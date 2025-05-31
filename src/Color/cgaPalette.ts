@@ -1,0 +1,53 @@
+import { CgaColors } from "./types";
+
+export const CGA_PALETTE_DICT: Record<CgaColors, string> = {
+  [CgaColors.Black]: "#000000",
+  [CgaColors.Red]: "#c40000",
+  [CgaColors.Green]: "#00c400",
+  [CgaColors.Blue]: "#0000c4",
+  [CgaColors.Yellow]: "#c4c400",
+  [CgaColors.Cyan]: "#00c4c4",
+  [CgaColors.Magenta]: "#c400c4",
+  [CgaColors.Orange]: "#c47e00",
+  [CgaColors.Chartreuse]: "#7ec400",
+  [CgaColors.SpringGreen]: "#00c47e",
+  [CgaColors.Azure]: "#007ec4",
+  [CgaColors.Violet]: "#7e00c4",
+  [CgaColors.Rose]: "#c4007e",
+  [CgaColors.LightGray]: "#c4c4c4",
+
+  [CgaColors.DarkGray]: "#4e4e4e",
+  [CgaColors.LightRed]: "#dc4e4e",
+  [CgaColors.LightGreen]: "#4edc4e",
+  [CgaColors.LightBlue]: "#4e4edc",
+  [CgaColors.LightYellow]: "#f3f34e",
+  [CgaColors.LightCyan]: "#4ef3f3",
+  [CgaColors.LightMagenta]: "#f34ef3",
+  [CgaColors.LightOrange]: "#e8b14e",
+  [CgaColors.LightChartreuse]: "#b1e84e",
+  [CgaColors.LightSpringGreen]: "#4ee8b1",
+  [CgaColors.LightAzure]: "#4eb1e8",
+  [CgaColors.LightViolet]: "#b14ee8",
+  [CgaColors.LightRose]: "#e84eb1",
+  [CgaColors.White]: "#ffffff",
+};
+
+export const CGA_PALETTE = [
+  CgaColors.Black,
+  CgaColors.Blue,
+  CgaColors.Green,
+  CgaColors.Cyan,
+  CgaColors.Red,
+  CgaColors.Magenta,
+  CgaColors.Yellow,
+  CgaColors.LightGray,
+
+  CgaColors.DarkGray,
+  CgaColors.LightBlue,
+  CgaColors.LightGreen,
+  CgaColors.LightCyan,
+  CgaColors.LightRed,
+  CgaColors.LightMagenta,
+  CgaColors.LightYellow,
+  CgaColors.White,
+];
