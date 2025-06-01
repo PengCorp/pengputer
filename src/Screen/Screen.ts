@@ -149,7 +149,7 @@ export class Screen {
 
     this.ctx = canvas.getContext("2d")!;
 
-    containerEl.appendChild(canvas);
+    containerEl.replaceChildren(canvas);
   }
 
   draw(dt: number) {
