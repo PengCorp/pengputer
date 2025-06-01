@@ -1,3 +1,5 @@
+// Full list of keyboard event codes: https://w3c.github.io/uievents-code/
+
 export const ANSI_LAYOUT = {
   KeyA: "a",
   KeyB: "b",
@@ -37,6 +39,7 @@ export const ANSI_LAYOUT = {
   Digit9: "9",
   Space: " ",
   Enter: "\n",
+  NumpadEnter: "\n",
   Backspace: "\b",
   Minus: "-",
   Equal: "=",
@@ -62,6 +65,8 @@ export const ANSI_LAYOUT = {
   NumpadSubtract: "-",
   NumpadMultiply: "*",
   NumpadDivide: "/",
+  NumpadDecimal: ".",
+  Backquote: "`",
 
   "@shift": {
     KeyA: "A",
@@ -127,6 +132,7 @@ export const ANSI_LAYOUT = {
     NumpadSubtract: "-",
     NumpadMultiply: "*",
     NumpadDivide: "/",
+    Backquote: "~",
   },
 
   "@caps": {
