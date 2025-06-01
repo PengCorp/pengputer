@@ -48,6 +48,10 @@ header a {
     background-size: 80px; */
 }
 
+#monitor-screen {
+  position: relative;
+}
+
 #controls {
   width: 120px;
   display: flex;
@@ -71,72 +75,37 @@ header a {
   width: calc((4 / 3) * 70vh);
 
   border: 10px inset #999;
-
-  background: black;
-  position: relative;
-  font-family: monospace;
-  color: white;
-  font-size: 2.2cqh;
-  padding: 20px;
-  font-smooth: never;
-  overflow: hidden;
+  padding: 24px;
+  background-color: black;
 }
 
-#screen p {
-  margin-top: 0px;
-  line-break: anywhere;
-  white-space: pre;
-}
-
-#screen::before {
+#screen-scanlines::before {
   /* crt effect by aleclownes.com */
   content: " ";
   display: block;
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
+  top: 10px;
+  left: 10px;
+  bottom: 10px;
+  right: 10px;
   background: linear-gradient(rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0) 50%);
   z-index: 2;
   background-size: 100% 2px;
   pointer-events: none;
 }
 
-#input {
-  white-space: pre;
-}
-
-.prompt {
-  margin-bottom: 0px;
-}
-
-.blink {
-  animation: blinker 1s step-start infinite;
-  font-weight: bold;
-}
-
-#screenContents {
-  position: relative;
-}
-
-@media (width <= 1650px) {
-  .keyboard-box {
-    display: none;
-  }
-}
-
-@media (height <= 850px) {
-  .keyboard-box {
-    display: none;
-  }
+.keyboard-box-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .keyboard-box {
   position: absolute;
-  left: calc((100vw - ((4 / 3) * 70vh + 60vh)) / 2);
-  bottom: 30px;
-  min-width: calc((4 / 3) * 70vh + 60vh);
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .keyboard {
@@ -231,5 +200,17 @@ header a {
 @keyframes blinker {
   50% {
     opacity: 0;
+  }
+}
+
+@media (width <= 1650px) {
+  .keyboard-box-container {
+    display: none;
+  }
+}
+
+@media (height <= 850px) {
+  .keyboard-box-container {
+    display: none;
   }
 }
