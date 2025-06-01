@@ -1,0 +1,235 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0px;
+  margin: 0px;
+}
+
+body {
+  padding: 25px;
+  background: url("/Pengputer/images/curtain_pattern.png");
+}
+
+header {
+  position: absolute;
+  font-family: serif;
+}
+
+header a {
+  color: white;
+  font-size: 20px;
+  background: black;
+}
+
+#monitor {
+  margin: auto;
+  padding: 20px;
+  padding-bottom: 100px;
+  padding-right: 0px;
+  background: #aaaaaa;
+  border: 15px outset #aaa;
+  border-radius: 5px;
+
+  width: fit-content;
+  display: flex;
+  align-items: stretch;
+  align-content: stretch;
+
+  /* background-image: url("logo.png");
+    background-position-x: right 20px;
+    background-position-y: bottom 40px;
+    background-repeat: no-repeat;
+    background-size: 80px; */
+}
+
+#controls {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-flow: column-reverse;
+}
+
+#controls img {
+  width: 100px;
+  padding: 5px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border: 3px inset #999;
+  background: #a2a2a2;
+  height: auto;
+}
+
+#screen {
+  height: 70vh;
+  width: calc((4 / 3) * 70vh);
+
+  border: 10px inset #999;
+
+  background: black;
+  position: relative;
+  font-family: monospace;
+  color: white;
+  font-size: 2.2cqh;
+  padding: 20px;
+  font-smooth: never;
+  overflow: hidden;
+}
+
+#screen p {
+  margin-top: 0px;
+  line-break: anywhere;
+  white-space: pre;
+}
+
+#screen::before {
+  /* crt effect by aleclownes.com */
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0) 50%);
+  z-index: 2;
+  background-size: 100% 2px;
+  pointer-events: none;
+}
+
+#input {
+  white-space: pre;
+}
+
+.prompt {
+  margin-bottom: 0px;
+}
+
+.blink {
+  animation: blinker 1s step-start infinite;
+  font-weight: bold;
+}
+
+#screenContents {
+  position: relative;
+}
+
+@media (width <= 1650px) {
+  .keyboard-box {
+    display: none;
+  }
+}
+
+@media (height <= 850px) {
+  .keyboard-box {
+    display: none;
+  }
+}
+
+.keyboard-box {
+  position: absolute;
+  left: calc((100vw - ((4 / 3) * 70vh + 60vh)) / 2);
+  bottom: 30px;
+  min-width: calc((4 / 3) * 70vh + 60vh);
+}
+
+.keyboard {
+  transform-origin: bottom;
+  transform: perspective(1000px) rotateX(45deg);
+  background-color: #999;
+  padding: 10px;
+  display: flex;
+  gap: 40px;
+  border-radius: 2px;
+}
+
+.keyboard-bottom {
+  height: 30px;
+  width: 100%;
+  background: #aaa;
+  box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
+}
+
+.keyboard span {
+  display: inline-block;
+  width: 54px;
+  text-align: center;
+  padding: 5px;
+  font-family: sans-serif;
+  background: #bbb;
+  border: 5px outset #aaa;
+  box-sizing: border-box;
+}
+
+/* .keyboard span:hover
+{
+    background: #aaa;
+    border: 4px solid #666;
+    padding-top: 10px;
+} */
+
+.keyboard .space {
+  flex-grow: 1;
+}
+
+.keyboard .smalltext {
+  font-size: 13px;
+  padding: 2px;
+}
+
+.keyboard .group {
+  /* background: #8d8d8d; */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.keyboard .row {
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.keyboard .ctrl {
+  min-width: 80px;
+}
+
+.keyboard .big {
+  min-width: 120px;
+}
+
+.keyboard .bigger {
+  min-width: 140px;
+}
+
+.keyboard .biggest {
+  min-width: 170px;
+}
+
+.keyboard .fill {
+  flex-grow: 1;
+}
+
+.desk {
+  position: absolute;
+  left: 0px;
+  bottom: 0px;
+  width: 100%;
+  height: 25vh;
+  background: url("/Pengputer/images/wood.jpg");
+  z-index: -1;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
