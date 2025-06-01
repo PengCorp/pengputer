@@ -12,6 +12,7 @@ import { Keyboard } from "./Keyboard";
 
   screen.clear();
   screen.drawSomeText();
+  screen.displayString({ x: 1, y: 15 }, "Get scrolled, nerd :P");
 
   let lastTime = performance.now();
   const cb = () => {
@@ -37,6 +38,14 @@ import { Keyboard } from "./Keyboard";
         screen.setCursorPositionDelta({ x: -1, y: 0 });
       } else if (key === "ArrowRight") {
         screen.setCursorPositionDelta({ x: 1, y: 0 });
+      } else if (key === "F1") {
+        screen.scrollUpRect({ x: 1, y: 1, h: 4, w: 4 }, 1);
+      } else if (key === "F2") {
+        screen.scrollUp(1);
+      } else if (key === "F3") {
+        screen.scrollDownRect({ x: 1, y: 1, h: 4, w: 4 }, 1);
+      } else if (key === "F4") {
+        screen.scrollDown(1);
       }
       // unsubType();
     };

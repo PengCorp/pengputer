@@ -2,11 +2,11 @@ import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenCharacter, ScreenCharacterAttributes } from "./types";
-import { Position, StringLike } from "../types";
+import { Position, Rect, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 
 /*
-  BIOS functions:
+  BIOS functions docs: http://www.techhelpmanual.com/27-dos__bios___extensions_service_index.html
     Set cursor position +
     Get cursor position +
     Scroll window up
@@ -95,8 +95,8 @@ export class Screen {
     this.charBlinkDuration = 600;
     this.charBlinkCounter = this.charBlinkDuration;
 
-    this.shouldScrollOnWrite = false;
-    this.shouldWrapOnWrite = false;
+    this.shouldScrollOnWrite = true;
+    this.shouldWrapOnWrite = true;
 
     this.screenBuffer = new Array(this.totalCharacters);
     for (let i = 0; i < this.totalCharacters; i += 1) {
@@ -338,19 +338,8 @@ export class Screen {
 
   setCursorPosition(pos: Position) {
     const { x, y } = pos;
-
-    if (
-      x < 0 ||
-      x >= this.widthInCharacters ||
-      y < 0 ||
-      y >= this.heightInCharacters
-    ) {
-      throw new Error(
-        `Cursor position out of bounds: (${x}, ${y}) is not within (${this.widthInCharacters}, ${this.heightInCharacters})`
-      );
-    }
-    this.curX = x;
-    this.curY = y;
+    this.curX = Math.max(0, Math.min(this.widthInCharacters - 1, x));
+    this.curY = Math.max(0, Math.min(this.heightInCharacters - 1, y));
     this.resetCursorBlink();
   }
 
@@ -423,19 +412,14 @@ export class Screen {
 
   /** Prints a string of characters to screen using current attributes and moves cursor. */
   printString(string: StringLike) {
-    this.displayString(
-      this.getCursorPosition(),
-      string,
-      this.getCurrentAttributes(),
-      true
-    );
+    this.displayString(this.getCursorPosition(), string, undefined, true);
   }
 
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
   displayString(
     pos: Position,
     string: StringLike,
-    attributes: ScreenCharacterAttributes,
+    attributes: ScreenCharacterAttributes = this.getCurrentAttributes(),
     shouldUpdateCursor: boolean = false
   ) {
     let curPos = { x: pos.x, y: pos.y };
@@ -469,17 +453,110 @@ export class Screen {
           curPos.x -= 1;
         }
       }
-      if (this.curY >= this.heightInCharacters) {
+      if (curPos.y >= this.heightInCharacters) {
         if (this.shouldScrollOnWrite) {
-          // scroll
-        } else {
-          curPos.y -= 1;
+          this.scrollUp(1);
         }
+        curPos.y -= 1;
       }
     }
 
     if (shouldUpdateCursor) {
       this.setCursorPosition(curPos);
+    }
+  }
+
+  /*================================ SCROLLING ================================*/
+
+  scrollUp(
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+  ) {
+    this.scrollUpRect(
+      {
+        x: 0,
+        y: 0,
+        w: this.widthInCharacters,
+        h: this.heightInCharacters,
+      },
+      linesToScroll,
+      attributes
+    );
+  }
+
+  scrollUpRect(
+    rect: Rect,
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+  ) {
+    // scroll screen buffer
+    for (let y = rect.y + linesToScroll; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+        this.screenBuffer[this._getScreenBufferIndex(x, y - linesToScroll)] =
+          this.screenBuffer[this._getScreenBufferIndex(x, y)];
+      }
+    }
+
+    // clear new lines
+    for (let y = rect.y + rect.h - linesToScroll; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+        this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
+          character: " ",
+          attributes,
+        };
+      }
+    }
+
+    for (let y = 0; y < this.heightInCharacters; y += 1) {
+      for (let x = 0; x < this.widthInCharacters; x += 1) {
+        this.redrawCharacter(x, y);
+      }
+    }
+  }
+
+  scrollDown(
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+  ) {
+    this.scrollDownRect(
+      {
+        x: 0,
+        y: 0,
+        w: this.widthInCharacters,
+        h: this.heightInCharacters,
+      },
+      linesToScroll,
+      attributes
+    );
+  }
+
+  scrollDownRect(
+    rect: Rect,
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+  ) {
+    // scroll screen buffer
+    for (let y = rect.y + rect.h - 1; y >= rect.y + linesToScroll; y -= 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+        this.screenBuffer[this._getScreenBufferIndex(x, y)] =
+          this.screenBuffer[this._getScreenBufferIndex(x, y - linesToScroll)];
+      }
+    }
+
+    // clear new lines
+    for (let y = rect.y; y < rect.y + linesToScroll; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+        this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
+          character: " ",
+          attributes,
+        };
+      }
+    }
+
+    for (let y = 0; y < this.heightInCharacters; y += 1) {
+      for (let x = 0; x < this.widthInCharacters; x += 1) {
+        this.redrawCharacter(x, y);
+      }
     }
   }
 
