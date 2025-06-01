@@ -1,13 +1,18 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
+import { TypeListener } from "../Keyboard/Keyboard";
 
-export const readLine = (screen: Screen, keyboard: Keyboard) => {
+export const readLine = (
+  screen: Screen,
+  keyboard: Keyboard
+): Promise<string> => {
   let unsubType: (() => void) | null = null;
 
-  const promise = new Promise((resolve) => {
+  const promise = new Promise<string>((resolve) => {
     let result = "";
     let curIndex = 0;
-    const onType = (char: string, key: string) => {
+
+    const onType: TypeListener = (char, key) => {
       if (char === "\n") {
         screen.printChar(char);
         resolve(result);

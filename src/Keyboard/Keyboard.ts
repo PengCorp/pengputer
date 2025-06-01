@@ -1,10 +1,12 @@
 import { ANSI_LAYOUT } from "./ansiLayout";
 
+export type TypeListener = (char: string | null, keyCode: string) => void;
+
 export class Keyboard {
   private pressed: Set<any>;
   private layout: any;
 
-  private typeListeners: Array<(char: string | null, keyCode: string) => void>;
+  private typeListeners: Array<TypeListener>;
   private autorepeatDelay: number;
   private autorepeatDelayCounter: number;
   private autorepeatInterval: number;
@@ -51,16 +53,14 @@ export class Keyboard {
     console["log"](this.pressed);
   }
 
-  getIsKeyPressed(keyCode: any) {
+  getIsKeyPressed(keyCode: string) {
     return this.pressed.has(keyCode);
   }
 
-  addTypeListener(callback: any) {
+  addTypeListener(callback: TypeListener) {
     this.typeListeners.push(callback);
     return () => {
-      this.typeListeners = this.typeListeners.filter(
-        (cb: any) => cb !== callback
-      );
+      this.typeListeners = this.typeListeners.filter((cb) => cb !== callback);
     };
   }
 

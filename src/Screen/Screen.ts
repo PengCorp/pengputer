@@ -229,6 +229,9 @@ export class Screen {
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = this.currentAttributes.fgColor;
     attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
+
+    this.curX = 0;
+    this.curY = 0;
   }
 
   resetCursorBlink() {
