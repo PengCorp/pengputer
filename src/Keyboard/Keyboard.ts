@@ -4,12 +4,12 @@ export class Keyboard {
   private pressed: Set<any>;
   private layout: any;
 
-  private typeListeners: any;
+  private typeListeners: Array<(char: string | null, keyCode: string) => void>;
   private autorepeatDelay: number;
   private autorepeatDelayCounter: number;
   private autorepeatInterval: number;
   private autorepeatIntervalCounter: number;
-  private autorepeatKey: string | null;
+  private autorepeatEvent: KeyboardEvent | null;
 
   constructor() {
     this.pressed = new Set();
@@ -24,25 +24,25 @@ export class Keyboard {
     this.autorepeatDelayCounter = this.autorepeatDelay;
     this.autorepeatInterval = 50;
     this.autorepeatIntervalCounter = this.autorepeatInterval;
-    this.autorepeatKey = null;
+    this.autorepeatEvent = null;
   }
 
-  _onKeyDown(e: any) {
+  _onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     if (e.repeat) return;
     this.pressed.add(e.code);
-    this._onKeyTyped(e.code);
+    this._onKeyTyped(e);
   }
 
-  _onKeyUp(e: any) {
+  _onKeyUp(e: KeyboardEvent) {
     this.pressed.delete(e.code);
-    if (this.autorepeatKey === e.code) {
+    if (this.autorepeatEvent?.code === e.code) {
       this._resetAutorepeat();
     }
   }
 
   _resetAutorepeat() {
-    this.autorepeatKey = null;
+    this.autorepeatEvent = null;
     this.autorepeatDelayCounter = this.autorepeatDelay;
     this.autorepeatIntervalCounter = 0;
   }
@@ -64,16 +64,16 @@ export class Keyboard {
     };
   }
 
-  _getCharFromLayout(keyCode: any) {
+  _getCharFromLayout(ev: KeyboardEvent) {
+    const { code: keyCode } = ev;
+    const isShiftDown = ev.getModifierState("Shift");
+    const isCapsOn = ev.getModifierState("CapsLock");
+
     const shiftLayout = this.layout["@shift"];
     const capsLayout = this.layout["@caps"];
     const capsShiftLayout = this.layout["@caps-shift"];
 
-    let isShiftDown =
-      this.pressed.has("ShiftLeft") || this.pressed.has("ShiftRight");
-    let isCapsDown = this.pressed.has("CapsLock");
-
-    if (isCapsDown && capsLayout) {
+    if (isCapsOn && capsLayout) {
       if (isShiftDown && capsShiftLayout && capsShiftLayout[keyCode]) {
         return capsShiftLayout[keyCode];
       }
@@ -97,23 +97,23 @@ export class Keyboard {
     return null;
   }
 
-  _onKeyTyped(key: any) {
-    const char = this._getCharFromLayout(key) ?? null;
-    if (key !== this.autorepeatKey) {
+  _onKeyTyped(ev: KeyboardEvent) {
+    const char = this._getCharFromLayout(ev) ?? null;
+    if (ev.code !== this.autorepeatEvent?.code) {
       this._resetAutorepeat();
-      this.autorepeatKey = key;
+      this.autorepeatEvent = ev;
     }
-    this.typeListeners.forEach((callback: any) => callback(char, key));
+    this.typeListeners.forEach((callback: any) => callback(char, ev.code));
   }
 
   update(dt: any) {
-    if (this.autorepeatKey) {
+    if (this.autorepeatEvent) {
       this.autorepeatDelayCounter -= dt;
       if (this.autorepeatDelayCounter <= 0) {
         this.autorepeatIntervalCounter -= dt;
         while (this.autorepeatIntervalCounter <= 0) {
           this.autorepeatIntervalCounter += this.autorepeatInterval;
-          this._onKeyTyped(this.autorepeatKey);
+          this._onKeyTyped(this.autorepeatEvent);
         }
       }
     }
