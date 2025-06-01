@@ -323,12 +323,12 @@ class PengOS {
         .trim()
         .split(" ")
         .filter((c) => Boolean(c));
-      const command = commandArguments[0].toLowerCase();
-      const knownCommand = commands[command];
+      const command = commandArguments[0];
+      const knownCommand = commands[command.toLowerCase()];
       if (knownCommand) {
         knownCommand(commandArguments.slice(1));
       } else {
-        screen.printString("Unknown command: " + commandString + "\n");
+        screen.printString("Unknown command: " + command + "\n");
         screen.printString('Try "help" or "h" to see available commands\n');
       }
     }
