@@ -307,6 +307,90 @@ async function submit(input, printFunction) {
 
 // ====================== REAL
 
+enum FileSystemObjectType {
+  Directory = "dir",
+  TextFile = "txt",
+}
+
+type FileSystemEntry =
+  | {
+      type: FileSystemObjectType.Directory;
+      name: string;
+      data: Directory;
+    }
+  | {
+      type: FileSystemObjectType.TextFile;
+      name: string;
+      data: TextFile;
+    };
+
+class Directory {
+  private items: FileSystemEntry[] = [];
+
+  getItems() {
+    return this.items;
+  }
+
+  getItem(name: string) {
+    return this.items.find((e) => e.name === name) ?? null;
+  }
+
+  mkdir(name: string) {
+    const newDir = new Directory();
+    this.items.push({
+      type: FileSystemObjectType.Directory,
+      data: newDir,
+      name,
+    });
+    return newDir;
+  }
+}
+
+class FileSystem {
+  private rootDir: Directory = new Directory();
+  private root: FileSystemEntry = {
+    type: FileSystemObjectType.Directory,
+    name: "/",
+    data: this.rootDir,
+  };
+
+  constructor() {
+    let newDir = this.rootDir.mkdir("test_folder");
+    newDir = this.rootDir.mkdir("test_folder_too");
+
+    newDir = this.rootDir.mkdir("nested");
+
+    newDir.mkdir("inside");
+  }
+
+  getAtPath(path: string[]): FileSystemEntry | null {
+    if (path.length === 0) {
+      return this.root;
+    }
+
+    let cur = this.rootDir;
+    let curPathI = 0;
+    while (curPathI < path.length - 1) {
+      const items = cur.getItems();
+      const found =
+        items.find(
+          (e) =>
+            e.type === FileSystemObjectType.Directory &&
+            e.name === path[curPathI]
+        ) ?? null;
+      if (found && found.type === FileSystemObjectType.Directory) {
+        cur = found.data;
+      } else {
+        return null;
+      }
+    }
+
+    const items = cur.getItems();
+    const found = items.find((e) => e.name === path[curPathI]) ?? null;
+    return found;
+  }
+}
+
 class PengOS {
   private pc: {
     screen: Screen;
@@ -314,6 +398,7 @@ class PengOS {
     currentDrive: string;
     currentPath: string[];
     prompt: string;
+    fileSystem: FileSystem;
   };
 
   constructor(screen: Screen, keyboard: Keyboard) {
@@ -323,34 +408,113 @@ class PengOS {
       currentDrive: "A",
       currentPath: [],
       prompt: "%D%P",
+      fileSystem: new FileSystem(),
     };
   }
+
   startup() {
     const { screen } = this.pc;
     screen.clear();
     screen.printString("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
 
     this.pc.currentDrive = "A";
-    this.pc.currentPath = ["GAMES", "TOONS"];
+    this.pc.currentPath = [];
     this.pc.prompt = "%D%P>";
+  }
+
+  formatPath(path: string[]): string {
+    return path.length > 0
+      ? `${PATH_SEPARATOR}${path.join(PATH_SEPARATOR)}${PATH_SEPARATOR}`
+      : PATH_SEPARATOR;
   }
 
   printPrompt() {
     const { screen, prompt, currentDrive, currentPath } = this.pc;
-    let pathString =
-      currentPath.length > 0
-        ? `${PATH_SEPARATOR}${currentPath.join(
-            PATH_SEPARATOR
-          )}${PATH_SEPARATOR}`
-        : PATH_SEPARATOR;
+    let pathString = this.formatPath(currentPath);
     const promptString = prompt
       .replace("%D", `${currentDrive}:`)
       .replace("%P", pathString);
     screen.printString(`\n${promptString}`);
   }
 
+  private commandPrompt(args: string[]) {
+    this.pc.prompt = args[0] ?? "";
+  }
+
+  private commandLook() {
+    const { fileSystem, currentPath, screen } = this.pc;
+    screen.printString(`Currently in ${this.formatPath(currentPath)}\n\n`);
+    const entry = fileSystem.getAtPath(currentPath);
+    if (entry && entry.type === FileSystemObjectType.Directory) {
+      const items = entry.data.getItems();
+      if (items.length > 0) {
+        for (const directoryEntry of entry.data.getItems()) {
+          const isDir = directoryEntry.type === FileSystemObjectType.Directory;
+          screen.printString(
+            `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`
+          );
+        }
+      } else {
+        screen.printString(`Directory is empty\n`);
+      }
+    }
+  }
+
+  private commandGo(args: string[]) {
+    const [dirName] = args;
+
+    const { fileSystem, currentPath, screen } = this.pc;
+
+    if (!dirName) {
+      screen.printString("Must provide a new path\n");
+      return;
+    }
+
+    const newPath = [...currentPath, dirName];
+    const fsEntry = fileSystem.getAtPath(newPath);
+    if (fsEntry) {
+      if (fsEntry.type === FileSystemObjectType.Directory) {
+        this.pc.currentPath = newPath;
+        screen.printString(`Now in ${this.formatPath(this.pc.currentPath)}\n`);
+      } else {
+        screen.printString("Not a directory\n");
+      }
+    } else {
+      screen.printString("Does not exist\n");
+    }
+  }
+
+  private commandUp() {
+    const { currentPath, screen } = this.pc;
+    if (currentPath.length > 0) {
+      currentPath.splice(currentPath.length - 1, 1);
+      screen.printString(`Went up to ${this.formatPath(currentPath)}\n`);
+    } else {
+      screen.printString("Already at the root of the drive.\n");
+    }
+  }
+
+  private commandHelp() {
+    const { screen } = this.pc;
+    screen.printString("help      List available commands\n");
+    screen.printString("look      Display contents of current directory\n");
+    screen.printString("go        Navigate directories\n");
+    screen.printString("up        Navigate to parent directory\n");
+    screen.printString("makedir   Create a directory\n");
+    screen.printString("prompt    Change your command prompt text\n");
+  }
+
   async mainLoop() {
     const { screen, keyboard } = this.pc;
+
+    const commands: Record<string, (args: string[]) => void> = {
+      prompt: this.commandPrompt.bind(this),
+      look: this.commandLook.bind(this),
+      go: this.commandGo.bind(this),
+      up: this.commandUp.bind(this),
+      help: this.commandHelp.bind(this),
+      h: this.commandHelp.bind(this),
+    };
 
     while (true) {
       this.printPrompt();
@@ -360,8 +524,9 @@ class PengOS {
         .split(" ")
         .filter((c) => Boolean(c));
       const command = commandArguments[0].toLowerCase();
-      if (command === "prompt") {
-        this.pc.prompt = commandArguments[1] ?? "";
+      const knownCommand = commands[command];
+      if (knownCommand) {
+        knownCommand(commandArguments.slice(1));
       } else {
         screen.printString("Unknown command: " + commandString + "\n");
         screen.printString('Try "help" or "h" to see available commands\n');
