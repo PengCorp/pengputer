@@ -336,18 +336,41 @@ export class Screen {
     return { x: this.curX, y: this.curY };
   }
 
-  setCursorPosition(pos: Position) {
-    const { x, y } = pos;
-    this.curX = Math.max(0, Math.min(this.widthInCharacters - 1, x));
+  setCursorPosition(pos: Position, shouldWrap: boolean = false) {
+    const { x, y } = this._resolveCursorXPosition(pos, shouldWrap);
+    this.curX = x;
     this.curY = Math.max(0, Math.min(this.heightInCharacters - 1, y));
     this.resetCursorBlink();
   }
 
-  setCursorPositionDelta(delta: Position) {
+  _resolveCursorXPosition(
+    pos: Position,
+    shouldWrap: boolean = false
+  ): Position {
+    if (shouldWrap) {
+      const newPos = { x: pos.x, y: pos.y };
+      while (newPos.x < 0) {
+        newPos.x += this.widthInCharacters;
+        newPos.y -= 1;
+      }
+      while (newPos.x >= this.widthInCharacters) {
+        newPos.x -= this.widthInCharacters;
+        newPos.y += 1;
+      }
+      return newPos;
+    } else {
+      return {
+        x: Math.max(0, Math.min(this.widthInCharacters - 1, pos.x)),
+        y: pos.y,
+      };
+    }
+  }
+
+  setCursorPositionDelta(delta: Position, shouldWrap: boolean = false) {
     const newPosition = this.getCursorPosition();
     newPosition.x += delta.x;
     newPosition.y += delta.y;
-    this.setCursorPosition(newPosition);
+    this.setCursorPosition(newPosition, shouldWrap);
   }
 
   getCharacter() {
@@ -445,15 +468,8 @@ export class Screen {
         continue;
       }
 
-      if (curPos.x >= this.widthInCharacters) {
-        if (this.shouldWrapOnWrite) {
-          curPos.x = 0;
-          curPos.y += 1;
-        } else {
-          curPos.x -= 1;
-        }
-      }
-      if (curPos.y >= this.heightInCharacters) {
+      curPos = this._resolveCursorXPosition(curPos, this.shouldWrapOnWrite);
+      while (curPos.y >= this.heightInCharacters) {
         if (this.shouldScrollOnWrite) {
           this.scrollUp(1);
         }
