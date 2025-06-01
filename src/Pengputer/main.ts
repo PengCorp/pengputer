@@ -94,8 +94,8 @@ class FileSystem {
     const licenseTxt = new TextFile();
     licenseTxt.replace(
       "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
-        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER\n" +
-        "TITLE 2,239,132 SECTION XII OF THE PENGER CRIMINAL JUSTICE\nCODE"
+        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
+        "XII OF THE PENGER CRIMINAL JUSTICE CODE"
     );
     pengOSDir.addItem({
       type: FileSystemObjectType.TextFile,
@@ -143,6 +143,8 @@ class PengOS {
     fileSystem: FileSystem;
   };
 
+  private suppressNextPromptNewline: boolean;
+
   constructor(screen: Screen, keyboard: Keyboard) {
     this.pc = {
       screen,
@@ -152,6 +154,8 @@ class PengOS {
       prompt: "%D%P",
       fileSystem: new FileSystem(),
     };
+
+    this.suppressNextPromptNewline = false;
   }
 
   startup() {
@@ -179,7 +183,10 @@ class PengOS {
     const promptString = prompt
       .replace("%D", `${currentDrive}:`)
       .replace("%P", pathString);
-    screen.printString(`\n${promptString}`);
+    screen.printString(
+      `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`
+    );
+    this.suppressNextPromptNewline = false;
   }
 
   private commandPrompt(args: string[]) {
@@ -276,6 +283,12 @@ class PengOS {
     }
   }
 
+  private commandClear() {
+    const { screen } = this.pc;
+    screen.clear();
+    this.suppressNextPromptNewline = true;
+  }
+
   private commandHelp() {
     const { screen } = this.pc;
     screen.printString("help      List available commands\n");
@@ -284,6 +297,7 @@ class PengOS {
     screen.printString("up        Navigate to parent directory\n");
     screen.printString("makedir   Create a directory\n");
     screen.printString("open      Display file\n");
+    screen.printString("clear     Clear screen\n");
     screen.printString("prompt    Change your command prompt text\n");
   }
 
@@ -298,6 +312,7 @@ class PengOS {
       up: this.commandUp.bind(this),
       makedir: this.commandMakedir.bind(this),
       open: this.commandOpen.bind(this),
+      clear: this.commandClear.bind(this),
       prompt: this.commandPrompt.bind(this),
     };
 
