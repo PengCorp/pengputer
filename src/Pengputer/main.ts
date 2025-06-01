@@ -31,6 +31,10 @@ class Directory {
     });
     return newDir;
   }
+
+  addItem(item: FileSystemEntry) {
+    this.items.push(item);
+  }
 }
 
 class TextFile {
@@ -85,6 +89,19 @@ class FileSystem {
     newDir = this.rootDir.mkdir("nested");
 
     newDir.mkdir("inside");
+
+    const pengOSDir = this.rootDir.mkdir("pengos");
+    const licenseTxt = new TextFile();
+    licenseTxt.replace(
+      "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
+        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER\n" +
+        "TITLE 2,239,132 SECTION XII OF THE PENGER CRIMINAL JUSTICE\nCODE"
+    );
+    pengOSDir.addItem({
+      type: FileSystemObjectType.TextFile,
+      data: licenseTxt,
+      name: "LICENSE.TXT",
+    });
   }
 
   getAtPath(path: string[]): FileSystemEntry | null {
@@ -104,6 +121,7 @@ class FileSystem {
         ) ?? null;
       if (found && found.type === FileSystemObjectType.Directory) {
         cur = found.data;
+        curPathI += 1;
       } else {
         return null;
       }
@@ -238,6 +256,26 @@ class PengOS {
     }
   }
 
+  private commandOpen(args: string[]) {
+    const { screen, fileSystem, currentPath } = this.pc;
+    const [fileName] = args;
+    if (!fileName) {
+      screen.printString("Must provide a file name\n");
+      return;
+    }
+
+    const fileEntry = fileSystem.getAtPath([...currentPath, fileName]);
+    if (fileEntry) {
+      if (fileEntry.type === FileSystemObjectType.TextFile) {
+        screen.printString(`${fileEntry.data.getText()}`);
+      } else {
+        screen.printString(`Not readable\n`);
+      }
+    } else {
+      screen.printString(`Does not exist\n`);
+    }
+  }
+
   private commandHelp() {
     const { screen } = this.pc;
     screen.printString("help      List available commands\n");
@@ -245,6 +283,7 @@ class PengOS {
     screen.printString("go        Navigate directories\n");
     screen.printString("up        Navigate to parent directory\n");
     screen.printString("makedir   Create a directory\n");
+    screen.printString("open      Display file\n");
     screen.printString("prompt    Change your command prompt text\n");
   }
 
@@ -258,6 +297,7 @@ class PengOS {
       go: this.commandGo.bind(this),
       up: this.commandUp.bind(this),
       makedir: this.commandMakedir.bind(this),
+      open: this.commandOpen.bind(this),
       prompt: this.commandPrompt.bind(this),
     };
 
