@@ -487,6 +487,51 @@ export class Screen {
 
   /*================================ SCROLLING ================================*/
 
+  private scrollCanvases(
+    src: Rect,
+    dst: Rect,
+    clear: Rect,
+    attributes: ScreenCharacterAttributes
+  ) {
+    const scrollDraws = [
+      {
+        ctx: this.bgCtx,
+        canvas: this.bgCanvas,
+      },
+      {
+        ctx: this.charCtx,
+        canvas: this.charCanvas,
+      },
+      {
+        ctx: this.attributeCtx,
+        canvas: this.attributeCanvas,
+      },
+    ];
+
+    for (const { ctx, canvas } of scrollDraws) {
+      this.bufferCtx.globalCompositeOperation = "copy";
+      this.bufferCtx.drawImage(
+        canvas,
+        src.x,
+        src.y,
+        src.w,
+        src.h,
+        dst.x,
+        dst.y,
+        dst.w,
+        dst.h
+      );
+      ctx.clearRect(dst.x, dst.y, dst.w, dst.h);
+      ctx.drawImage(this.bufferCanvas, 0, 0);
+    }
+
+    this.bgCtx.fillStyle = attributes.bgColor;
+    this.bgCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
+    this.charCtx.clearRect(clear.x, clear.y, clear.w, clear.h);
+    this.attributeCtx.fillStyle = attributes.fgColor;
+    this.attributeCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
+  }
+
   scrollUp(
     linesToScroll: number,
     attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
@@ -526,11 +571,26 @@ export class Screen {
       }
     }
 
-    for (let y = 0; y < this.heightInCharacters; y += 1) {
-      for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.redrawCharacter(x, y);
-      }
-    }
+    const copyRect = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const copyRectTo = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const clearRect = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + rect.h - linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: linesToScroll * this.characterHeight,
+    };
+
+    this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
   }
 
   scrollDown(
@@ -572,11 +632,26 @@ export class Screen {
       }
     }
 
-    for (let y = 0; y < this.heightInCharacters; y += 1) {
-      for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.redrawCharacter(x, y);
-      }
-    }
+    const copyRect = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const copyRectTo = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const clearRect = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: linesToScroll * this.characterHeight,
+    };
+
+    this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
   }
 
   /*================================ DEMO STUFF ================================*/
