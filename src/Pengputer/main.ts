@@ -2,6 +2,11 @@ import { loadFont9x16 } from "../Screen/font9x16";
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
 import { readLine } from "../Functions";
+import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
+import { PC } from "./PC";
+import { TextFile } from "./TextFile";
+import { HelloWorld } from "./HelloWorld";
+import { DateApp } from "./DateApp";
 
 const PATH_SEPARATOR = "/";
 
@@ -11,137 +16,8 @@ declare global {
   }
 }
 
-class Directory {
-  private items: FileSystemEntry[] = [];
-
-  getItems() {
-    return this.items;
-  }
-
-  getItem(name: string) {
-    return this.items.find((e) => e.name === name) ?? null;
-  }
-
-  mkdir(name: string) {
-    const newDir = new Directory();
-    this.items.push({
-      type: FileSystemObjectType.Directory,
-      data: newDir,
-      name,
-    });
-    return newDir;
-  }
-
-  addItem(item: FileSystemEntry) {
-    this.items.push(item);
-  }
-}
-
-class TextFile {
-  private data: string;
-
-  constructor() {
-    this.data = "";
-  }
-
-  getText() {
-    return this.data;
-  }
-
-  append(text: string) {
-    this.data = `${this.data}${text}`;
-  }
-
-  replace(text: string) {
-    this.data = text;
-  }
-}
-
-enum FileSystemObjectType {
-  Directory = "dir",
-  TextFile = "txt",
-}
-
-type FileSystemEntry =
-  | {
-      type: FileSystemObjectType.Directory;
-      name: string;
-      data: Directory;
-    }
-  | {
-      type: FileSystemObjectType.TextFile;
-      name: string;
-      data: TextFile;
-    };
-
-class FileSystem {
-  private rootDir: Directory = new Directory();
-  private root: FileSystemEntry = {
-    type: FileSystemObjectType.Directory,
-    name: "/",
-    data: this.rootDir,
-  };
-
-  constructor() {
-    let newDir = this.rootDir.mkdir("test_folder");
-    newDir = this.rootDir.mkdir("test_folder_too");
-
-    newDir = this.rootDir.mkdir("nested");
-
-    newDir.mkdir("inside");
-
-    const pengOSDir = this.rootDir.mkdir("pengos");
-    const licenseTxt = new TextFile();
-    licenseTxt.replace(
-      "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
-        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
-        "XII OF THE PENGER CRIMINAL JUSTICE CODE"
-    );
-    pengOSDir.addItem({
-      type: FileSystemObjectType.TextFile,
-      data: licenseTxt,
-      name: "LICENSE.TXT",
-    });
-  }
-
-  getAtPath(path: string[]): FileSystemEntry | null {
-    if (path.length === 0) {
-      return this.root;
-    }
-
-    let cur = this.rootDir;
-    let curPathI = 0;
-    while (curPathI < path.length - 1) {
-      const items = cur.getItems();
-      const found =
-        items.find(
-          (e) =>
-            e.type === FileSystemObjectType.Directory &&
-            e.name === path[curPathI]
-        ) ?? null;
-      if (found && found.type === FileSystemObjectType.Directory) {
-        cur = found.data;
-        curPathI += 1;
-      } else {
-        return null;
-      }
-    }
-
-    const items = cur.getItems();
-    const found = items.find((e) => e.name === path[curPathI]) ?? null;
-    return found;
-  }
-}
-
 class PengOS {
-  private pc: {
-    screen: Screen;
-    keyboard: Keyboard;
-    currentDrive: string;
-    currentPath: string[];
-    prompt: string;
-    fileSystem: FileSystem;
-  };
+  private pc: PC;
 
   private suppressNextPromptNewline: boolean;
 
@@ -169,6 +45,35 @@ class PengOS {
     this.pc.currentDrive = "A";
     this.pc.currentPath = [];
     this.pc.prompt = "%D%P>";
+
+    const rootDirEntry = this.pc.fileSystem.getAtPath([])!;
+    const rootDir = rootDirEntry.data as Directory;
+
+    rootDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "date.exe",
+      data: new DateApp(this.pc),
+    });
+
+    const pengOSDir = rootDir.mkdir("pengos");
+    const licenseTxt = new TextFile();
+    licenseTxt.replace(
+      "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
+        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
+        "XII OF THE PENGER CRIMINAL JUSTICE CODE"
+    );
+    pengOSDir.addItem({
+      type: FileSystemObjectType.TextFile,
+      data: licenseTxt,
+      name: "LICENSE.TXT",
+    });
+
+    const programDir = rootDir.mkdir("software");
+    programDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "hello.exe",
+      data: new HelloWorld(this.pc),
+    });
   }
 
   formatPath(path: string[]): string {
@@ -200,7 +105,32 @@ class PengOS {
     if (entry && entry.type === FileSystemObjectType.Directory) {
       const items = entry.data.getItems();
       if (items.length > 0) {
-        for (const directoryEntry of entry.data.getItems()) {
+        const items = entry.data.getItems();
+        items.sort((a, b) => {
+          if (a.name === b.name) {
+            return 0;
+          }
+          if (b.name > a.name) {
+            return -1;
+          }
+          return 1;
+        });
+        items.sort((a, b) => {
+          if (
+            a.type === FileSystemObjectType.Directory &&
+            b.type === FileSystemObjectType.Directory
+          ) {
+            return 0;
+          }
+          if (
+            a.type === FileSystemObjectType.Directory &&
+            b.type !== FileSystemObjectType.Directory
+          ) {
+            return -1;
+          }
+          return 1;
+        });
+        for (const directoryEntry of items) {
           const isDir = directoryEntry.type === FileSystemObjectType.Directory;
           screen.printString(
             `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`
@@ -263,6 +193,26 @@ class PengOS {
     }
   }
 
+  private async commandRun(args: string[]) {
+    const { screen, fileSystem, currentPath } = this.pc;
+    const [fileName] = args;
+    if (!fileName) {
+      screen.printString("Must provide a file name\n");
+      return;
+    }
+
+    const fileEntry = fileSystem.getAtPath([...currentPath, fileName]);
+    if (fileEntry) {
+      if (fileEntry.type === FileSystemObjectType.Executable) {
+        await fileEntry.data.run(args);
+      } else {
+        screen.printString(`Not executable\n`);
+      }
+    } else {
+      screen.printString(`Does not exist\n`);
+    }
+  }
+
   private commandOpen(args: string[]) {
     const { screen, fileSystem, currentPath } = this.pc;
     const [fileName] = args;
@@ -296,6 +246,7 @@ class PengOS {
     screen.printString("go        Navigate directories\n");
     screen.printString("up        Navigate to parent directory\n");
     screen.printString("makedir   Create a directory\n");
+    screen.printString("run       Execute program\n");
     screen.printString("open      Display file\n");
     screen.printString("clear     Clear screen\n");
     screen.printString("prompt    Change your command prompt text\n");
@@ -311,6 +262,7 @@ class PengOS {
       go: this.commandGo.bind(this),
       up: this.commandUp.bind(this),
       makedir: this.commandMakedir.bind(this),
+      run: this.commandRun.bind(this),
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),
       prompt: this.commandPrompt.bind(this),
