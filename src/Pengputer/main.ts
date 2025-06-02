@@ -7,6 +7,8 @@ import { PC } from "./PC";
 import { TextFile } from "./TextFile";
 import { HelloWorld } from "./HelloWorld";
 import { DateApp } from "./DateApp";
+import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
+import { CgaColors } from "../Color/types";
 
 const PATH_SEPARATOR = "/";
 
@@ -84,6 +86,11 @@ class PengOS {
 
   printPrompt() {
     const { screen, prompt, currentDrive, currentPath } = this.pc;
+    screen.currentAttributes = {
+      ...screen.currentAttributes,
+      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
+      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
+    };
     let pathString = this.formatPath(currentPath);
     const promptString = prompt
       .replace("%D", `${currentDrive}:`)
