@@ -26,7 +26,7 @@ import { Keyboard } from "./Keyboard";
 
   const readLine = async () => {
     let unsubType;
-    const onType = (char: string, key: string) => {
+    const onType = (char: string | null, key: string) => {
       if (char) {
         screen.printChar(char);
       }
