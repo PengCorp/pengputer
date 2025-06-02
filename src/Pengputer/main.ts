@@ -323,13 +323,15 @@ class PengOS {
         .trim()
         .split(" ")
         .filter((c) => Boolean(c));
-      const command = commandArguments[0];
-      const knownCommand = commands[command.toLowerCase()];
-      if (knownCommand) {
-        knownCommand(commandArguments.slice(1));
-      } else {
-        screen.printString("Unknown command: " + command + "\n");
-        screen.printString('Try "help" or "h" to see available commands\n');
+      if (commandArguments.length > 0) {
+        const command = commandArguments[0];
+        const knownCommand = commands[command.toLowerCase()];
+        if (knownCommand) {
+          knownCommand(commandArguments.slice(1));
+        } else {
+          screen.printString("Unknown command: " + command + "\n");
+          screen.printString('Try "help" or "h" to see available commands\n');
+        }
       }
     }
   }
