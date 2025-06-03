@@ -1,9 +1,17 @@
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
+import { CGA_PALETTE, CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenCharacter, ScreenCharacterAttributes } from "./types";
 import { Position, Rect, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
+
+const stringLikeToArray = (s: StringLike) => {
+  if (Array.isArray(s)) {
+    return s;
+  }
+
+  return s.split("");
+};
 
 /*
   BIOS functions docs: http://www.techhelpmanual.com/27-dos__bios___extensions_service_index.html
@@ -444,6 +452,60 @@ export class Screen {
 
   /*================================ TTY EMULATION =============================*/
 
+  /** Handles escape code. Index should point to first character after escape character. Returns new index into string just after the escape sequence. */
+  private handleEscape(string: StringLike, index: number): number {
+    const cmdChar = string[index];
+    index += 1;
+    switch (cmdChar) {
+      case "f": {
+        const colorIndex = parseInt(
+          stringLikeToArray(string)
+            .slice(index, index + 2)
+            .join(""),
+          16
+        );
+        if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+          this.currentAttributes = {
+            ...this.currentAttributes,
+            fgColor: CGA_PALETTE[colorIndex],
+          };
+        }
+        index += 2;
+        break;
+      }
+      case "b": {
+        const colorIndex = parseInt(
+          stringLikeToArray(string)
+            .slice(index, index + 2)
+            .join(""),
+          16
+        );
+        if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+          this.currentAttributes = {
+            ...this.currentAttributes,
+            bgColor: CGA_PALETTE[colorIndex],
+          };
+        }
+        index += 2;
+        break;
+      }
+      case "i": {
+        const fgColor = this.currentAttributes.fgColor;
+        const bgColor = this.currentAttributes.bgColor;
+        this.currentAttributes = {
+          ...this.currentAttributes,
+          fgColor: bgColor,
+          bgColor: fgColor,
+        };
+        break;
+      }
+      default:
+        index -= 1;
+        break;
+    }
+    return index;
+  }
+
   /** Prints a single character to screen using current attributes and moves cursor. */
   printChar(ch: string) {
     this.printString([ch]);
@@ -451,19 +513,21 @@ export class Screen {
 
   /** Prints a string of characters to screen using current attributes and moves cursor. */
   printString(string: StringLike) {
-    this.displayString(this.getCursorPosition(), string, undefined, true);
+    this.displayString(this.getCursorPosition(), string, null, true);
   }
 
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
   displayString(
     pos: Position,
     string: StringLike,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes(),
+    attributes: ScreenCharacterAttributes | null,
     shouldUpdateCursor: boolean = false
   ) {
     let curPos = { x: pos.x, y: pos.y };
 
-    for (const ch of string) {
+    let i = 0;
+    while (i < string.length) {
+      const ch = string[i];
       if (ch === "\n") {
         curPos.y += 1;
         curPos.x = 0;
@@ -476,11 +540,23 @@ export class Screen {
             curPos.y = 0;
           }
         }
-        this.replaceCharacterAndAttributesAt(" ", attributes, curPos);
+        this.replaceCharacterAndAttributesAt(
+          " ",
+          attributes ?? this.getCurrentAttributes(),
+          curPos
+        );
       } else if (getIsPrintable(ch)) {
-        this.replaceCharacterAndAttributesAt(ch, attributes, curPos);
+        this.replaceCharacterAndAttributesAt(
+          ch,
+          attributes ?? this.getCurrentAttributes(),
+          curPos
+        );
         curPos.x += 1;
       } else {
+        i += 1;
+        if (ch === "\x1B") {
+          i = this.handleEscape(string, i);
+        }
         continue;
       }
 
@@ -491,6 +567,7 @@ export class Screen {
         }
         curPos.y -= 1;
       }
+      i += 1;
     }
 
     if (shouldUpdateCursor) {
