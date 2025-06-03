@@ -118,9 +118,7 @@ export class Screen {
       this.screenBuffer[i] = {
         character: " ",
         attributes: {
-          bgColor: this.currentAttributes.bgColor,
-          fgColor: this.currentAttributes.fgColor,
-          blink: this.currentAttributes.blink,
+          ...this.currentAttributes,
         },
       };
     }
@@ -259,12 +257,6 @@ export class Screen {
     this.curY = 0;
   }
 
-  resetCursorBlink() {
-    return;
-    this.curBlinkCounter = this.curBlinkDuration;
-    this.curBlinkState = true;
-  }
-
   moveCurDelta(dx: number, dy: number) {
     this.curX += dx;
     if (this.curX >= this.widthInCharacters) {
@@ -281,7 +273,6 @@ export class Screen {
     if (this.curY < 0) {
       this.curY = 0;
     }
-    this.resetCursorBlink();
   }
 
   //================================================= CANVAS HANDLING ==========================================
@@ -344,7 +335,6 @@ export class Screen {
 
   showCursor() {
     this.curDisplay = true;
-    this.resetCursorBlink();
   }
 
   hideCursor() {
@@ -368,7 +358,6 @@ export class Screen {
     const { x, y } = this._resolveCursorXPosition(pos, shouldWrap);
     this.curX = x;
     this.curY = Math.max(0, Math.min(this.heightInCharacters - 1, y));
-    this.resetCursorBlink();
   }
 
   _resolveCursorXPosition(
@@ -427,7 +416,6 @@ export class Screen {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     bufferCharacter.character = char;
     this.redrawCharacter(x, y);
-    this.resetCursorBlink();
   }
 
   replaceCharacterAndAttributes(
@@ -449,9 +437,9 @@ export class Screen {
     const { x, y } = pos;
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     bufferCharacter.character = character;
-    bufferCharacter.attributes = attributes;
+    bufferCharacter.attributes = { ...attributes };
     this.redrawCharacter(x, y);
-    this.resetCursorBlink();
+    console.log(bufferCharacter);
   }
 
   /*================================ TTY EMULATION =============================*/
@@ -472,7 +460,6 @@ export class Screen {
                 .join(""),
               16
             );
-            console.log(colorIndex);
             if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
               this.currentAttributes.fgColor =
                 CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
@@ -532,6 +519,10 @@ export class Screen {
         this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
         this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
         this.currentAttributes.blink = false;
+        break;
+      }
+      case "f": {
+        this.currentAttributes.blink = !this.currentAttributes.blink;
         break;
       }
       default:
@@ -695,7 +686,7 @@ export class Screen {
       for (let x = rect.x; x < rect.x + rect.w; x += 1) {
         this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
           character: " ",
-          attributes,
+          attributes: { ...attributes },
         };
       }
     }
@@ -756,7 +747,7 @@ export class Screen {
       for (let x = rect.x; x < rect.x + rect.w; x += 1) {
         this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
           character: " ",
-          attributes,
+          attributes: { ...attributes },
         };
       }
     }
