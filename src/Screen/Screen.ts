@@ -539,14 +539,14 @@ export class Screen {
 
   /** Prints a string of characters to screen using current attributes and moves cursor. */
   printString(string: StringLike) {
-    this.displayString(this.getCursorPosition(), string, null, true);
+    this.displayString(this.getCursorPosition(), string, undefined, true);
   }
 
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
   displayString(
     pos: Position,
     string: StringLike,
-    attributes: ScreenCharacterAttributes | null,
+    attributes: ScreenCharacterAttributes | undefined,
     shouldUpdateCursor: boolean = false
   ) {
     let curPos = { x: pos.x, y: pos.y };
