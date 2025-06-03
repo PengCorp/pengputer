@@ -22,10 +22,16 @@ declare global {
   }
 }
 
+interface TakenProgram {
+  path: Array<string>;
+  name: string;
+}
+
 class PengOS {
   private pc: PC;
 
   private suppressNextPromptNewline: boolean;
+  private takenPrograms: Array<TakenProgram>;
 
   constructor(screen: Screen, keyboard: Keyboard) {
     this.pc = {
@@ -36,6 +42,7 @@ class PengOS {
       prompt: "%D%P",
       fileSystem: new FileSystem(),
     };
+    this.takenPrograms = [];
 
     this.suppressNextPromptNewline = false;
   }
@@ -330,6 +337,59 @@ class PengOS {
     await this.runStartupAnimation();
   }
 
+  private commandTake(args: string[]) {
+    const { screen, fileSystem } = this.pc;
+    const [argsName] = args;
+    if (!argsName) {
+      screen.printString(`Must provide name\n`);
+    }
+    const strippedNameMatch = argsName.match(/^[^.]+/);
+    if (!strippedNameMatch) {
+      screen.printString(`Invalid name provided\n`);
+      return;
+    }
+    const path = [...this.pc.currentPath, argsName];
+    const target = fileSystem.getAtPath(path);
+    if (!target) {
+      screen.printString("Program not found\n");
+      return;
+    }
+    if (target.type !== FileSystemObjectType.Executable) {
+      screen.printString("Not executable\n");
+      return;
+    }
+    const strippedName = strippedNameMatch[0];
+    let candidateName = strippedName;
+    let dedupIndex = 0;
+    while (this.takenPrograms.find((p) => p.name === candidateName)) {
+      dedupIndex += 1;
+      candidateName = `${strippedName}~${dedupIndex}`;
+    }
+
+    screen.printString(
+      `Added "${argsName}" as "${candidateName}" to command list\n`
+    );
+    this.takenPrograms.push({
+      name: candidateName,
+      path,
+    });
+  }
+
+  private commandDrop(args: string[]) {
+    const { screen } = this.pc;
+    const [name] = args;
+    if (!name) {
+      screen.printString("Must provide a name\n");
+      return;
+    }
+    const filteredPrograms = this.takenPrograms.filter((p) => p.name !== name);
+    if (filteredPrograms.length < this.takenPrograms.length) {
+      screen.printString(`"${name}" dropped from command list\n`);
+    } else {
+      screen.printString(`"${name} not found in the taken command list\n`);
+    }
+  }
+
   private commandHelp() {
     const { screen } = this.pc;
     screen.printString("\x1Bbshelp      \x1BbrList available commands\n");
@@ -345,11 +405,24 @@ class PengOS {
     screen.printString(
       "\x1Bbsprompt    \x1BbrChange your command prompt text\n"
     );
+    screen.printString(
+      "\x1Bbstake      \x1BbrAdd a program to the command list\n"
+    );
+    screen.printString(
+      "\x1Bbsdrop      \x1BbrRemove a program from the command list\n"
+    );
     screen.printString("\x1Bbsreboot    \x1BbrRestart the system\n");
+
+    if (this.takenPrograms.length > 0) {
+      screen.printString("\nAvailable programs:\n");
+      for (const takenProgram of this.takenPrograms) {
+        screen.printString(`${takenProgram.name}\n`);
+      }
+    }
   }
 
   async mainLoop() {
-    const { screen, keyboard } = this.pc;
+    const { screen, keyboard, fileSystem } = this.pc;
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
@@ -362,6 +435,8 @@ class PengOS {
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),
       prompt: this.commandPrompt.bind(this),
+      take: this.commandTake.bind(this),
+      drop: this.commandDrop.bind(this),
       reboot: this.commandReboot.bind(this),
     };
 
@@ -375,8 +450,18 @@ class PengOS {
       if (commandArguments.length > 0) {
         const command = commandArguments[0];
         const knownCommand = commands[command.toLowerCase()];
+        const knownTakenApp = this.takenPrograms.find(
+          (p) => p.name === command
+        );
         if (knownCommand) {
           await knownCommand(commandArguments.slice(1));
+        } else if (knownTakenApp) {
+          const app = fileSystem.getAtPath(knownTakenApp.path);
+          if (app && app.type === FileSystemObjectType.Executable) {
+            app.data.run(commandArguments);
+          } else {
+            screen.printString(`Executable not found. Consider dropping`);
+          }
         } else {
           screen.printString("Unknown command: " + command + "\n");
           screen.printString('Try "help" or "h" to see available commands\n');
