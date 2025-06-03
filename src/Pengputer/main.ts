@@ -91,13 +91,15 @@ class PengOS {
       name: "LICENSE.TXT",
     });
 
-    const programDir = rootDir.mkdir("software");
-    programDir.addItem({
+    const softwareDir = rootDir.mkdir("software");
+    softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "hello.exe",
       data: new HelloWorld(this.pc),
     });
-    programDir.addItem({
+    const gamesDir = softwareDir.mkdir("games");
+
+    gamesDir.addItem({
       type: FileSystemObjectType.Link,
       name: "pongr.exe",
       data: new LinkFile("https://penger.city/pongerslair/"),
