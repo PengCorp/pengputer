@@ -336,16 +336,22 @@ class PengOS {
     screen.printString(
       "\x1Bbslook      \x1BbrDisplay contents of current directory\n"
     );
-    screen.printString("\x1Bbsgo        \x1BbrNavigate directories\n");
-    screen.printString("\x1Bbsup        \x1BbrNavigate to parent directory\n");
-    screen.printString("\x1Bbsmakedir   \x1BbrCreate a directory\n");
+    screen.printString(
+      "\x1Bbsgo        \x1BbrNavigate \x1Bsf09directories\x1Br\n"
+    );
+    screen.printString(
+      "\x1Bbsup        \x1BbrNavigate to parent \x1Bsf09directory\x1Br\n"
+    );
+    screen.printString(
+      "\x1Bbsmakedir   \x1BbrCreate a \x1Bsf09directory\x1Br\n"
+    );
     screen.printString("\x1Bbsrun       \x1BbrExecute program\n");
     screen.printString("\x1Bbsopen      \x1BbrDisplay file\n");
     screen.printString("\x1Bbsclear     \x1BbrClear screen\n");
     screen.printString(
       "\x1Bbsprompt    \x1BbrChange your command prompt text\n"
     );
-    screen.printString("\x1Bbsreboot    \x1BbrRestart the system\n");
+    screen.printString("\x1Bbsreboot    \x1Bbr\x1BfRestart the system\x1Bf\n");
   }
 
   async mainLoop() {

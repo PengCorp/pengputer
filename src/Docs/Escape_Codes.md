@@ -10,3 +10,4 @@ Supported sequences:
 `bs` - switches foreground color to more intense one if available. "Bold Set".
 `br` - switches foreground color to more plain one if available. "Bold Reset".
 `r` - resets color to default light gray on black, resets blink to off. "Reset".
+`f` - toggle blink. "Flash".
