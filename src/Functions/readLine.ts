@@ -1,6 +1,7 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
 import { TypeListener } from "../Keyboard/Keyboard";
+import { getIsModifierKey } from "../Keyboard/isModifierKey";
 
 export const readLine = (
   screen: Screen,
@@ -68,14 +69,16 @@ export const readLine = (
 export const readKey = (keyboard: Keyboard) => {
   let unsubType: (() => void) | null = null;
 
-  const promise = new Promise<void>((resolve) => {
-    const onType: TypeListener = (char, key) => {
-      if (char) {
-        resolve();
-      }
-    };
-    unsubType = keyboard.addTypeListener(onType);
-  });
+  const promise = new Promise<{ char: string | null; key: string }>(
+    (resolve) => {
+      const onType: TypeListener = (char, key) => {
+        if (!getIsModifierKey(key)) {
+          resolve({ char, key });
+        }
+      };
+      unsubType = keyboard.addTypeListener(onType);
+    }
+  );
 
   return promise.finally(() => {
     unsubType?.();
