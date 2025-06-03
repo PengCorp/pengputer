@@ -1,7 +1,12 @@
 import { loadFont9x16 } from "../Screen/font9x16";
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { loadImageBitmapFromUrl, readLine, waitFor } from "../Functions";
+import {
+  loadImageBitmapFromUrl,
+  readKey,
+  readLine,
+  waitFor,
+} from "../Functions";
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
 import { TextFile } from "./TextFile";
@@ -13,6 +18,11 @@ import { padStart } from "lodash";
 
 import energyStar from "./res/energyStar.png";
 import biosPenger from "./res/biosPenger.png";
+
+import canyonOgg from "./files/documents/music/CANYON.ogg";
+import mountainKingOgg from "./files/documents/music/mountainking.ogg";
+import passportOgg from "./files/documents/music/PASSPORT.ogg";
+import { AudioFile } from "./AudioFile";
 
 const PATH_SEPARATOR = "/";
 
@@ -81,6 +91,29 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "hello.exe",
       data: new HelloWorld(this.pc),
+    });
+
+    rootDir.addItem({
+      type: FileSystemObjectType.Audio,
+      name: "c",
+      data: new AudioFile(canyonOgg),
+    });
+    const documentsDir = rootDir.mkdir("documents");
+    const musicDir = documentsDir.mkdir("music");
+    musicDir.addItem({
+      type: FileSystemObjectType.Audio,
+      name: "CANYON.MID",
+      data: new AudioFile(canyonOgg),
+    });
+    musicDir.addItem({
+      type: FileSystemObjectType.Audio,
+      name: "PASSPORT.MID",
+      data: new AudioFile(passportOgg),
+    });
+    musicDir.addItem({
+      type: FileSystemObjectType.Audio,
+      name: "mountainking.mid",
+      data: new AudioFile(mountainKingOgg),
     });
 
     await this.runStartupAnimation();
@@ -193,7 +226,9 @@ class PengOS {
 
   private commandLook() {
     const { fileSystem, currentPath, screen } = this.pc;
-    screen.printString(`Currently in ${this.formatPath(currentPath)}\n\n`);
+    screen.printString(
+      `Currently in ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n\n`
+    );
     const entry = fileSystem.getAtPath(currentPath);
     if (entry && entry.type === FileSystemObjectType.Directory) {
       const items = entry.data.getItems();
@@ -250,7 +285,11 @@ class PengOS {
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
         this.pc.currentPath = newPath;
-        screen.printString(`Now in ${this.formatPath(this.pc.currentPath)}\n`);
+        screen.printString(
+          `Now in ${this.pc.currentDrive}:${this.formatPath(
+            this.pc.currentPath
+          )}\n`
+        );
       } else {
         screen.printString("Not a directory\n");
       }
@@ -306,8 +345,8 @@ class PengOS {
     }
   }
 
-  private commandOpen(args: string[]) {
-    const { screen, fileSystem, currentPath } = this.pc;
+  private async commandOpen(args: string[]) {
+    const { screen, keyboard, fileSystem, currentPath } = this.pc;
     const [fileName] = args;
     if (!fileName) {
       screen.printString("Must provide a file name\n");
@@ -318,6 +357,14 @@ class PengOS {
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
         screen.printString(`${fileEntry.data.getText()}`);
+      }
+      if (fileEntry.type === FileSystemObjectType.Audio) {
+        screen.printString(`Playing ${fileEntry.name}...\n`);
+        screen.printString(`Press any key to exit.`);
+        fileEntry.data.play();
+        await readKey(keyboard);
+        fileEntry.data.stop();
+        screen.printString(`\n`);
       } else {
         screen.printString(`Not readable\n`);
       }

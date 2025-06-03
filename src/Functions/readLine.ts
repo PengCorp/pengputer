@@ -64,3 +64,20 @@ export const readLine = (
     unsubType?.();
   });
 };
+
+export const readKey = (keyboard: Keyboard) => {
+  let unsubType: (() => void) | null = null;
+
+  const promise = new Promise<void>((resolve) => {
+    const onType: TypeListener = (char, key) => {
+      if (char) {
+        resolve();
+      }
+    };
+    unsubType = keyboard.addTypeListener(onType);
+  });
+
+  return promise.finally(() => {
+    unsubType?.();
+  });
+};

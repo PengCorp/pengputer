@@ -1,9 +1,11 @@
+import { AudioFile } from "./AudioFile";
 import { TextFile } from "./TextFile";
 
 export enum FileSystemObjectType {
   Directory = "dir",
   TextFile = "txt",
   Executable = "exe",
+  Audio = "aud",
 }
 
 export interface Executable {
@@ -51,6 +53,11 @@ export type FileSystemEntry =
       type: FileSystemObjectType.Executable;
       name: string;
       data: Executable;
+    }
+  | {
+      type: FileSystemObjectType.Audio;
+      name: string;
+      data: AudioFile;
     };
 
 export class FileSystem {
