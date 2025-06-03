@@ -10,6 +10,7 @@ import {
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
 import { TextFile } from "./TextFile";
+import { AudioFile } from "./AudioFile";
 import { HelloWorld } from "./HelloWorld";
 import { DateApp } from "./DateApp";
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
@@ -22,7 +23,9 @@ import biosPenger from "./res/biosPenger.png";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
-import { AudioFile } from "./AudioFile";
+import nerdgerPng from "./files/documents/pengers/nerdger.png";
+import macgerPng from "./files/documents/pengers/macger.png";
+import { ImageFile } from "./ImageFile";
 
 const PATH_SEPARATOR = "/";
 
@@ -93,11 +96,6 @@ class PengOS {
       data: new HelloWorld(this.pc),
     });
 
-    rootDir.addItem({
-      type: FileSystemObjectType.Audio,
-      name: "c",
-      data: new AudioFile(canyonOgg),
-    });
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
     musicDir.addItem({
@@ -114,6 +112,23 @@ class PengOS {
       type: FileSystemObjectType.Audio,
       name: "mountainking.mid",
       data: new AudioFile(mountainKingOgg),
+    });
+
+    rootDir.addItem({
+      type: FileSystemObjectType.Image,
+      name: "m",
+      data: new ImageFile(macgerPng),
+    });
+    const pengersDir = documentsDir.mkdir("pengers");
+    pengersDir.addItem({
+      type: FileSystemObjectType.Image,
+      name: "macger.png",
+      data: new ImageFile(macgerPng),
+    });
+    pengersDir.addItem({
+      type: FileSystemObjectType.Image,
+      name: "nerdger.png",
+      data: new ImageFile(nerdgerPng),
     });
 
     await this.runStartupAnimation();
@@ -357,14 +372,22 @@ class PengOS {
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
         screen.printString(`${fileEntry.data.getText()}`);
-      }
-      if (fileEntry.type === FileSystemObjectType.Audio) {
+      } else if (fileEntry.type === FileSystemObjectType.Audio) {
         screen.printString(`Playing ${fileEntry.name}...\n`);
         screen.printString(`Press any key to exit.`);
         fileEntry.data.play();
         await readKey(keyboard);
         fileEntry.data.stop();
         screen.printString(`\n`);
+      } else if (fileEntry.type === FileSystemObjectType.Image) {
+        screen.clear();
+        const { x, y } = screen.getCursorPositionPx();
+        const image = await fileEntry.data.load();
+        screen.drawImageAt(image, x, y);
+        screen.moveCurDelta(
+          0,
+          Math.ceil(image.height / screen.characterHeight)
+        );
       } else {
         screen.printString(`Not readable\n`);
       }

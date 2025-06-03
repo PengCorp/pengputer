@@ -354,6 +354,13 @@ export class Screen {
     return { x: this.curX, y: this.curY };
   }
 
+  getCursorPositionPx(): Position {
+    return {
+      x: this.curX * this.characterWidth,
+      y: this.curY * this.characterHeight,
+    };
+  }
+
   setCursorPosition(pos: Position, shouldWrap: boolean = false) {
     const { x, y } = this._resolveCursorXPosition(pos, shouldWrap);
     this.curX = x;
