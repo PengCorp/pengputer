@@ -439,7 +439,6 @@ export class Screen {
     bufferCharacter.character = character;
     bufferCharacter.attributes = { ...attributes };
     this.redrawCharacter(x, y);
-    console.log(bufferCharacter);
   }
 
   /*================================ TTY EMULATION =============================*/
