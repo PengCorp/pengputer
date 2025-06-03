@@ -6,6 +6,7 @@ import {
   readKey,
   readLine,
   waitFor,
+  waitForKeysUp,
 } from "../Functions";
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
@@ -26,6 +27,7 @@ import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import macgerPng from "./files/documents/pengers/macger.png";
 import { ImageFile } from "./ImageFile";
+import { LinkFile } from "./LinkFile";
 
 const PATH_SEPARATOR = "/";
 
@@ -95,6 +97,11 @@ class PengOS {
       name: "hello.exe",
       data: new HelloWorld(this.pc),
     });
+    programDir.addItem({
+      type: FileSystemObjectType.Link,
+      name: "pongr.exe",
+      data: new LinkFile("https://penger.city/pongerslair/"),
+    });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
@@ -114,11 +121,6 @@ class PengOS {
       data: new AudioFile(mountainKingOgg),
     });
 
-    rootDir.addItem({
-      type: FileSystemObjectType.Image,
-      name: "m",
-      data: new ImageFile(macgerPng),
-    });
     const pengersDir = documentsDir.mkdir("pengers");
     pengersDir.addItem({
       type: FileSystemObjectType.Image,
@@ -388,6 +390,10 @@ class PengOS {
           0,
           Math.ceil(image.height / screen.characterHeight)
         );
+      } else if (fileEntry.type === FileSystemObjectType.Link) {
+        screen.printString("Opening...\n");
+        await waitForKeysUp(keyboard);
+        fileEntry.data.open();
       } else {
         screen.printString(`Not readable\n`);
       }

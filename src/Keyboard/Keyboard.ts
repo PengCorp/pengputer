@@ -1,12 +1,15 @@
 import { ANSI_LAYOUT } from "./ansiLayout";
 
 export type TypeListener = (char: string | null, keyCode: string) => void;
+export type VoidListener = () => void;
 
 export class Keyboard {
   private pressed: Set<any>;
   private layout: any;
 
   private typeListeners: Array<TypeListener>;
+  private allKeysUpListeners: Array<VoidListener>;
+
   private autorepeatDelay: number;
   private autorepeatDelayCounter: number;
   private autorepeatInterval: number;
@@ -21,6 +24,7 @@ export class Keyboard {
     window.addEventListener("keyup", this._onKeyUp.bind(this));
 
     this.typeListeners = [];
+    this.allKeysUpListeners = [];
 
     this.autorepeatDelay = 250;
     this.autorepeatDelayCounter = this.autorepeatDelay;
@@ -40,6 +44,9 @@ export class Keyboard {
     this.pressed.delete(e.code);
     if (this.autorepeatEvent?.code === e.code) {
       this._resetAutorepeat();
+    }
+    if (this.pressed.size === 0) {
+      this.allKeysUpListeners.forEach((callback) => callback());
     }
   }
 
@@ -61,6 +68,15 @@ export class Keyboard {
     this.typeListeners.push(callback);
     return () => {
       this.typeListeners = this.typeListeners.filter((cb) => cb !== callback);
+    };
+  }
+
+  addAllKeysUpListener(callback: VoidListener) {
+    this.allKeysUpListeners.push(callback);
+    return () => {
+      this.allKeysUpListeners = this.allKeysUpListeners.filter(
+        (cb) => cb !== callback
+      );
     };
   }
 
@@ -103,7 +119,7 @@ export class Keyboard {
       this._resetAutorepeat();
       this.autorepeatEvent = ev;
     }
-    this.typeListeners.forEach((callback: any) => callback(char, ev.code));
+    this.typeListeners.forEach((callback) => callback(char, ev.code));
   }
 
   update(dt: any) {

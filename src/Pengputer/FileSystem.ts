@@ -1,5 +1,6 @@
 import { AudioFile } from "./AudioFile";
 import { ImageFile } from "./ImageFile";
+import { LinkFile } from "./LinkFile";
 import { TextFile } from "./TextFile";
 
 export enum FileSystemObjectType {
@@ -8,6 +9,7 @@ export enum FileSystemObjectType {
   Executable = "exe",
   Audio = "aud",
   Image = "img",
+  Link = "lnk",
 }
 
 export interface Executable {
@@ -65,6 +67,11 @@ export type FileSystemEntry =
       type: FileSystemObjectType.Image;
       name: string;
       data: ImageFile;
+    }
+  | {
+      type: FileSystemObjectType.Link;
+      name: string;
+      data: LinkFile;
     };
 
 export class FileSystem {

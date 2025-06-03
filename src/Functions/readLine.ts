@@ -1,6 +1,6 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { TypeListener } from "../Keyboard/Keyboard";
+import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
 
 export const readLine = (
@@ -82,5 +82,20 @@ export const readKey = (keyboard: Keyboard) => {
 
   return promise.finally(() => {
     unsubType?.();
+  });
+};
+
+export const waitForKeysUp = (keyboard: Keyboard) => {
+  let unsub: (() => void) | null = null;
+
+  const promise = new Promise<void>((resolve) => {
+    const onType: VoidListener = () => {
+      resolve();
+    };
+    unsub = keyboard.addAllKeysUpListener(onType);
+  });
+
+  return promise.finally(() => {
+    unsub?.();
   });
 };
