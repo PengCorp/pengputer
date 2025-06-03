@@ -345,7 +345,7 @@ class PengOS {
   }
 
   private async commandRun(args: string[]) {
-    const { screen, fileSystem, currentPath } = this.pc;
+    const { screen, keyboard, fileSystem, currentPath } = this.pc;
     const [fileName] = args;
     if (!fileName) {
       screen.printString("Must provide a file name\n");
@@ -356,6 +356,10 @@ class PengOS {
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.data.run(args);
+      } else if (fileEntry.type === FileSystemObjectType.Link) {
+        screen.printString("Opening...\n");
+        await waitForKeysUp(keyboard);
+        fileEntry.data.open();
       } else {
         screen.printString(`Not executable\n`);
       }
@@ -392,10 +396,6 @@ class PengOS {
           0,
           Math.ceil(image.height / screen.characterHeight)
         );
-      } else if (fileEntry.type === FileSystemObjectType.Link) {
-        screen.printString("Opening...\n");
-        await waitForKeysUp(keyboard);
-        fileEntry.data.open();
       } else {
         screen.printString(`Not readable\n`);
       }
