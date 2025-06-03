@@ -321,7 +321,9 @@ class PengOS {
     const { currentPath, screen } = this.pc;
     if (currentPath.length > 0) {
       currentPath.splice(currentPath.length - 1, 1);
-      screen.printString(`Went up to ${this.formatPath(currentPath)}\n`);
+      screen.printString(
+        `Went up to ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n`
+      );
     } else {
       screen.printString("Already at the root of the drive.\n");
     }
