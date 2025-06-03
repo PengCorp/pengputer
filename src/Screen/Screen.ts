@@ -1,9 +1,21 @@
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
+import {
+  CGA_BOLD_MAP,
+  CGA_PALETTE,
+  CGA_PALETTE_DICT,
+} from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenCharacter, ScreenCharacterAttributes } from "./types";
 import { Position, Rect, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
+
+const stringLikeToArray = (s: StringLike) => {
+  if (Array.isArray(s)) {
+    return s;
+  }
+
+  return s.split("");
+};
 
 /*
   BIOS functions docs: http://www.techhelpmanual.com/27-dos__bios___extensions_service_index.html
@@ -106,9 +118,7 @@ export class Screen {
       this.screenBuffer[i] = {
         character: " ",
         attributes: {
-          bgColor: this.currentAttributes.bgColor,
-          fgColor: this.currentAttributes.fgColor,
-          blink: this.currentAttributes.blink,
+          ...this.currentAttributes,
         },
       };
     }
@@ -247,12 +257,6 @@ export class Screen {
     this.curY = 0;
   }
 
-  resetCursorBlink() {
-    return;
-    this.curBlinkCounter = this.curBlinkDuration;
-    this.curBlinkState = true;
-  }
-
   moveCurDelta(dx: number, dy: number) {
     this.curX += dx;
     if (this.curX >= this.widthInCharacters) {
@@ -269,7 +273,6 @@ export class Screen {
     if (this.curY < 0) {
       this.curY = 0;
     }
-    this.resetCursorBlink();
   }
 
   //================================================= CANVAS HANDLING ==========================================
@@ -332,7 +335,6 @@ export class Screen {
 
   showCursor() {
     this.curDisplay = true;
-    this.resetCursorBlink();
   }
 
   hideCursor() {
@@ -356,7 +358,6 @@ export class Screen {
     const { x, y } = this._resolveCursorXPosition(pos, shouldWrap);
     this.curX = x;
     this.curY = Math.max(0, Math.min(this.heightInCharacters - 1, y));
-    this.resetCursorBlink();
   }
 
   _resolveCursorXPosition(
@@ -415,12 +416,11 @@ export class Screen {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     bufferCharacter.character = char;
     this.redrawCharacter(x, y);
-    this.resetCursorBlink();
   }
 
   replaceCharacterAndAttributes(
     character: string,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.replaceCharacterAndAttributesAt(
       character,
@@ -437,12 +437,100 @@ export class Screen {
     const { x, y } = pos;
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     bufferCharacter.character = character;
-    bufferCharacter.attributes = attributes;
+    bufferCharacter.attributes = { ...attributes };
     this.redrawCharacter(x, y);
-    this.resetCursorBlink();
+    console.log(bufferCharacter);
   }
 
   /*================================ TTY EMULATION =============================*/
+
+  /** Handles escape code. Index should point to first character after escape character. Returns new index into string just after the escape sequence. */
+  private handleEscape(string: StringLike, index: number): number {
+    const cmdChar = string[index];
+    index += 1;
+    switch (cmdChar) {
+      case "s": {
+        const setChar = string[index];
+        index += 1;
+        switch (setChar) {
+          case "f": {
+            const colorIndex = parseInt(
+              stringLikeToArray(string)
+                .slice(index, index + 2)
+                .join(""),
+              16
+            );
+            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+              this.currentAttributes.fgColor =
+                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
+            }
+            index += 2;
+            break;
+          }
+          case "b": {
+            const colorIndex = parseInt(
+              stringLikeToArray(string)
+                .slice(index, index + 2)
+                .join(""),
+              16
+            );
+            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+              this.currentAttributes.bgColor =
+                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
+            }
+            index += 2;
+            break;
+          }
+        }
+        break;
+      }
+      case "i": {
+        const fgColor = this.currentAttributes.fgColor;
+        const bgColor = this.currentAttributes.bgColor;
+        this.currentAttributes.fgColor = bgColor;
+        this.currentAttributes.bgColor = fgColor;
+        break;
+      }
+      case "b": {
+        const boldCommand = string[index];
+        index += 1;
+        switch (boldCommand) {
+          case "s": {
+            const boldColor = CGA_BOLD_MAP[this.currentAttributes.fgColor];
+            if (boldColor) {
+              this.currentAttributes.fgColor = boldColor;
+            }
+            break;
+          }
+          case "r": {
+            const fgColor = this.currentAttributes.fgColor;
+            const result = Object.entries(CGA_BOLD_MAP).find(
+              ([k, v]) => v === fgColor
+            );
+            if (result) {
+              this.currentAttributes.fgColor = result[0];
+            }
+            break;
+          }
+        }
+        break;
+      }
+      case "r": {
+        this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+        this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+        this.currentAttributes.blink = false;
+        break;
+      }
+      case "f": {
+        this.currentAttributes.blink = !this.currentAttributes.blink;
+        break;
+      }
+      default:
+        index -= 1;
+        break;
+    }
+    return index;
+  }
 
   /** Prints a single character to screen using current attributes and moves cursor. */
   printChar(ch: string) {
@@ -458,12 +546,14 @@ export class Screen {
   displayString(
     pos: Position,
     string: StringLike,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes(),
+    attributes: ScreenCharacterAttributes | undefined,
     shouldUpdateCursor: boolean = false
   ) {
     let curPos = { x: pos.x, y: pos.y };
 
-    for (const ch of string) {
+    let i = 0;
+    while (i < string.length) {
+      const ch = string[i];
       if (ch === "\n") {
         curPos.y += 1;
         curPos.x = 0;
@@ -476,11 +566,23 @@ export class Screen {
             curPos.y = 0;
           }
         }
-        this.replaceCharacterAndAttributesAt(" ", attributes, curPos);
+        this.replaceCharacterAndAttributesAt(
+          " ",
+          attributes ?? this.currentAttributes,
+          curPos
+        );
       } else if (getIsPrintable(ch)) {
-        this.replaceCharacterAndAttributesAt(ch, attributes, curPos);
+        this.replaceCharacterAndAttributesAt(
+          ch,
+          attributes ?? this.currentAttributes,
+          curPos
+        );
         curPos.x += 1;
       } else {
+        i += 1;
+        if (ch === "\x1B") {
+          i = this.handleEscape(string, i);
+        }
         continue;
       }
 
@@ -491,6 +593,7 @@ export class Screen {
         }
         curPos.y -= 1;
       }
+      i += 1;
     }
 
     if (shouldUpdateCursor) {
@@ -551,7 +654,7 @@ export class Screen {
 
   scrollUp(
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.scrollUpRect(
       {
@@ -568,7 +671,7 @@ export class Screen {
   scrollUpRect(
     rect: Rect,
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     // scroll screen buffer
     for (let y = rect.y + linesToScroll; y < rect.y + rect.h; y += 1) {
@@ -583,7 +686,7 @@ export class Screen {
       for (let x = rect.x; x < rect.x + rect.w; x += 1) {
         this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
           character: " ",
-          attributes,
+          attributes: { ...attributes },
         };
       }
     }
@@ -612,7 +715,7 @@ export class Screen {
 
   scrollDown(
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.scrollDownRect(
       {
@@ -629,7 +732,7 @@ export class Screen {
   scrollDownRect(
     rect: Rect,
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     // scroll screen buffer
     for (let y = rect.y + rect.h - 1; y >= rect.y + linesToScroll; y -= 1) {
@@ -644,7 +747,7 @@ export class Screen {
       for (let x = rect.x; x < rect.x + rect.w; x += 1) {
         this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
           character: " ",
-          attributes,
+          attributes: { ...attributes },
         };
       }
     }
