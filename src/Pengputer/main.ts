@@ -332,16 +332,20 @@ class PengOS {
 
   private commandHelp() {
     const { screen } = this.pc;
-    screen.printString("help      List available commands\n");
-    screen.printString("look      Display contents of current directory\n");
-    screen.printString("go        Navigate directories\n");
-    screen.printString("up        Navigate to parent directory\n");
-    screen.printString("makedir   Create a directory\n");
-    screen.printString("run       Execute program\n");
-    screen.printString("open      Display file\n");
-    screen.printString("clear     Clear screen\n");
-    screen.printString("prompt    Change your command prompt text\n");
-    screen.printString("reboot    Restart the system\n");
+    screen.printString("\x1Bbshelp      \x1BbrList available commands\n");
+    screen.printString(
+      "\x1Bbslook      \x1BbrDisplay contents of current directory\n"
+    );
+    screen.printString("\x1Bbsgo        \x1BbrNavigate directories\n");
+    screen.printString("\x1Bbsup        \x1BbrNavigate to parent directory\n");
+    screen.printString("\x1Bbsmakedir   \x1BbrCreate a directory\n");
+    screen.printString("\x1Bbsrun       \x1BbrExecute program\n");
+    screen.printString("\x1Bbsopen      \x1BbrDisplay file\n");
+    screen.printString("\x1Bbsclear     \x1BbrClear screen\n");
+    screen.printString(
+      "\x1Bbsprompt    \x1BbrChange your command prompt text\n"
+    );
+    screen.printString("\x1Bbsreboot    \x1BbrRestart the system\n");
   }
 
   async mainLoop() {

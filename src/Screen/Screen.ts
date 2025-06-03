@@ -1,4 +1,8 @@
-import { CGA_PALETTE, CGA_PALETTE_DICT } from "../Color/cgaPalette";
+import {
+  CGA_BOLD_MAP,
+  CGA_PALETTE,
+  CGA_PALETTE_DICT,
+} from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenCharacter, ScreenCharacterAttributes } from "./types";
@@ -428,7 +432,7 @@ export class Screen {
 
   replaceCharacterAndAttributes(
     character: string,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.replaceCharacterAndAttributesAt(
       character,
@@ -457,46 +461,77 @@ export class Screen {
     const cmdChar = string[index];
     index += 1;
     switch (cmdChar) {
-      case "f": {
-        const colorIndex = parseInt(
-          stringLikeToArray(string)
-            .slice(index, index + 2)
-            .join(""),
-          16
-        );
-        if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
-          this.currentAttributes = {
-            ...this.currentAttributes,
-            fgColor: CGA_PALETTE[colorIndex],
-          };
+      case "s": {
+        const setChar = string[index];
+        index += 1;
+        switch (setChar) {
+          case "f": {
+            const colorIndex = parseInt(
+              stringLikeToArray(string)
+                .slice(index, index + 2)
+                .join(""),
+              16
+            );
+            console.log(colorIndex);
+            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+              this.currentAttributes.fgColor =
+                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
+            }
+            index += 2;
+            break;
+          }
+          case "b": {
+            const colorIndex = parseInt(
+              stringLikeToArray(string)
+                .slice(index, index + 2)
+                .join(""),
+              16
+            );
+            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
+              this.currentAttributes.bgColor =
+                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
+            }
+            index += 2;
+            break;
+          }
         }
-        index += 2;
-        break;
-      }
-      case "b": {
-        const colorIndex = parseInt(
-          stringLikeToArray(string)
-            .slice(index, index + 2)
-            .join(""),
-          16
-        );
-        if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
-          this.currentAttributes = {
-            ...this.currentAttributes,
-            bgColor: CGA_PALETTE[colorIndex],
-          };
-        }
-        index += 2;
         break;
       }
       case "i": {
         const fgColor = this.currentAttributes.fgColor;
         const bgColor = this.currentAttributes.bgColor;
-        this.currentAttributes = {
-          ...this.currentAttributes,
-          fgColor: bgColor,
-          bgColor: fgColor,
-        };
+        this.currentAttributes.fgColor = bgColor;
+        this.currentAttributes.bgColor = fgColor;
+        break;
+      }
+      case "b": {
+        const boldCommand = string[index];
+        index += 1;
+        switch (boldCommand) {
+          case "s": {
+            const boldColor = CGA_BOLD_MAP[this.currentAttributes.fgColor];
+            if (boldColor) {
+              this.currentAttributes.fgColor = boldColor;
+            }
+            break;
+          }
+          case "r": {
+            const fgColor = this.currentAttributes.fgColor;
+            const result = Object.entries(CGA_BOLD_MAP).find(
+              ([k, v]) => v === fgColor
+            );
+            if (result) {
+              this.currentAttributes.fgColor = result[0];
+            }
+            break;
+          }
+        }
+        break;
+      }
+      case "r": {
+        this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+        this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+        this.currentAttributes.blink = false;
         break;
       }
       default:
@@ -542,13 +577,13 @@ export class Screen {
         }
         this.replaceCharacterAndAttributesAt(
           " ",
-          attributes ?? this.getCurrentAttributes(),
+          attributes ?? this.currentAttributes,
           curPos
         );
       } else if (getIsPrintable(ch)) {
         this.replaceCharacterAndAttributesAt(
           ch,
-          attributes ?? this.getCurrentAttributes(),
+          attributes ?? this.currentAttributes,
           curPos
         );
         curPos.x += 1;
@@ -628,7 +663,7 @@ export class Screen {
 
   scrollUp(
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.scrollUpRect(
       {
@@ -645,7 +680,7 @@ export class Screen {
   scrollUpRect(
     rect: Rect,
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     // scroll screen buffer
     for (let y = rect.y + linesToScroll; y < rect.y + rect.h; y += 1) {
@@ -689,7 +724,7 @@ export class Screen {
 
   scrollDown(
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     this.scrollDownRect(
       {
@@ -706,7 +741,7 @@ export class Screen {
   scrollDownRect(
     rect: Rect,
     linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.getCurrentAttributes()
+    attributes: ScreenCharacterAttributes = this.currentAttributes
   ) {
     // scroll screen buffer
     for (let y = rect.y + rect.h - 1; y >= rect.y + linesToScroll; y -= 1) {
