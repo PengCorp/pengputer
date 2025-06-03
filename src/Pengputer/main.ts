@@ -389,9 +389,8 @@ class PengOS {
         screen.printString(`\n`);
       } else if (fileEntry.type === FileSystemObjectType.Image) {
         screen.clear();
-        const { x, y } = screen.getCursorPositionPx();
         const image = await fileEntry.data.load();
-        screen.drawImageAt(image, x, y);
+        screen.drawImageAt(image, 0, 0);
         screen.moveCurDelta(
           0,
           Math.ceil(image.height / screen.characterHeight)
