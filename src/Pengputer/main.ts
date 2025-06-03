@@ -1,7 +1,7 @@
 import { loadFont9x16 } from "../Screen/font9x16";
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { readLine } from "../Functions";
+import { loadImageBitmapFromUrl, readLine, waitFor } from "../Functions";
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
 import { TextFile } from "./TextFile";
@@ -9,6 +9,10 @@ import { HelloWorld } from "./HelloWorld";
 import { DateApp } from "./DateApp";
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
+import { padStart } from "lodash";
+
+import energyStar from "./res/energyStar.png";
+import biosPenger from "./res/biosPenger.png";
 
 const PATH_SEPARATOR = "/";
 
@@ -36,13 +40,8 @@ class PengOS {
     this.suppressNextPromptNewline = false;
   }
 
-  startup() {
-    window.startupNoise.volume = 0.7;
-    window.startupNoise.play();
-
+  async startup() {
     const { screen } = this.pc;
-    screen.clear();
-    screen.printString("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
 
     this.pc.currentDrive = "A";
     this.pc.currentPath = [];
@@ -76,6 +75,86 @@ class PengOS {
       name: "hello.exe",
       data: new HelloWorld(this.pc),
     });
+
+    await this.runStartupAnimation();
+  }
+
+  private async runStartupAnimation() {
+    const { screen, keyboard } = this.pc;
+    screen.clear();
+    if (!localStorage.getItem("hasStartedUp")) {
+      window.startupNoise.volume = 0.7;
+      window.startupNoise.play();
+      screen.hideCursor();
+      screen.drawImageAt(await loadImageBitmapFromUrl(energyStar), -135, 0);
+      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
+
+      screen.printString(
+        "    Penger Modular BIOS v5.22, An Energy Star Ally\n"
+      );
+      screen.printString("    Copyright (C) 1982-85, PengCorp\n");
+      screen.printString("\n");
+      const curPos = screen.getCursorPosition();
+      screen.setCursorPosition({ x: 0, y: 24 });
+      screen.printString("05/02/1984-ALADDIN5-P2B");
+      screen.setCursorPosition(curPos);
+      await waitFor(1000);
+      screen.printString("AMD-K6(rm)-III/450 Processor\n");
+      screen.printString("Memory Test :        ");
+      await waitFor(500);
+      for (let i = 0; i <= 262144; i += 1024) {
+        screen.moveCurDelta(-7, 0);
+        screen.printString(`${padStart(String(i), 6, " ")}K`);
+        await waitFor(7);
+      }
+      await waitFor(500);
+      screen.printString(` OK\n`);
+      screen.printString("\n");
+      await waitFor(750);
+      screen.printString("Initialize Plug and Play Cards...\n");
+      await waitFor(1000);
+      screen.printString("PNP Init Completed");
+      await waitFor(2500);
+      screen.clear();
+      screen.printString(
+        "╔═══════════════════════════════════════════════════════════════════════════╗\n"
+      );
+      screen.printString(
+        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n"
+      );
+      screen.printString(
+        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n"
+      );
+      screen.printString(
+        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n"
+      );
+      screen.printString(
+        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
+      );
+      screen.printString(
+        '║ Floppy Drive A:    : 1.44 MB, 3½"   │ Hard Disk C: Type  : 47             ║\n'
+      );
+      screen.printString(
+        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
+      );
+      screen.printString(
+        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n"
+      );
+      screen.printString(
+        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n"
+      );
+      screen.printString(
+        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n"
+      );
+      await waitFor(1500);
+      screen.printString("Starting PengOS...\n\n");
+      await waitFor(1000);
+      localStorage.setItem("hasStartedUp", "yes");
+    }
+
+    screen.printString("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
+
+    screen.showCursor();
   }
 
   formatPath(path: string[]): string {
@@ -246,6 +325,11 @@ class PengOS {
     this.suppressNextPromptNewline = true;
   }
 
+  private async commandReboot() {
+    localStorage.removeItem("hasStartedUp");
+    await this.runStartupAnimation();
+  }
+
   private commandHelp() {
     const { screen } = this.pc;
     screen.printString("help      List available commands\n");
@@ -257,12 +341,13 @@ class PengOS {
     screen.printString("open      Display file\n");
     screen.printString("clear     Clear screen\n");
     screen.printString("prompt    Change your command prompt text\n");
+    screen.printString("reboot    Restart the system\n");
   }
 
   async mainLoop() {
     const { screen, keyboard } = this.pc;
 
-    const commands: Record<string, (args: string[]) => void> = {
+    const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
       h: this.commandHelp.bind(this),
       look: this.commandLook.bind(this),
@@ -273,6 +358,7 @@ class PengOS {
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),
       prompt: this.commandPrompt.bind(this),
+      reboot: this.commandReboot.bind(this),
     };
 
     while (true) {
@@ -286,7 +372,7 @@ class PengOS {
         const command = commandArguments[0];
         const knownCommand = commands[command.toLowerCase()];
         if (knownCommand) {
-          knownCommand(commandArguments.slice(1));
+          await knownCommand(commandArguments.slice(1));
         } else {
           screen.printString("Unknown command: " + command + "\n");
           screen.printString('Try "help" or "h" to see available commands\n');
@@ -315,6 +401,6 @@ class PengOS {
   requestAnimationFrame(cb);
 
   const pengOS = new PengOS(screen, keyboard);
-  pengOS.startup();
+  await pengOS.startup();
   pengOS.mainLoop();
 })();

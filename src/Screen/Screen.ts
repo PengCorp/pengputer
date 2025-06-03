@@ -43,6 +43,9 @@ export class Screen {
   private attributeCanvas!: HTMLCanvasElement;
   private attributeCtx!: CanvasRenderingContext2D;
 
+  private graphicsCanvas!: HTMLCanvasElement;
+  private graphicsCtx!: CanvasRenderingContext2D;
+
   public currentAttributes: ScreenCharacterAttributes;
 
   private curX: number;
@@ -137,6 +140,11 @@ export class Screen {
     this.attributeCtx = this.attributeCanvas.getContext("2d")!;
     this.attributeCtx.fillStyle = this.currentAttributes.fgColor;
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
+
+    this.graphicsCanvas = document.createElement("canvas");
+    this.graphicsCanvas.width = this.canvas.width;
+    this.graphicsCanvas.height = this.canvas.height;
+    this.graphicsCtx = this.graphicsCanvas.getContext("2d")!;
   }
 
   initCanvas(containerEl: HTMLElement) {
@@ -213,11 +221,14 @@ export class Screen {
 
     // commit characters
     this.ctx.drawImage(this.bufferCanvas, 0, 0);
+
+    // display graphics
+    this.ctx.drawImage(this.graphicsCanvas, 0, 0);
   }
 
   /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
   clear() {
-    const { bgCtx, charCtx, attributeCtx } = this;
+    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
 
     bgCtx.globalCompositeOperation = "source-over";
     bgCtx.fillStyle = this.currentAttributes.bgColor;
@@ -229,6 +240,8 @@ export class Screen {
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = this.currentAttributes.fgColor;
     attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
+
+    graphicsCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
 
     this.curX = 0;
     this.curY = 0;
@@ -506,6 +519,10 @@ export class Screen {
         ctx: this.attributeCtx,
         canvas: this.attributeCanvas,
       },
+      {
+        ctx: this.graphicsCtx,
+        canvas: this.graphicsCanvas,
+      },
     ];
 
     for (const { ctx, canvas } of scrollDraws) {
@@ -652,6 +669,19 @@ export class Screen {
     };
 
     this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
+  }
+
+  /*================================ IMAGES ====================================*/
+
+  drawImageAt(image: CanvasImageSource, dx: number, dy: number) {
+    while (dx < 0) {
+      dx += this.widthInPixels;
+    }
+    while (dy < 0) {
+      dy += this.heightInPixels;
+    }
+
+    this.graphicsCtx.drawImage(image, dx, dy);
   }
 
   /*================================ DEMO STUFF ================================*/
