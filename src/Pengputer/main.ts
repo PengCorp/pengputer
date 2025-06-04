@@ -541,7 +541,31 @@ class PengOS {
 
     while (true) {
       this.printPrompt();
-      const commandString = await readLine(screen, keyboard);
+      let autoCompletes = [...this.takenPrograms.map((p) => p.name)];
+
+      const entry = fileSystem.getAtPath(this.pc.currentPath);
+      if (entry && entry.type === FileSystemObjectType.Directory) {
+        const items = entry.data.getItems();
+        autoCompletes = [...autoCompletes, ...items.map((i) => i.name)];
+      }
+
+      autoCompletes = [
+        ...autoCompletes,
+        "help",
+        "look",
+        "go",
+        "up",
+        "makedir",
+        "run",
+        "open",
+        "clear",
+        "prompt",
+        "take",
+        "drop",
+        "reboot",
+      ];
+
+      const commandString = await readLine(screen, keyboard, autoCompletes);
       const commandArguments = commandString
         .trim()
         .split(" ")

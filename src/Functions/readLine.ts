@@ -5,7 +5,8 @@ import { getIsModifierKey } from "../Keyboard/isModifierKey";
 
 export const readLine = (
   screen: Screen,
-  keyboard: Keyboard
+  keyboard: Keyboard,
+  autoCompleteStrings: string[] = []
 ): Promise<string> => {
   let unsubType: (() => void) | null = null;
 
@@ -14,7 +15,39 @@ export const readLine = (
     let curIndex = 0;
 
     const onType: TypeListener = (char, key) => {
-      if (key === "Home") {
+      if (
+        key === "Tab" &&
+        autoCompleteStrings.length > 0 &&
+        curIndex === result.length
+      ) {
+        let tokens = result.split(" ");
+        if (tokens.length === 0) return;
+        let token = tokens[tokens.length - 1];
+        if (token.length === 0) return;
+
+        const matchingAutoCompleteStrings = autoCompleteStrings.filter((s) =>
+          s.startsWith(token)
+        );
+
+        if (matchingAutoCompleteStrings.length === 1) {
+          const autoCompleteString = matchingAutoCompleteStrings[0];
+          let prefix = autoCompleteString.slice(0, token.length);
+          if (prefix === token) {
+            screen.setCursorPositionDelta(
+              {
+                x: -token.length,
+                y: 0,
+              },
+              true
+            );
+            screen.printString(autoCompleteString);
+            result =
+              result.slice(0, result.length - token.length) +
+              autoCompleteString;
+            curIndex = result.length;
+          }
+        }
+      } else if (key === "Home") {
         screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
         curIndex = 0;
       } else if (key === "End") {
@@ -32,7 +65,7 @@ export const readLine = (
           const stringStart = result.slice(0, curIndex - 1);
           const stringEnd = result.slice(curIndex);
           result = stringStart + stringEnd;
-          curIndex = Math.max(0, curIndex - 1);
+          curIndex = curIndex - 1;
           screen.setCursorPositionDelta({ x: -1, y: 0 }, true);
           screen.printString(stringEnd + " ");
           screen.setCursorPositionDelta(

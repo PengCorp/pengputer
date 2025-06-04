@@ -538,6 +538,13 @@ export class Screen {
     this.displayString(this.getCursorPosition(), string, undefined, true);
   }
 
+  /** Replace string at current cursor position with new string. */
+  replaceString(string: StringLike) {
+    const curPos = this.getCursorPosition();
+    this.printString(string);
+    this.setCursorPosition(curPos, false);
+  }
+
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
   displayString(
     pos: Position,
