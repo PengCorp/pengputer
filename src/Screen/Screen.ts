@@ -17,18 +17,6 @@ const stringLikeToArray = (s: StringLike) => {
   return s.split("");
 };
 
-/*
-  BIOS functions docs: http://www.techhelpmanual.com/27-dos__bios___extensions_service_index.html
-    Set cursor position +
-    Get cursor position +
-    Scroll window up
-    Scroll window down
-    Read char/attr at cursor +
-    Write char/attr, no cursor move +
-    Write char only, no attr write, no cursor move +
-    Teletype emulation, write character using set fg/bg, wrap, scroll
-*/
-
 export class Screen {
   private widthInCharacters: number;
   private heightInCharacters: number;
