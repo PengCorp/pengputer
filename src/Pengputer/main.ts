@@ -103,6 +103,7 @@ class PengOS {
       type: FileSystemObjectType.Link,
       name: "pongr.exe",
       data: new LinkFile("https://penger.city/pongerslair/"),
+      openType: "run",
     });
 
     const documentsDir = rootDir.mkdir("documents");
@@ -358,8 +359,11 @@ class PengOS {
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.data.run(args);
-      } else if (fileEntry.type === FileSystemObjectType.Link) {
-        screen.printString("Opening...\n");
+      } else if (
+        fileEntry.type === FileSystemObjectType.Link &&
+        fileEntry.openType === "run"
+      ) {
+        screen.printString("Running...\n");
         await waitForKeysUp(keyboard);
         fileEntry.data.open();
       } else {
@@ -397,6 +401,13 @@ class PengOS {
           0,
           Math.ceil(image.height / screen.characterHeight)
         );
+      } else if (
+        fileEntry.type === FileSystemObjectType.Link &&
+        fileEntry.openType === "open"
+      ) {
+        screen.printString("Opening...\n");
+        await waitForKeysUp(keyboard);
+        fileEntry.data.open();
       } else {
         screen.printString(`Not readable\n`);
       }
