@@ -13,6 +13,7 @@ import { PC } from "./PC";
 import { TextFile } from "./TextFile";
 import { AudioFile } from "./AudioFile";
 import { HelloWorld } from "./HelloWorld";
+import { EightBall } from "./EightBall";
 import { DateApp } from "./DateApp";
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
@@ -106,8 +107,14 @@ class PengOS {
       name: "hello.exe",
       data: new HelloWorld(this.pc),
     });
-    const gamesDir = softwareDir.mkdir("games");
 
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "8ball.exe",
+      data: new EightBall(this.pc),
+    });
+
+    const gamesDir = softwareDir.mkdir("games");
     gamesDir.addItem({
       type: FileSystemObjectType.Link,
       name: "pongr.exe",
