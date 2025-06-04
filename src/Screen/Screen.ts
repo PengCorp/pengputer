@@ -257,24 +257,6 @@ export class Screen {
     this.curY = 0;
   }
 
-  moveCurDelta(dx: number, dy: number) {
-    this.curX += dx;
-    if (this.curX >= this.widthInCharacters) {
-      this.curX = this.widthInCharacters - 1;
-    }
-    if (this.curX < 0) {
-      this.curX = 0;
-    }
-
-    this.curY += dy;
-    if (this.curY >= this.heightInCharacters) {
-      this.curY = this.heightInCharacters - 1;
-    }
-    if (this.curY < 0) {
-      this.curY = 0;
-    }
-  }
-
   //================================================= CANVAS HANDLING ==========================================
 
   _getScreenBufferIndex(x: number, y: number) {
