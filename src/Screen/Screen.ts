@@ -283,7 +283,7 @@ export class Screen {
 
   redrawCharacter(x: number, y: number) {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
-    const { bgCtx, charCtx, attributeCtx } = this;
+    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
 
     // fill background
     bgCtx.globalCompositeOperation = "source-over";
@@ -324,6 +324,14 @@ export class Screen {
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = bufferCharacter.attributes.fgColor;
     attributeCtx.fillRect(
+      x * this.characterWidth,
+      y * this.characterHeight,
+      this.characterWidth,
+      this.characterHeight
+    );
+
+    // clear graphics
+    graphicsCtx.clearRect(
       x * this.characterWidth,
       y * this.characterHeight,
       this.characterWidth,
