@@ -52,7 +52,7 @@ class PengOS {
     this.pc = {
       screen,
       keyboard,
-      currentDrive: "A",
+      currentDrive: "C",
       currentPath: [],
       prompt: "%D%P",
       fileSystem: new FileSystem(),
@@ -65,7 +65,7 @@ class PengOS {
   async startup() {
     const { screen } = this.pc;
 
-    this.pc.currentDrive = "A";
+    this.pc.currentDrive = "C";
     this.pc.currentPath = [];
     this.pc.prompt = "%D%P>";
 
@@ -90,6 +90,15 @@ class PengOS {
       data: licenseTxt,
       name: "LICENSE.TXT",
     });
+    const pplTxt = new TextFile();
+    pplTxt.replace(
+      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`
+    );
+    pengOSDir.addItem({
+      type: FileSystemObjectType.TextFile,
+      data: pplTxt,
+      name: "PPL.TXT",
+    });
 
     const softwareDir = rootDir.mkdir("software");
     softwareDir.addItem({
@@ -103,6 +112,7 @@ class PengOS {
       type: FileSystemObjectType.Link,
       name: "pongr.exe",
       data: new LinkFile("https://penger.city/pongerslair/"),
+      openType: "run",
     });
 
     const documentsDir = rootDir.mkdir("documents");
@@ -146,13 +156,13 @@ class PengOS {
       window.startupNoise.play();
       screen.hideCursor();
       screen.drawImageAt(await loadImageBitmapFromUrl(energyStar), -135, 0);
-      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
 
       screen.printString(
         "    Penger Modular BIOS v5.22, An Energy Star Ally\n"
       );
       screen.printString("    Copyright (C) 1982-85, PengCorp\n");
       screen.printString("\n");
+      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
       const curPos = screen.getCursorPosition();
       screen.setCursorPosition({ x: 0, y: 24 });
       screen.printString("05/02/1984-ALADDIN5-P2B");
@@ -162,7 +172,7 @@ class PengOS {
       screen.printString("Memory Test :        ");
       await waitFor(500);
       for (let i = 0; i <= 262144; i += 1024) {
-        screen.moveCurDelta(-7, 0);
+        screen.setCursorPositionDelta({ x: -7, y: 0 }, false);
         screen.printString(`${padStart(String(i), 6, " ")}K`);
         await waitFor(7);
       }
@@ -191,8 +201,8 @@ class PengOS {
         "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
       );
       screen.printString(
-        '║ Floppy Drive A:    : 1.44 MB, 3½"   │ Hard Disk C: Type  : 47             ║\n'
-      );
+        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n"
+      ); // 1.44 MB, 3½"
       screen.printString(
         "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
       );
@@ -358,8 +368,11 @@ class PengOS {
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.data.run(args);
-      } else if (fileEntry.type === FileSystemObjectType.Link) {
-        screen.printString("Opening...\n");
+      } else if (
+        fileEntry.type === FileSystemObjectType.Link &&
+        fileEntry.openType === "run"
+      ) {
+        screen.printString("Running...\n");
         await waitForKeysUp(keyboard);
         fileEntry.data.open();
       } else {
@@ -393,10 +406,17 @@ class PengOS {
         screen.clear();
         const image = await fileEntry.data.load();
         screen.drawImageAt(image, 0, 0);
-        screen.moveCurDelta(
-          0,
-          Math.ceil(image.height / screen.characterHeight)
-        );
+        screen.setCursorPositionDelta({
+          x: 0,
+          y: Math.ceil(image.height / screen.characterHeight),
+        });
+      } else if (
+        fileEntry.type === FileSystemObjectType.Link &&
+        fileEntry.openType === "open"
+      ) {
+        screen.printString("Opening...\n");
+        await waitForKeysUp(keyboard);
+        fileEntry.data.open();
       } else {
         screen.printString(`Not readable\n`);
       }
@@ -521,7 +541,31 @@ class PengOS {
 
     while (true) {
       this.printPrompt();
-      const commandString = await readLine(screen, keyboard);
+      let autoCompletes = [...this.takenPrograms.map((p) => p.name)];
+
+      const entry = fileSystem.getAtPath(this.pc.currentPath);
+      if (entry && entry.type === FileSystemObjectType.Directory) {
+        const items = entry.data.getItems();
+        autoCompletes = [...autoCompletes, ...items.map((i) => i.name)];
+      }
+
+      autoCompletes = [
+        ...autoCompletes,
+        "help",
+        "look",
+        "go",
+        "up",
+        "makedir",
+        "run",
+        "open",
+        "clear",
+        "prompt",
+        "take",
+        "drop",
+        "reboot",
+      ];
+
+      const commandString = await readLine(screen, keyboard, autoCompletes);
       const commandArguments = commandString
         .trim()
         .split(" ")
