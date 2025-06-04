@@ -234,11 +234,11 @@ class PengOS {
 
   printPrompt() {
     const { screen, prompt, currentDrive, currentPath } = this.pc;
-    screen.currentAttributes = {
-      ...screen.currentAttributes,
+    screen.setCurrentAttributes({
+      ...screen.getCurrentAttributes(),
       fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
       bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    };
+    });
     let pathString = this.formatPath(currentPath);
     const promptString = prompt
       .replace("%D", `${currentDrive}:`)
@@ -408,7 +408,7 @@ class PengOS {
         screen.drawImageAt(image, 0, 0);
         screen.setCursorPositionDelta({
           x: 0,
-          y: Math.ceil(image.height / screen.characterHeight),
+          y: Math.ceil(image.height / screen.getCharacterSize().h),
         });
       } else if (
         fileEntry.type === FileSystemObjectType.Link &&

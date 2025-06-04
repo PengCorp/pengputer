@@ -6,7 +6,7 @@ import {
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenCharacter, ScreenCharacterAttributes } from "./types";
-import { Position, Rect, StringLike } from "../types";
+import { Position, Rect, Size, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 
 const stringLikeToArray = (s: StringLike) => {
@@ -30,15 +30,15 @@ const stringLikeToArray = (s: StringLike) => {
 */
 
 export class Screen {
-  public widthInCharacters: number;
-  public heightInCharacters: number;
-  public totalCharacters: number;
+  private widthInCharacters: number;
+  private heightInCharacters: number;
+  private totalCharacters: number;
 
-  public characterWidth: number;
-  public characterHeight: number;
+  private characterWidth: number;
+  private characterHeight: number;
 
-  public widthInPixels: number;
-  public heightInPixels: number;
+  private widthInPixels: number;
+  private heightInPixels: number;
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
@@ -58,7 +58,7 @@ export class Screen {
   private graphicsCanvas!: HTMLCanvasElement;
   private graphicsCtx!: CanvasRenderingContext2D;
 
-  public currentAttributes: ScreenCharacterAttributes;
+  private currentAttributes: ScreenCharacterAttributes;
 
   private curX: number;
   private curY: number;
@@ -78,7 +78,7 @@ export class Screen {
   private shouldScrollOnWrite: boolean;
   private shouldWrapOnWrite: boolean;
 
-  public screenBuffer: Array<ScreenCharacter>;
+  private screenBuffer: Array<ScreenCharacter>;
 
   constructor() {
     this.widthInCharacters = 80;
@@ -257,9 +257,34 @@ export class Screen {
     this.curY = 0;
   }
 
+  getSizeInCharacters(): Size {
+    return {
+      w: this.widthInCharacters,
+      h: this.heightInCharacters,
+    };
+  }
+
+  getSizeInPixels(): Size {
+    return {
+      w: this.widthInPixels,
+      h: this.heightInPixels,
+    };
+  }
+
+  getCharacterSize(): Size {
+    return {
+      w: this.characterWidth,
+      h: this.characterHeight,
+    };
+  }
+
+  getTotalCharacters(): number {
+    return this.totalCharacters;
+  }
+
   //================================================= CANVAS HANDLING ==========================================
 
-  _getScreenBufferIndex(x: number, y: number) {
+  private _getScreenBufferIndex(x: number, y: number) {
     return y * this.widthInCharacters + x;
   }
 
@@ -357,7 +382,7 @@ export class Screen {
     this.curY = Math.max(0, Math.min(this.heightInCharacters - 1, y));
   }
 
-  _resolveCursorXPosition(
+  private _resolveCursorXPosition(
     pos: Position,
     shouldWrap: boolean = false
   ): Position {
@@ -401,6 +426,14 @@ export class Screen {
       fgColor: this.currentAttributes.fgColor,
       bgColor: this.currentAttributes.bgColor,
       blink: this.currentAttributes.blink,
+    };
+  }
+
+  setCurrentAttributes(attributes: ScreenCharacterAttributes) {
+    this.currentAttributes = {
+      fgColor: attributes.fgColor,
+      bgColor: attributes.bgColor,
+      blink: attributes.blink,
     };
   }
 
@@ -549,7 +582,7 @@ export class Screen {
   displayString(
     pos: Position,
     string: StringLike,
-    attributes: ScreenCharacterAttributes | undefined,
+    attributes: ScreenCharacterAttributes | undefined = undefined,
     shouldUpdateCursor: boolean = false
   ) {
     let curPos = { x: pos.x, y: pos.y };
