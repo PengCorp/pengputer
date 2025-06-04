@@ -90,6 +90,15 @@ class PengOS {
       data: licenseTxt,
       name: "LICENSE.TXT",
     });
+    const pplTxt = new TextFile();
+    pplTxt.replace(
+      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`
+    );
+    pengOSDir.addItem({
+      type: FileSystemObjectType.TextFile,
+      data: pplTxt,
+      name: "PPL.TXT",
+    });
 
     const softwareDir = rootDir.mkdir("software");
     softwareDir.addItem({
