@@ -14,7 +14,16 @@ export const readLine = (
     let curIndex = 0;
 
     const onType: TypeListener = (char, key) => {
-      if (char === "\n") {
+      if (key === "Home") {
+        screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
+        curIndex = 0;
+      } else if (key === "End") {
+        screen.setCursorPositionDelta(
+          { x: result.length - curIndex, y: 0 },
+          true
+        );
+        curIndex = result.length;
+      } else if (char === "\n") {
         screen.printChar(char);
         resolve(result);
         return;
@@ -53,8 +62,10 @@ export const readLine = (
           screen.setCursorPositionDelta({ x: 1, y: 0 }, true);
         }
       } else if (char) {
-        screen.printChar(char);
-        result = result.slice(0, curIndex) + char + result.slice(curIndex);
+        const rest = char + result.slice(curIndex);
+        screen.printString(rest);
+        screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 }, true);
+        result = result.slice(0, curIndex) + rest;
         curIndex += 1;
       }
     };
