@@ -172,7 +172,7 @@ class PengOS {
       screen.printString("Memory Test :        ");
       await waitFor(500);
       for (let i = 0; i <= 262144; i += 1024) {
-        screen.moveCurDelta(-7, 0);
+        screen.setCursorPositionDelta({ x: -7, y: 0 }, false);
         screen.printString(`${padStart(String(i), 6, " ")}K`);
         await waitFor(7);
       }
@@ -406,10 +406,10 @@ class PengOS {
         screen.clear();
         const image = await fileEntry.data.load();
         screen.drawImageAt(image, 0, 0);
-        screen.moveCurDelta(
-          0,
-          Math.ceil(image.height / screen.characterHeight)
-        );
+        screen.setCursorPositionDelta({
+          x: 0,
+          y: Math.ceil(image.height / screen.characterHeight),
+        });
       } else if (
         fileEntry.type === FileSystemObjectType.Link &&
         fileEntry.openType === "open"
