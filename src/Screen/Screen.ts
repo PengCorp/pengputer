@@ -257,24 +257,6 @@ export class Screen {
     this.curY = 0;
   }
 
-  moveCurDelta(dx: number, dy: number) {
-    this.curX += dx;
-    if (this.curX >= this.widthInCharacters) {
-      this.curX = this.widthInCharacters - 1;
-    }
-    if (this.curX < 0) {
-      this.curX = 0;
-    }
-
-    this.curY += dy;
-    if (this.curY >= this.heightInCharacters) {
-      this.curY = this.heightInCharacters - 1;
-    }
-    if (this.curY < 0) {
-      this.curY = 0;
-    }
-  }
-
   //================================================= CANVAS HANDLING ==========================================
 
   _getScreenBufferIndex(x: number, y: number) {
@@ -283,7 +265,7 @@ export class Screen {
 
   redrawCharacter(x: number, y: number) {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
-    const { bgCtx, charCtx, attributeCtx } = this;
+    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
 
     // fill background
     bgCtx.globalCompositeOperation = "source-over";
@@ -324,6 +306,14 @@ export class Screen {
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = bufferCharacter.attributes.fgColor;
     attributeCtx.fillRect(
+      x * this.characterWidth,
+      y * this.characterHeight,
+      this.characterWidth,
+      this.characterHeight
+    );
+
+    // clear graphics
+    graphicsCtx.clearRect(
       x * this.characterWidth,
       y * this.characterHeight,
       this.characterWidth,
@@ -546,6 +536,13 @@ export class Screen {
   /** Prints a string of characters to screen using current attributes and moves cursor. */
   printString(string: StringLike) {
     this.displayString(this.getCursorPosition(), string, undefined, true);
+  }
+
+  /** Replace string at current cursor position with new string. */
+  replaceString(string: StringLike) {
+    const curPos = this.getCursorPosition();
+    this.printString(string);
+    this.setCursorPosition(curPos, false);
   }
 
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */

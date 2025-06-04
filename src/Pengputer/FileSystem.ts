@@ -1,6 +1,6 @@
 import { AudioFile } from "./AudioFile";
 import { ImageFile } from "./ImageFile";
-import { LinkFile } from "./LinkFile";
+import { LinkFile, LinkOpenType } from "./LinkFile";
 import { TextFile } from "./TextFile";
 
 export enum FileSystemObjectType {
@@ -72,6 +72,7 @@ export type FileSystemEntry =
       type: FileSystemObjectType.Link;
       name: string;
       data: LinkFile;
+      openType: LinkOpenType;
     };
 
 export class FileSystem {

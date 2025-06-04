@@ -1,3 +1,5 @@
+export type LinkOpenType = "run" | "open";
+
 export class LinkFile {
   private href: string;
 
