@@ -52,7 +52,7 @@ class PengOS {
     this.pc = {
       screen,
       keyboard,
-      currentDrive: "A",
+      currentDrive: "C",
       currentPath: [],
       prompt: "%D%P",
       fileSystem: new FileSystem(),
@@ -65,7 +65,7 @@ class PengOS {
   async startup() {
     const { screen } = this.pc;
 
-    this.pc.currentDrive = "A";
+    this.pc.currentDrive = "C";
     this.pc.currentPath = [];
     this.pc.prompt = "%D%P>";
 
@@ -156,13 +156,13 @@ class PengOS {
       window.startupNoise.play();
       screen.hideCursor();
       screen.drawImageAt(await loadImageBitmapFromUrl(energyStar), -135, 0);
-      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
 
       screen.printString(
         "    Penger Modular BIOS v5.22, An Energy Star Ally\n"
       );
       screen.printString("    Copyright (C) 1982-85, PengCorp\n");
       screen.printString("\n");
+      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
       const curPos = screen.getCursorPosition();
       screen.setCursorPosition({ x: 0, y: 24 });
       screen.printString("05/02/1984-ALADDIN5-P2B");
@@ -201,8 +201,8 @@ class PengOS {
         "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
       );
       screen.printString(
-        '║ Floppy Drive A:    : 1.44 MB, 3½"   │ Hard Disk C: Type  : 47             ║\n'
-      );
+        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n"
+      ); // 1.44 MB, 3½"
       screen.printString(
         "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
       );
