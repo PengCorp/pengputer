@@ -29,6 +29,7 @@ import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import macgerPng from "./files/documents/pengers/macger.png";
 import { ImageFile } from "./ImageFile";
 import { LinkFile } from "./LinkFile";
+import { argparse } from "../Functions/argparse";
 
 const PATH_SEPARATOR = "/";
 
@@ -573,27 +574,24 @@ class PengOS {
       ];
 
       const commandString = await readLine(screen, keyboard, autoCompletes);
-      const commandArguments = commandString
-        .trim()
-        .split(" ")
-        .filter((c) => Boolean(c));
-      if (commandArguments.length > 0) {
-        const command = commandArguments[0];
-        const knownCommand = commands[command.toLowerCase()];
+      const args = argparse(commandString);
+      const commandName = args[0];
+      if (commandName) {
+        const knownCommand = commands[commandName.toLowerCase()];
         const knownTakenApp = this.takenPrograms.find(
-          (p) => p.name === command
+          (p) => p.name === commandName
         );
         if (knownCommand) {
-          await knownCommand(commandArguments.slice(1));
+          await knownCommand(args.slice(1));
         } else if (knownTakenApp) {
           const app = fileSystem.getAtPath(knownTakenApp.path);
           if (app && app.type === FileSystemObjectType.Executable) {
-            app.data.run(commandArguments);
+            app.data.run(args.slice(1));
           } else {
             screen.printString(`Executable not found. Consider dropping`);
           }
         } else {
-          screen.printString("Unknown command: " + command + "\n");
+          screen.printString("Unknown command: " + commandName + "\n");
           screen.printString('Try "help" or "h" to see available commands\n');
         }
       }
