@@ -30,6 +30,7 @@ import macgerPng from "./files/documents/pengers/macger.png";
 import { ImageFile } from "./ImageFile";
 import { LinkFile } from "./LinkFile";
 import { argparse } from "../Functions/argparse";
+import { PrintArgs } from "./PrintArgs";
 
 const PATH_SEPARATOR = "/";
 
@@ -113,6 +114,12 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "8ball.exe",
       data: new EightBall(this.pc),
+    });
+
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "args.exe",
+      data: new PrintArgs(this.pc),
     });
 
     const gamesDir = softwareDir.mkdir("games");
@@ -586,7 +593,7 @@ class PengOS {
         } else if (knownTakenApp) {
           const app = fileSystem.getAtPath(knownTakenApp.path);
           if (app && app.type === FileSystemObjectType.Executable) {
-            app.data.run(args.slice(1));
+            app.data.run(args);
           } else {
             screen.printString(`Executable not found. Consider dropping`);
           }
