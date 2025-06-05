@@ -20,7 +20,7 @@ export class EightBall implements Executable {
       this.help(args);
       return;
     }
-    if (args[1] === "/h") {
+    if (args[1] === "-h") {
       this.help(args);
       return;
     }
@@ -36,7 +36,7 @@ export class EightBall implements Executable {
   help(args: string[]) {
     const helpText = [
       "Welcome to (8) Your personal oracle!\n",
-      `Usage: ${args[0]} [/h] [question]\n`,
+      `Usage: ${args[0]} [-h] [question]\n`,
       "\n",
       `Example: ${args[0]} Will B replace C?\n`,
     ];
