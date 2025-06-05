@@ -16,16 +16,16 @@ export class EightBall implements Executable {
   }
 
   async run(args: string[]) {
-    if (args.length <= 1) {
-      this.help();
+    if (args.length < 2) {
+      this.help(args);
       return;
     }
     if (args[1] === "/h") {
-      this.help();
+      this.help(args);
       return;
     }
 
-    let userQuery = ["\"", args.slice(1).join(" "), "\""];
+    let userQuery = ['"', args.slice(2).join(" "), '"'];
     const response = this.randomResponse();
 
     this.pc.screen.printString(userQuery.join(""));
@@ -33,12 +33,12 @@ export class EightBall implements Executable {
     this.pc.screen.printString(response);
   }
 
-  help() {
+  help(args: string[]) {
     const helpText = [
       "Welcome to (8) Your personal oracle!\n",
-      "Usage: 8ball.exe [/h] [question]\n",
+      `Usage: ${args[0]} [/h] [question]\n`,
       "\n",
-      "Example: 8ball.exe Will B replace C?\n",
+      `Example: ${args[0]} Will B replace C?\n`,
     ];
     for (const line of helpText) {
       this.pc.screen.printString(line);
