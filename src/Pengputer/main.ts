@@ -530,6 +530,8 @@ class PengOS {
   async mainLoop() {
     const { screen, keyboard, fileSystem } = this.pc;
 
+    const previousEntries: string[] = [];
+
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
       h: this.commandHelp.bind(this),
@@ -548,16 +550,19 @@ class PengOS {
 
     while (true) {
       this.printPrompt();
-      let autoCompletes = [...this.takenPrograms.map((p) => p.name)];
+      let autoCompleteStrings = [...this.takenPrograms.map((p) => p.name)];
 
       const entry = fileSystem.getAtPath(this.pc.currentPath);
       if (entry && entry.type === FileSystemObjectType.Directory) {
         const items = entry.data.getItems();
-        autoCompletes = [...autoCompletes, ...items.map((i) => i.name)];
+        autoCompleteStrings = [
+          ...autoCompleteStrings,
+          ...items.map((i) => i.name),
+        ];
       }
 
-      autoCompletes = [
-        ...autoCompletes,
+      autoCompleteStrings = [
+        ...autoCompleteStrings,
         "help",
         "look",
         "go",
@@ -572,7 +577,11 @@ class PengOS {
         "reboot",
       ];
 
-      const commandString = await readLine(screen, keyboard, autoCompletes);
+      const commandString = await readLine(screen, keyboard, {
+        autoCompleteStrings,
+        previousEntries,
+      });
+      previousEntries.push(commandString);
       const args = argparse(commandString);
       const commandName = args[0];
       if (commandName) {

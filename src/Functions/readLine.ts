@@ -6,9 +6,19 @@ import { getIsModifierKey } from "../Keyboard/isModifierKey";
 export const readLine = (
   screen: Screen,
   keyboard: Keyboard,
-  autoCompleteStrings: string[] = []
+  {
+    autoCompleteStrings = [],
+    previousEntries = [],
+  }: {
+    autoCompleteStrings?: string[];
+    previousEntries?: string[];
+  }
 ): Promise<string> => {
   let unsubType: (() => void) | null = null;
+  const cursorStartPos = screen.getCursorPosition();
+  let isUsingPreviousEntry = false;
+  let previousEntryIndex = 0;
+  let savedResult = "";
 
   const promise = new Promise<string>((resolve) => {
     let result = "";
@@ -20,6 +30,7 @@ export const readLine = (
         autoCompleteStrings.length > 0 &&
         curIndex === result.length
       ) {
+        isUsingPreviousEntry = false;
         let tokens = result.split(" ");
         if (tokens.length === 0) return;
         let token = tokens[tokens.length - 1];
@@ -48,11 +59,14 @@ export const readLine = (
           }
         }
       } else if (key === "Home") {
-        screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
+        screen.setCursorPosition(cursorStartPos);
         curIndex = 0;
       } else if (key === "End") {
-        screen.setCursorPositionDelta(
-          { x: result.length - curIndex, y: 0 },
+        screen.setCursorPosition(
+          {
+            x: cursorStartPos.x + result.length,
+            y: cursorStartPos.y,
+          },
           true
         );
         curIndex = result.length;
@@ -62,6 +76,7 @@ export const readLine = (
         return;
       } else if (char === "\b") {
         if (curIndex > 0) {
+          isUsingPreviousEntry = false;
           const stringStart = result.slice(0, curIndex - 1);
           const stringEnd = result.slice(curIndex);
           result = stringStart + stringEnd;
@@ -75,6 +90,7 @@ export const readLine = (
         }
       } else if (key === "Delete") {
         if (curIndex < result.length) {
+          isUsingPreviousEntry = false;
           const stringStart = result.slice(0, curIndex);
           const stringEnd = result.slice(curIndex + 1);
           result = stringStart + stringEnd;
@@ -94,7 +110,48 @@ export const readLine = (
           curIndex += 1;
           screen.setCursorPositionDelta({ x: 1, y: 0 }, true);
         }
+      } else if (key === "ArrowUp") {
+        if (previousEntries.length > 0) {
+          let replaceWith = "";
+          if (!isUsingPreviousEntry) {
+            isUsingPreviousEntry = true;
+            savedResult = result;
+            previousEntryIndex = previousEntries.length - 1;
+            replaceWith = previousEntries[previousEntryIndex];
+          } else if (previousEntryIndex > 0) {
+            previousEntryIndex -= 1;
+            replaceWith = previousEntries[previousEntryIndex];
+          }
+          if (replaceWith) {
+            screen.setCursorPosition(cursorStartPos);
+            screen.printString(" ".repeat(result.length));
+            screen.setCursorPosition(cursorStartPos);
+            screen.printString(replaceWith);
+            result = replaceWith;
+            curIndex = replaceWith.length;
+          }
+        }
+      } else if (key === "ArrowDown") {
+        if (
+          isUsingPreviousEntry &&
+          previousEntryIndex < previousEntries.length
+        ) {
+          let replaceWith = "";
+          previousEntryIndex += 1;
+          if (previousEntryIndex < previousEntries.length) {
+            replaceWith = previousEntries[previousEntryIndex];
+          } else {
+            replaceWith = savedResult;
+          }
+          screen.setCursorPosition(cursorStartPos);
+          screen.printString(" ".repeat(result.length));
+          screen.setCursorPosition(cursorStartPos);
+          screen.printString(replaceWith);
+          result = replaceWith;
+          curIndex = replaceWith.length;
+        }
       } else if (char) {
+        isUsingPreviousEntry = false;
         const rest = char + result.slice(curIndex);
         screen.printString(rest);
         screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 }, true);
