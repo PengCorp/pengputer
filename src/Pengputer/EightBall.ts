@@ -16,7 +16,7 @@ export class EightBall implements Executable {
   }
 
   async run(args: string[]) {
-    if (args.length < 2) {
+    if (args.length <= 1) {
       this.help(args);
       return;
     }
@@ -25,7 +25,7 @@ export class EightBall implements Executable {
       return;
     }
 
-    let userQuery = ['"', args.slice(2).join(" "), '"'];
+    let userQuery = ['"', args.slice(1).join(" "), '"'];
     const response = this.randomResponse();
 
     this.pc.screen.printString(userQuery.join(""));
