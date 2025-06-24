@@ -27,17 +27,11 @@ export class Cursor {
     const screenSize = this.screen.getSize();
 
     const newPosition = vectorAdd(this.position, delta);
-    const resolvedPosition = this.wrapOrClampPosition(newPosition, shouldWrap);
+    this.position = this.wrapOrClampPosition(newPosition, shouldWrap);
+  }
 
-    let scrolledLines = 0;
-    if (resolvedPosition.y >= screenSize.h) {
-      scrolledLines = resolvedPosition.y - (screenSize.h - 1);
-      resolvedPosition.y = screenSize.h - 1;
-    }
-
-    this.position = resolvedPosition;
-
-    return { scrolledLines };
+  public moveToStartOfLine() {
+    this.position.x = 0;
   }
 
   private wrapOrClampPosition(

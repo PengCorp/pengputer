@@ -551,15 +551,16 @@ export class Screen {
     const displayCursor = new Cursor({
       getSize: () => screenSize,
     });
+    displayCursor.setPosition(pos);
 
     let i = 0;
     while (i < string.length) {
       const ch = string[i];
       if (ch === "\n") {
-        displayCursor.moveBy({ x: 0, y: 1 });
-        displayCursor.setPosition({ ...displayCursor.getPosition(), x: 0 });
+        displayCursor.moveBy({ x: 0, y: 1 }, shouldWrap);
+        displayCursor.moveToStartOfLine();
       } else if (ch === "\b") {
-        displayCursor.moveBy({ x: -1, y: 0 });
+        displayCursor.moveBy({ x: -1, y: 0 }, shouldWrap);
         this.replaceCharacterAndAttributesAt(
           " ",
           attributes ?? this.currentAttributes,
@@ -571,7 +572,7 @@ export class Screen {
           attributes ?? this.currentAttributes,
           displayCursor.getPosition()
         );
-        displayCursor.moveBy({ x: 1, y: 0 });
+        displayCursor.moveBy({ x: 1, y: 0 }, shouldWrap);
       } else {
         i += 1;
         if (ch === "\x1B") {
