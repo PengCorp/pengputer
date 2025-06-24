@@ -8,7 +8,12 @@ Sources:
 */
 
 import _ from "lodash";
-import { getIsPositionInRect, Rect, Size } from "../types";
+import {
+  getIsPositionInRect,
+  getRectFromPositionAndSize,
+  Rect,
+  Size,
+} from "../types";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 import {
@@ -909,7 +914,13 @@ class Tetris implements GameState {
       y: this.boardScreenRect.y + boardPosition.y * CELL_HEIGHT,
     };
 
-    if (!getIsPositionInRect(screenPos, screen.getCharacterRect())) return null;
+    if (
+      !getIsPositionInRect(
+        screenPos,
+        getRectFromPositionAndSize(zeroVector, screen.getSizeInCharacters())
+      )
+    )
+      return null;
 
     return screenPos;
   }
@@ -1084,11 +1095,11 @@ class Tetris implements GameState {
       bgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
       fgColor: CGA_PALETTE_DICT[CgaColors.White],
     });
-    const levelString = this.currentLevel < levels.length - 1 ? String(this.currentLevel) : '* MAX *';
-    screen.displayString(
-      { x: 14, y: 21 },
-      ` ${_.padStart(levelString, 9)} `
-    );
+    const levelString =
+      this.currentLevel < levels.length - 1
+        ? String(this.currentLevel)
+        : "* MAX *";
+    screen.displayString({ x: 14, y: 21 }, ` ${_.padStart(levelString, 9)} `);
   }
 
   private drawLines() {
@@ -1188,7 +1199,10 @@ class Tetris implements GameState {
 
   private setLinesCleared(linesCleared: number) {
     this.linesCleared = linesCleared;
-    this.currentLevel = Math.max(Math.min(Math.floor(linesCleared / 10), levels.length - 1), this.currentLevel);
+    this.currentLevel = Math.max(
+      Math.min(Math.floor(linesCleared / 10), levels.length - 1),
+      this.currentLevel
+    );
   }
 
   public onEnter() {
