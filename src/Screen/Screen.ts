@@ -9,6 +9,7 @@ import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
 import { Rect, Size, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 import { Vector } from "../Toolbox/Vector";
+import { Cursor } from "./Cursor";
 
 const stringLikeToArray = (s: StringLike) => {
   if (Array.isArray(s)) {
@@ -49,8 +50,7 @@ export class Screen {
 
   private currentAttributes: ScreenCharacterAttributes;
 
-  private curX: number;
-  private curY: number;
+  private cursor: Cursor;
   private curDisplay: boolean;
   private curBlinkState: boolean;
   private curBlinkDuration: number;
@@ -85,8 +85,9 @@ export class Screen {
       blink: false,
     };
 
-    this.curX = 0;
-    this.curY = 0;
+    this.cursor = new Cursor({
+      getSize: () => this.getSizeInCharacters(),
+    });
     this.curDisplay = true;
     this.curBlinkState = true;
     this.curBlinkDuration = 600;
@@ -204,10 +205,11 @@ export class Screen {
 
     // draw cursor
     if (this.curDisplay && this.curBlinkState) {
+      const cursorPosition = this.cursor.getPosition();
       const curW = this.characterWidth;
       const curH = this.curEnd - this.curStart + 1;
-      const curX = this.curX * this.characterWidth;
-      const curY = this.curY * this.characterHeight + this.curStart;
+      const curX = cursorPosition.x * this.characterWidth;
+      const curY = cursorPosition.y * this.characterHeight + this.curStart;
       this.bufferCtx.globalCompositeOperation = "xor";
       this.bufferCtx.fillRect(curX, curY, curW, curH);
     }
@@ -240,8 +242,7 @@ export class Screen {
 
     graphicsCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
 
-    this.curX = 0;
-    this.curY = 0;
+    this.cursor.setPosition({ x: 0, y: 0 });
   }
 
   getSizeInCharacters(): Size {
@@ -348,29 +349,26 @@ export class Screen {
     this.curEnd = end;
   }
 
+  getCursorPosition(): Vector {
+    return this.cursor.getPosition();
+  }
+
   setCursorPosition(pos: Vector) {
-    this.curX = pos.x;
-    this.curY = pos.y;
+    this.cursor.setPosition(pos);
+  }
 
-    if (this.curX < 0) {
-      this.curX = 0;
-    } else if (this.curX >= this.widthInCharacters) {
-      this.curX = this.widthInCharacters - 1;
-    }
+  setCursorPositionDelta(delta: Vector, shouldWrap: boolean = false) {
+    this.cursor.moveBy(delta, shouldWrap);
+  }
 
-    if (this.curY < 0) {
-      this.curY = 0;
-    } else if (this.curY >= this.heightInCharacters) {
-      this.curY = this.heightInCharacters - 1;
-    }
+  getCharacter() {
+    return this.getCharacterAt(this.getCursorPosition());
   }
 
   getCharacterAt(pos: Vector) {
     const { x, y } = pos;
     return this.screenBuffer[this._getScreenBufferIndex(x, y)];
   }
-
-  // Attributes
 
   getCurrentAttributes(): ScreenCharacterAttributes {
     return {
@@ -400,7 +398,29 @@ export class Screen {
     );
   }
 
-  private replaceCharacterAndAttributesAt(
+  replaceCharacter(char: string) {
+    this.replaceCharacterAt(char, this.getCursorPosition());
+  }
+
+  replaceCharacterAt(char: string, pos: Vector) {
+    const { x, y } = pos;
+    const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
+    bufferCharacter.character = char;
+    this.redrawCharacter(x, y);
+  }
+
+  replaceCharacterAndAttributes(
+    character: string,
+    attributes: ScreenCharacterAttributes = this.currentAttributes
+  ) {
+    this.replaceCharacterAndAttributesAt(
+      character,
+      attributes,
+      this.getCursorPosition()
+    );
+  }
+
+  replaceCharacterAndAttributesAt(
     character: string,
     attributes: ScreenCharacterAttributes,
     pos: Vector
@@ -502,6 +522,23 @@ export class Screen {
     return index;
   }
 
+  /** Prints a single character to screen using current attributes and moves cursor. */
+  printChar(ch: string) {
+    this.printString([ch]);
+  }
+
+  /** Prints a string of characters to screen using current attributes and moves cursor. */
+  printString(string: StringLike) {
+    this.displayString(this.getCursorPosition(), string, undefined, true, true);
+  }
+
+  /** Replace string at current cursor position with new string. */
+  replaceString(string: StringLike) {
+    const curPos = this.getCursorPosition();
+    this.printString(string);
+    this.setCursorPosition(curPos);
+  }
+
   /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
   displayString(
     pos: Vector,
@@ -510,35 +547,31 @@ export class Screen {
     shouldUpdateCursor: boolean = false,
     shouldWrap: boolean = false
   ) {
-    let curPos = { x: pos.x, y: pos.y };
+    const screenSize = this.getSizeInCharacters();
+    const displayCursor = new Cursor({
+      getSize: () => screenSize,
+    });
 
     let i = 0;
     while (i < string.length) {
       const ch = string[i];
       if (ch === "\n") {
-        curPos.y += 1;
-        curPos.x = 0;
+        displayCursor.moveBy({ x: 0, y: 1 });
+        displayCursor.setPosition({ ...displayCursor.getPosition(), x: 0 });
       } else if (ch === "\b") {
-        curPos.x -= 1;
-        if (curPos.x < 0) {
-          curPos.x = this.widthInCharacters - 1;
-          curPos.y -= 1;
-          if (curPos.y < 0) {
-            curPos.y = 0;
-          }
-        }
+        displayCursor.moveBy({ x: -1, y: 0 });
         this.replaceCharacterAndAttributesAt(
           " ",
           attributes ?? this.currentAttributes,
-          curPos
+          displayCursor.getPosition()
         );
       } else if (getIsPrintable(ch)) {
         this.replaceCharacterAndAttributesAt(
           ch,
           attributes ?? this.currentAttributes,
-          curPos
+          displayCursor.getPosition()
         );
-        curPos.x += 1;
+        displayCursor.moveBy({ x: 1, y: 0 });
       } else {
         i += 1;
         if (ch === "\x1B") {
@@ -547,18 +580,19 @@ export class Screen {
         continue;
       }
 
-      curPos = this._resolveCursorXPosition(curPos, shouldWrap);
-      while (curPos.y >= this.heightInCharacters) {
-        if (this.shouldScrollOnWrite) {
-          this.scrollUp(1);
-        }
-        curPos.y -= 1;
+      const finalPosition = displayCursor.getPosition();
+      if (finalPosition.y >= screenSize.h) {
+        this.scrollUp(finalPosition.y - (screenSize.h - 1));
+        displayCursor.setPosition({
+          ...displayCursor.getPosition(),
+          y: screenSize.h - 1,
+        });
       }
       i += 1;
     }
 
     if (shouldUpdateCursor) {
-      this.setCursorPosition(curPos);
+      this.setCursorPosition(displayCursor.getPosition());
     }
   }
 
@@ -613,6 +647,22 @@ export class Screen {
     this.attributeCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
   }
 
+  scrollUp(
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.currentAttributes
+  ) {
+    this.scrollUpRect(
+      {
+        x: 0,
+        y: 0,
+        w: this.widthInCharacters,
+        h: this.heightInCharacters,
+      },
+      linesToScroll,
+      attributes
+    );
+  }
+
   scrollUpRect(
     rect: Rect,
     linesToScroll: number,
@@ -656,6 +706,22 @@ export class Screen {
     };
 
     this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
+  }
+
+  scrollDown(
+    linesToScroll: number,
+    attributes: ScreenCharacterAttributes = this.currentAttributes
+  ) {
+    this.scrollDownRect(
+      {
+        x: 0,
+        y: 0,
+        w: this.widthInCharacters,
+        h: this.heightInCharacters,
+      },
+      linesToScroll,
+      attributes
+    );
   }
 
   scrollDownRect(
@@ -714,5 +780,81 @@ export class Screen {
     }
 
     this.graphicsCtx.drawImage(image, dx, dy);
+  }
+
+  /*================================ DEMO STUFF ================================*/
+
+  _printColorDemo() {
+    const daskish: Array<keyof typeof CGA_PALETTE_DICT> = [
+      CgaColors.Black,
+      CgaColors.Red,
+      CgaColors.Green,
+      CgaColors.Blue,
+      CgaColors.Yellow,
+      CgaColors.Cyan,
+      CgaColors.Magenta,
+      CgaColors.Orange,
+      CgaColors.Chartreuse,
+      CgaColors.SpringGreen,
+      CgaColors.Azure,
+      CgaColors.Violet,
+      CgaColors.Rose,
+      CgaColors.LightGray,
+    ];
+
+    const lightish: Array<keyof typeof CGA_PALETTE_DICT> = [
+      CgaColors.DarkGray,
+      CgaColors.LightRed,
+      CgaColors.LightGreen,
+      CgaColors.LightBlue,
+      CgaColors.LightYellow,
+      CgaColors.LightCyan,
+      CgaColors.LightMagenta,
+      CgaColors.LightOrange,
+      CgaColors.LightChartreuse,
+      CgaColors.LightSpringGreen,
+      CgaColors.LightAzure,
+      CgaColors.LightViolet,
+      CgaColors.LightRose,
+      CgaColors.White,
+    ];
+
+    for (const c of daskish) {
+      this.currentAttributes.bgColor = CGA_PALETTE_DICT[c];
+      this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+      this.printChar(`☺︎`);
+    }
+    this.printString(`\n`);
+
+    for (const c of lightish) {
+      this.currentAttributes.bgColor = CGA_PALETTE_DICT[c];
+      this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+      this.printChar(`☺︎`);
+    }
+    this.printString(`\n`);
+  }
+
+  _printBoxDrawingDemo() {
+    this.currentAttributes.bgColor = CGA_PALETTE_DICT["black"];
+    this.currentAttributes.fgColor = CGA_PALETTE_DICT["lightGray"];
+    this.printString("╔═══════╗\n");
+    this.printString("╙───────╫\n");
+    this.printString("   ╟────╜\n");
+  }
+
+  drawSomeText() {
+    this.currentAttributes.bgColor = CGA_PALETTE_DICT["black"];
+    this.currentAttributes.fgColor = CGA_PALETTE_DICT["lightGray"];
+    this.printString("C:\\>\n");
+
+    this.printString("Hello ");
+
+    this.currentAttributes.bgColor = "blue";
+    this.currentAttributes.fgColor = "green";
+    this.printString("World!\n");
+
+    this._printColorDemo();
+
+    this._printBoxDrawingDemo();
   }
 }

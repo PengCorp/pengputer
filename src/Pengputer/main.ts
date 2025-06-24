@@ -573,7 +573,7 @@ class PengOS {
 
     let previousEntries: string[] = [];
 
-    await new Ped(this.pc).run([]);
+    // await new Ped(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
