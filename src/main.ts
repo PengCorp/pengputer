@@ -11,7 +11,6 @@ import { Keyboard } from "./Keyboard";
   const keyboard = new Keyboard();
 
   screen.clear();
-  screen.drawSomeText();
   screen.displayString({ x: 1, y: 15 }, "Get scrolled, nerd :P");
 
   let lastTime = performance.now();
