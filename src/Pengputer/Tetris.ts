@@ -1192,6 +1192,10 @@ class Tetris implements GameState {
     this.bagIndex += 1;
     if (this.bagIndex === this.bag.length) {
       this.shuffleBag();
+      // reshuffle bag while it starts with the same piece as was drawn
+      while (this.bag[0] === result) {
+        this.shuffleBag();
+      }
     }
     return result;
   }
