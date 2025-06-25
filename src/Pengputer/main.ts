@@ -436,7 +436,7 @@ class PengOS {
         const image = await fileEntry.data.load();
         if (image) {
           std.drawConsoleImage(image, 0, 0);
-          const screenSize = std.getConsoleSizeInCharacters();
+          const screenSize = std.getConsoleSize();
           std.moveConsoleCursor({
             x: 0,
             y: Math.ceil(image.height / screenSize.h),
@@ -635,10 +635,12 @@ class PengOS {
         );
         if (knownCommand) {
           await knownCommand(args.slice(1));
+          std.resetConsole();
         } else if (knownTakenApp) {
           const app = fileSystem.getAtPath(knownTakenApp.path);
           if (app && app.type === FileSystemObjectType.Executable) {
-            app.createInstance().run(args);
+            await app.createInstance().run(args);
+            std.resetConsole();
           } else {
             std.writeConsole(`Executable not found. Consider dropping`);
           }

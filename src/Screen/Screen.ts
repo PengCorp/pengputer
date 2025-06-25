@@ -60,6 +60,8 @@ export class Screen {
   /** Pixel of cell to end cursor on. Inclusive. */
   private curEnd: number;
 
+  private isScrollable: boolean;
+
   private charBlinkState: boolean;
   private charBlinkDuration: number;
   private charBlinkCounter: number;
@@ -92,6 +94,8 @@ export class Screen {
     this.curBlinkCounter = this.curBlinkDuration;
     this.curStart = 14;
     this.curEnd = 15;
+
+    this.isScrollable = true;
 
     this.charBlinkState = true;
     this.charBlinkDuration = 600;
@@ -152,6 +156,16 @@ export class Screen {
     this.ctx = canvas.getContext("2d")!;
 
     containerEl.replaceChildren(canvas);
+  }
+
+  /** Resets screen attributes and parameters to sensible defaults. */
+  public reset() {
+    this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    this.currentAttributes.blink = false;
+    this.setIsScrollable(true);
+    this.showCursor();
+    this.setCursorSize(14, 15);
   }
 
   draw(dt: number) {
@@ -238,7 +252,7 @@ export class Screen {
 
     graphicsCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
 
-    this.cursor.setPosition({ x: 0, y: 0 });
+    this.cursor.moveToStartOfScreen();
   }
 
   getSizeInCharacters(): Size {
@@ -351,12 +365,20 @@ export class Screen {
 
   setCursorPosition(pos: Vector) {
     this.cursor.setPosition(pos);
-    this.scrollInCursor();
+    if (!this.isScrollable) {
+      this.cursor.snapToScreen();
+    } else {
+      this.scrollInCursor();
+    }
   }
 
   setCursorPositionDelta(delta: Vector) {
     this.cursor.moveBy(delta);
-    this.scrollInCursor();
+    if (!this.isScrollable) {
+      this.cursor.snapToScreen();
+    } else {
+      this.scrollInCursor();
+    }
   }
 
   getCharacterAt(pos: Vector) {
@@ -490,8 +512,15 @@ export class Screen {
       if (ch === "\n") {
         this.cursor.moveBy({ x: 0, y: 1 });
         this.cursor.moveToStartOfLine();
+        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
+          this.cursor.moveToEndOfScreen();
+          this.cursor.moveToStartOfLine();
+        }
       } else if (ch === "\b") {
         this.cursor.moveBy({ x: -1, y: 0 });
+        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
+          this.cursor.moveToStartOfScreen();
+        }
         this.replaceCharacterAndAttributesAt(
           " ",
           this.currentAttributes,
@@ -504,6 +533,9 @@ export class Screen {
           this.cursor.getPosition()
         );
         this.cursor.moveBy({ x: 1, y: 0 });
+        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
+          this.cursor.moveToEndOfScreen();
+        }
       } else {
         i += 1;
         if (ch === "\x1B") {
@@ -512,12 +544,18 @@ export class Screen {
         continue;
       }
 
-      this.scrollInCursor();
+      if (this.isScrollable) {
+        this.scrollInCursor();
+      }
       i += 1;
     }
   }
 
   /*================================ SCROLLING ================================*/
+
+  public setIsScrollable(isScrollable: boolean) {
+    this.isScrollable = isScrollable;
+  }
 
   private scrollCanvases(
     src: Rect,

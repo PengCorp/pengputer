@@ -878,7 +878,7 @@ class Tetris implements GameState {
 
     this.board = new Board();
 
-    const screenSize = std.getConsoleSizeInCharacters();
+    const screenSize = std.getConsoleSize();
 
     this.boardScreenRect = {
       x: Math.round((screenSize.w - WIDTH * CELL_WIDTH - BORDER_SIZE_H) / 2),
@@ -917,7 +917,7 @@ class Tetris implements GameState {
     if (
       !getIsPositionInRect(
         screenPos,
-        getRectFromPositionAndSize(zeroVector, std.getConsoleSizeInCharacters())
+        getRectFromPositionAndSize(zeroVector, std.getConsoleSize())
       )
     )
       return null;
@@ -1211,10 +1211,7 @@ class Tetris implements GameState {
     std.clearConsole();
     std.setConsoleCursorPosition({ x: 0, y: 0 });
     std.writeConsole(
-      _.pad(
-        "======== P E N G T R I S ========",
-        std.getConsoleSizeInCharacters().w
-      )
+      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w)
     );
 
     keyboard.resetWereKeysPressed();
@@ -1361,20 +1358,15 @@ class MainMenu implements GameState {
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 0, y: start + 3 });
     std.writeConsole(
-      _.pad(
-        "======== P E N G T R I S ========",
-        std.getConsoleSizeInCharacters().w
-      )
+      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w)
     );
 
     std.setConsoleCursorPosition({ x: 0, y: start + 5 });
     std.writeConsole(
-      _.pad("Press ENTER to begin game", std.getConsoleSizeInCharacters().w)
+      _.pad("Press ENTER to begin game", std.getConsoleSize().w)
     );
     std.setConsoleCursorPosition({ x: 0, y: start + 6 });
-    std.writeConsole(
-      _.pad("Press ESCAPE to quit", std.getConsoleSizeInCharacters().w)
-    );
+    std.writeConsole(_.pad("Press ESCAPE to quit", std.getConsoleSize().w));
   }
 
   update(dt: number) {

@@ -19,7 +19,11 @@ export class Std {
     return this.screen.clear();
   }
 
-  getConsoleSizeInCharacters() {
+  resetConsole() {
+    return this.screen.reset();
+  }
+
+  getConsoleSize() {
     return this.screen.getSizeInCharacters();
   }
 
