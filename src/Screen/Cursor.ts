@@ -19,43 +19,31 @@ export class Cursor {
   }
 
   public setPosition(pos: Vector) {
-    const resolvedPosition = this.wrapOrClampPosition(pos, false);
+    const resolvedPosition = this.wrapPosition(pos);
     this.position = resolvedPosition;
   }
 
-  public moveBy(delta: Vector, shouldWrap: boolean = false) {
-    const screenSize = this.screen.getSize();
-
+  public moveBy(delta: Vector) {
     const newPosition = vectorAdd(this.position, delta);
-    this.position = this.wrapOrClampPosition(newPosition, shouldWrap);
+    this.position = this.wrapPosition(newPosition);
   }
 
   public moveToStartOfLine() {
     this.position.x = 0;
   }
 
-  private wrapOrClampPosition(
-    pos: Vector,
-    shouldWrap: boolean = false
-  ): Vector {
+  private wrapPosition(pos: Vector): Vector {
     const screenSize = this.screen.getSize();
 
-    if (shouldWrap) {
-      const newPos = vectorClone(pos);
-      while (newPos.x < 0) {
-        newPos.x += screenSize.w;
-        newPos.y -= 1;
-      }
-      while (newPos.x >= screenSize.w) {
-        newPos.x -= screenSize.w;
-        newPos.y += 1;
-      }
-      return newPos;
-    } else {
-      return {
-        x: Math.max(0, Math.min(screenSize.w - 1, pos.x)),
-        y: Math.max(0, Math.min(screenSize.h - 1, pos.y)),
-      };
+    const newPos = vectorClone(pos);
+    while (newPos.x < 0) {
+      newPos.x += screenSize.w;
+      newPos.y -= 1;
     }
+    while (newPos.x >= screenSize.w) {
+      newPos.x -= screenSize.w;
+      newPos.y += 1;
+    }
+    return newPos;
   }
 }

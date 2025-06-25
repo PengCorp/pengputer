@@ -874,11 +874,11 @@ class Tetris implements GameState {
   constructor(pc: PC) {
     this.pc = pc;
 
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
     this.board = new Board();
 
-    const screenSize = screen.getSizeInCharacters();
+    const screenSize = std.getConsoleSizeInCharacters();
 
     this.boardScreenRect = {
       x: Math.round((screenSize.w - WIDTH * CELL_WIDTH - BORDER_SIZE_H) / 2),
@@ -906,7 +906,7 @@ class Tetris implements GameState {
   private getScreenPositionFromBoardPosition(
     boardPosition: Vector
   ): Vector | null {
-    const { screen } = this.pc;
+    const { std } = this.pc;
     if (!getIsPositionInRect(boardPosition, BOARD_RECT)) return null;
 
     const screenPos = {
@@ -917,7 +917,7 @@ class Tetris implements GameState {
     if (
       !getIsPositionInRect(
         screenPos,
-        getRectFromPositionAndSize(zeroVector, screen.getSizeInCharacters())
+        getRectFromPositionAndSize(zeroVector, std.getConsoleSizeInCharacters())
       )
     )
       return null;
@@ -930,14 +930,14 @@ class Tetris implements GameState {
     color: PieceColor,
     string: string = "[]"
   ) {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: color.bgColor,
-      fgColor: color.fgColor,
-    });
-    screen.displayString(screenPos, string);
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = color.bgColor;
+    currentAttributes.fgColor = color.fgColor;
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition(screenPos);
+    std.writeConsole(string);
   }
 
   public drawBoardSquare(boardPosition: Vector, color: PieceColor) {
@@ -948,39 +948,43 @@ class Tetris implements GameState {
   }
 
   private drawBorder() {
-    const { screen } = this.pc;
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    });
+    const { std } = this.pc;
+
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
     for (
       let y = this.boardScreenRect.y + TOP_PADDING - 2;
       y < this.boardScreenRect.y + TOP_PADDING;
       y += 1
     ) {
-      screen.displayString(
-        { x: this.boardScreenRect.x - BORDER_SIZE_H, y },
-        "\x1Bsf08\x1Bsb00  " + "  ".repeat(WIDTH) + "  "
-      );
+      std.setConsoleCursorPosition({
+        x: this.boardScreenRect.x - BORDER_SIZE_H,
+        y,
+      });
+      std.writeConsole("\x1Bsf08\x1Bsb00  " + "  ".repeat(WIDTH) + "  ");
     }
     for (
       let y = this.boardScreenRect.y + TOP_PADDING;
       y < this.boardScreenRect.y + HEIGHT * CELL_HEIGHT;
       y += 1
     ) {
-      screen.displayString(
-        { x: this.boardScreenRect.x - BORDER_SIZE_H, y },
+      std.setConsoleCursorPosition({
+        x: this.boardScreenRect.x - BORDER_SIZE_H,
+        y,
+      });
+      std.writeConsole(
         "\x1Bsb07\x1Bsf08<!\x1Bsf08\x1Bsb00" +
           " .".repeat(WIDTH) +
           "\x1Bsb07\x1Bsf08!>"
       );
     }
-    screen.displayString(
-      {
-        x: this.boardScreenRect.x - BORDER_SIZE_H,
-        y: this.boardScreenRect.y + HEIGHT * CELL_HEIGHT,
-      },
+    std.setConsoleCursorPosition({
+      x: this.boardScreenRect.x - BORDER_SIZE_H,
+      y: this.boardScreenRect.y + HEIGHT * CELL_HEIGHT,
+    });
+    std.writeConsole(
       "\x1Bsb07\x1Bsf08<!" + "=".repeat(WIDTH * CELL_WIDTH) + "!>"
     );
   }
@@ -1050,14 +1054,14 @@ class Tetris implements GameState {
   }
 
   private drawNext() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    });
-    screen.displayString(this.nextOrigin, "= NEXT =");
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition(this.nextOrigin);
+    std.writeConsole("= NEXT =");
 
     this.drawStaticPiece(
       this.bag[this.bagIndex],
@@ -1066,14 +1070,14 @@ class Tetris implements GameState {
   }
 
   private drawHeld() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    });
-    screen.displayString(this.holdOrigin, "= HOLD =");
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition(this.holdOrigin);
+    std.writeConsole("= HOLD =");
 
     this.drawStaticPiece(
       this.heldPiece,
@@ -1082,64 +1086,56 @@ class Tetris implements GameState {
   }
 
   private drawLevel() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    });
-    screen.displayString({ x: 14, y: 20 }, "== LEVEL ==");
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
-      fgColor: CGA_PALETTE_DICT[CgaColors.White],
-    });
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 14, y: 20 });
+    std.writeConsole("== LEVEL ==");
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    std.setConsoleAttributes(currentAttributes);
     const levelString =
       this.currentLevel < levels.length - 1
         ? String(this.currentLevel)
         : "* MAX *";
-    screen.displayString({ x: 14, y: 21 }, ` ${_.padStart(levelString, 9)} `);
+    std.setConsoleCursorPosition({ x: 14, y: 21 });
+    std.writeConsole(` ${_.padStart(levelString, 9)} `);
   }
 
   private drawLines() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    });
-    screen.displayString({ x: 14, y: 23 }, "== LINES ==");
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
-      fgColor: CGA_PALETTE_DICT[CgaColors.White],
-    });
-    screen.displayString(
-      { x: 14, y: 24 },
-      ` ${_.padStart(String(this.linesCleared), 9)} `
-    );
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 14, y: 23 });
+    std.writeConsole("== LINES ==");
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 14, y: 24 });
+    std.writeConsole(` ${_.padStart(String(this.linesCleared), 9)} `);
   }
 
   private drawScore() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    });
-    screen.displayString({ x: 14, y: 17 }, "== SCORE ==");
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      bgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
-      fgColor: CGA_PALETTE_DICT[CgaColors.White],
-    });
-    screen.displayString(
-      { x: 14, y: 18 },
-      ` ${_.padStart(String(this.score), 9)} `
-    );
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 14, y: 17 });
+    std.writeConsole("== SCORE ==");
+
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 14, y: 18 });
+    std.writeConsole(` ${_.padStart(String(this.score), 9)} `);
   }
 
   private spawnPiece(key: PieceKey) {
@@ -1206,17 +1202,19 @@ class Tetris implements GameState {
   }
 
   public onEnter() {
-    const { screen, keyboard } = this.pc;
+    const { std, keyboard } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    });
-    screen.clear();
-    screen.displayString(
-      { x: 0, y: 0 },
-      _.pad("======== P E N G T R I S ========", screen.getSizeInCharacters().w)
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.clearConsole();
+    std.setConsoleCursorPosition({ x: 0, y: 0 });
+    std.writeConsole(
+      _.pad(
+        "======== P E N G T R I S ========",
+        std.getConsoleSizeInCharacters().w
+      )
     );
 
     keyboard.resetWereKeysPressed();
@@ -1225,9 +1223,9 @@ class Tetris implements GameState {
   public onLeave() {}
 
   async update(dt: number) {
-    const { screen, keyboard } = this.pc;
+    const { std, keyboard } = this.pc;
 
-    screen.hideCursor();
+    std.setIsConsoleCursorVisible(false);
 
     // input
 
@@ -1314,18 +1312,17 @@ class MainMenu implements GameState {
   }
 
   onEnter() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    });
-    screen.clear();
+    let currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.clearConsole();
 
     let start = 9;
     for (let titleLineIndex = 0; titleLineIndex < 2; titleLineIndex += 1) {
-      screen.setCursorPosition({ x: 12, y: start + titleLineIndex });
+      std.setConsoleCursorPosition({ x: 12, y: start + titleLineIndex });
       for (const char of this.titleGraphic[titleLineIndex]) {
         let string = "";
         switch (char) {
@@ -1354,26 +1351,29 @@ class MainMenu implements GameState {
             string = "\x1bsb0c\x1bsf04[]";
             break;
         }
-        screen.printString(string);
+        std.writeConsole(string);
       }
     }
 
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    });
-    screen.displayString(
-      { x: 0, y: start + 3 },
-      _.pad("======== P E N G T R I S ========", screen.getSizeInCharacters().w)
+    currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 0, y: start + 3 });
+    std.writeConsole(
+      _.pad(
+        "======== P E N G T R I S ========",
+        std.getConsoleSizeInCharacters().w
+      )
     );
-    screen.displayString(
-      { x: 0, y: start + 5 },
-      _.pad("Press ENTER to begin game", screen.getSizeInCharacters().w)
+
+    std.setConsoleCursorPosition({ x: 0, y: start + 5 });
+    std.writeConsole(
+      _.pad("Press ENTER to begin game", std.getConsoleSizeInCharacters().w)
     );
-    screen.displayString(
-      { x: 0, y: start + 6 },
-      _.pad("Press ESCAPE to quit", screen.getSizeInCharacters().w)
+    std.setConsoleCursorPosition({ x: 0, y: start + 6 });
+    std.writeConsole(
+      _.pad("Press ESCAPE to quit", std.getConsoleSizeInCharacters().w)
     );
   }
 
@@ -1402,15 +1402,16 @@ class GameOver implements GameState {
   }
 
   onEnter() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
 
-    screen.updateCurrentAttributes((currentAttributes) => {
-      currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-      currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
-      return currentAttributes;
-    });
-    screen.displayString({ x: 27, y: 13 }, "  ==   GAME  OVER   ==  ");
-    screen.displayString({ x: 27, y: 14 }, "  ==  Press ESCAPE  ==  ");
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    std.setConsoleAttributes(currentAttributes);
+    std.setConsoleCursorPosition({ x: 27, y: 13 });
+    std.writeConsole("  ==   GAME  OVER   ==  ");
+    std.setConsoleCursorPosition({ x: 27, y: 14 });
+    std.writeConsole("  ==  Press ESCAPE  ==  ");
   }
 
   update() {
@@ -1478,19 +1479,14 @@ export class TetrisApp implements Executable {
     this.pc = pc;
   }
 
-  private reset() {
-    this.isQuitting = false;
-    this.currentState = null;
-  }
-
   async run(args: string[]) {
-    const { screen, keyboard } = this.pc;
+    const { std, keyboard } = this.pc;
 
     keyboard.resetWereKeysPressed();
     this.changeState(GameStateKey.MainMenu);
 
     return new Promise<void>((resolve) => {
-      screen.hideCursor();
+      std.setIsConsoleCursorVisible(false);
 
       let lastTime = performance.now();
       const doAnimationFrame: FrameRequestCallback = async () => {
@@ -1500,8 +1496,8 @@ export class TetrisApp implements Executable {
         this.currentState?.update(dt);
 
         if (this.isQuitting) {
-          screen.clear();
-          screen.printString("Thank you for playing!\n");
+          std.clearConsole();
+          std.writeConsole("Thank you for playing!\n");
           resolve();
           return;
         }

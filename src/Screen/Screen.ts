@@ -6,9 +6,9 @@ import {
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
-import { Rect, Size, StringLike } from "../types";
+import { getRectFromPositionAndSize, Rect, Size, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
-import { Vector } from "../Toolbox/Vector";
+import { Vector, zeroVector } from "../Toolbox/Vector";
 import { Cursor } from "./Cursor";
 
 const stringLikeToArray = (s: StringLike) => {
@@ -64,8 +64,6 @@ export class Screen {
   private charBlinkDuration: number;
   private charBlinkCounter: number;
 
-  private shouldScrollOnWrite: boolean;
-
   private screenBuffer: Array<ScreenBufferCharacter>;
 
   constructor() {
@@ -98,8 +96,6 @@ export class Screen {
     this.charBlinkState = true;
     this.charBlinkDuration = 600;
     this.charBlinkCounter = this.charBlinkDuration;
-
-    this.shouldScrollOnWrite = true;
 
     this.screenBuffer = new Array(this.totalCharacters);
     for (let i = 0; i < this.totalCharacters; i += 1) {
@@ -355,15 +351,12 @@ export class Screen {
 
   setCursorPosition(pos: Vector) {
     this.cursor.setPosition(pos);
-  }
-
-  setCursorPositionDelta(delta: Vector, shouldWrap: boolean = false) {
-    this.cursor.moveBy(delta, shouldWrap);
     this.scrollInCursor();
   }
 
-  getCharacter() {
-    return this.getCharacterAt(this.getCursorPosition());
+  setCursorPositionDelta(delta: Vector) {
+    this.cursor.moveBy(delta);
+    this.scrollInCursor();
   }
 
   getCharacterAt(pos: Vector) {
@@ -385,18 +378,6 @@ export class Screen {
       bgColor: attributes.bgColor,
       blink: attributes.blink,
     };
-  }
-
-  updateCurrentAttributes(
-    updateFn: (
-      currentAttributes: ScreenCharacterAttributes
-    ) => ScreenCharacterAttributes
-  ) {
-    this.setCurrentAttributes(
-      updateFn({
-        ...this.getCurrentAttributes(),
-      })
-    );
   }
 
   private replaceCharacterAndAttributesAt(
@@ -501,56 +482,28 @@ export class Screen {
     return index;
   }
 
-  /** Prints a single character to screen using current attributes and moves cursor. */
-  printChar(ch: string) {
-    this.printString([ch]);
-  }
-
-  /** Prints a string of characters to screen using current attributes and moves cursor. */
-  printString(string: StringLike) {
-    this.displayString(this.getCursorPosition(), string, undefined, true);
-  }
-
-  /** Replace string at current cursor position with new string. */
-  replaceString(string: StringLike) {
-    const curPos = this.getCursorPosition();
-    this.printString(string);
-    this.setCursorPosition(curPos);
-  }
-
-  /** Updates screen by writing a string with provided attributes. Optionally updates cursor position. */
-  displayString(
-    pos: Vector,
-    string: StringLike,
-    attributes: ScreenCharacterAttributes | undefined = undefined,
-    shouldUpdateCursor: boolean = false
-  ) {
-    const screenSize = this.getSizeInCharacters();
-    const displayCursor = new Cursor({
-      getSize: () => screenSize,
-    });
-    displayCursor.setPosition(pos);
-
+  /** Updates screen by writing a string with provided attributes. */
+  displayString(string: StringLike) {
     let i = 0;
     while (i < string.length) {
       const ch = string[i];
       if (ch === "\n") {
-        displayCursor.moveBy({ x: 0, y: 1 }, shouldUpdateCursor);
-        displayCursor.moveToStartOfLine();
+        this.cursor.moveBy({ x: 0, y: 1 });
+        this.cursor.moveToStartOfLine();
       } else if (ch === "\b") {
-        displayCursor.moveBy({ x: -1, y: 0 }, shouldUpdateCursor);
+        this.cursor.moveBy({ x: -1, y: 0 });
         this.replaceCharacterAndAttributesAt(
           " ",
-          attributes ?? this.currentAttributes,
-          displayCursor.getPosition()
+          this.currentAttributes,
+          this.cursor.getPosition()
         );
       } else if (getIsPrintable(ch)) {
         this.replaceCharacterAndAttributesAt(
           ch,
-          attributes ?? this.currentAttributes,
-          displayCursor.getPosition()
+          this.currentAttributes,
+          this.cursor.getPosition()
         );
-        displayCursor.moveBy({ x: 1, y: 0 }, shouldUpdateCursor);
+        this.cursor.moveBy({ x: 1, y: 0 });
       } else {
         i += 1;
         if (ch === "\x1B") {
@@ -561,10 +514,6 @@ export class Screen {
 
       this.scrollInCursor();
       i += 1;
-    }
-
-    if (shouldUpdateCursor) {
-      this.setCursorPosition(displayCursor.getPosition());
     }
   }
 
@@ -619,22 +568,6 @@ export class Screen {
     this.attributeCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
   }
 
-  scrollUp(
-    linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.currentAttributes
-  ) {
-    this.scrollUpRect(
-      {
-        x: 0,
-        y: 0,
-        w: this.widthInCharacters,
-        h: this.heightInCharacters,
-      },
-      linesToScroll,
-      attributes
-    );
-  }
-
   scrollUpRect(
     rect: Rect,
     linesToScroll: number,
@@ -678,22 +611,6 @@ export class Screen {
     };
 
     this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
-  }
-
-  scrollDown(
-    linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.currentAttributes
-  ) {
-    this.scrollDownRect(
-      {
-        x: 0,
-        y: 0,
-        w: this.widthInCharacters,
-        h: this.heightInCharacters,
-      },
-      linesToScroll,
-      attributes
-    );
   }
 
   scrollDownRect(
@@ -741,11 +658,15 @@ export class Screen {
     this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
   }
 
+  /** Scrolls screen so that cursor is inside the screen rect. */
   private scrollInCursor() {
     const finalPosition = this.cursor.getPosition();
     const screenSize = this.getSizeInCharacters();
     if (finalPosition.y >= screenSize.h) {
-      this.scrollUp(finalPosition.y - (screenSize.h - 1));
+      this.scrollUpRect(
+        getRectFromPositionAndSize(zeroVector, this.getSizeInCharacters()),
+        finalPosition.y - (screenSize.h - 1)
+      );
       this.cursor.setPosition({
         ...this.cursor.getPosition(),
         y: screenSize.h - 1,

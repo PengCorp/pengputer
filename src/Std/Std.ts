@@ -1,5 +1,9 @@
 import { Keyboard } from "../Keyboard";
 import { Screen } from "../Screen";
+import { ScreenCharacterAttributes } from "../Screen/types";
+import { Vector, zeroVector } from "../Toolbox/Vector";
+import { getRectFromPositionAndSize, Rect, StringLike } from "../types";
+import { readKey, readLine, waitForKeysUp } from "./readLine";
 
 export class Std {
   private screen: Screen;
@@ -11,19 +15,117 @@ export class Std {
     this.keyboard = keyboard;
   }
 
-  clearScreen() {
+  clearConsole() {
     return this.screen.clear();
   }
 
-  getScreenSizeInCharacters() {
+  getConsoleSizeInCharacters() {
     return this.screen.getSizeInCharacters();
   }
 
-  getScreenSizeInPixels() {
+  getConsoleSizeInPixels() {
     return this.screen.getSizeInPixels();
   }
 
-  getScreenCharacterSize() {
+  getConsoleCharacterSize() {
     return this.screen.getCharacterSize();
+  }
+
+  setIsConsoleCursorVisible(isVisible: boolean) {
+    if (isVisible) {
+      this.screen.showCursor();
+    } else {
+      this.screen.hideCursor();
+    }
+  }
+
+  getConsoleCursorSize() {
+    return this.screen.getCursorSize();
+  }
+
+  setConsoleCursorSize(start: number, end: number) {
+    return this.screen.setCursorSize(start, end);
+  }
+
+  getConsoleCursorPosition(): Vector {
+    return this.screen.getCursorPosition();
+  }
+
+  setConsoleCursorPosition(newPosition: Vector) {
+    return this.screen.setCursorPosition(newPosition);
+  }
+
+  moveConsoleCursor(delta: Vector) {
+    return this.screen.setCursorPositionDelta(delta);
+  }
+
+  getConsoleAttributes(): ScreenCharacterAttributes {
+    return this.screen.getCurrentAttributes();
+  }
+
+  setConsoleAttributes(attributes: ScreenCharacterAttributes) {
+    return this.screen.setCurrentAttributes(attributes);
+  }
+
+  writeConsole(string: StringLike) {
+    return this.screen.displayString(string);
+  }
+
+  /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
+  scrollConsole(numberOfLines: number) {
+    if (numberOfLines === 0) {
+      return;
+    }
+
+    if (numberOfLines > 0) {
+      this.screen.scrollUpRect(
+        getRectFromPositionAndSize(
+          zeroVector,
+          this.screen.getSizeInCharacters()
+        ),
+        numberOfLines
+      );
+    } else {
+      this.screen.scrollDownRect(
+        getRectFromPositionAndSize(
+          zeroVector,
+          this.screen.getSizeInCharacters()
+        ),
+        -numberOfLines
+      );
+    }
+  }
+
+  /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
+  scrollConsoleRect(rect: Rect, numberOfLines: number) {
+    if (numberOfLines === 0) {
+      return;
+    }
+
+    if (numberOfLines > 0) {
+      this.screen.scrollUpRect(rect, numberOfLines);
+    } else {
+      this.screen.scrollDownRect(rect, -numberOfLines);
+    }
+  }
+
+  drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {
+    this.screen.drawImageAt(image, dx, dy);
+  }
+
+  readConsoleLine(
+    ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
+      ? R
+      : never
+  ) {
+    return readLine(this.screen, this.keyboard, ...args);
+  }
+
+  readConsoleKey() {
+    return readKey(this.keyboard);
+  }
+
+  waitForKeyboardKeysUp() {
+    return waitForKeysUp(this.keyboard);
   }
 }

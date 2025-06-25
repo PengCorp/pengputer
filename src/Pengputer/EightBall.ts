@@ -102,9 +102,9 @@ export class EightBall implements Executable {
     let userQuery = ['"', args.slice(1).join(" "), '"'].join("");
     const response = this.getResponse(userQuery);
 
-    this.pc.screen.printString(userQuery);
-    this.pc.screen.printString("\n");
-    this.pc.screen.printString(await response);
+    this.pc.std.writeConsole(userQuery);
+    this.pc.std.writeConsole("\n");
+    this.pc.std.writeConsole(await response);
   }
 
   async getResponse(userQuery: string) {
@@ -127,7 +127,7 @@ export class EightBall implements Executable {
       "  -e - run 8ball in Magic 8 Ball emulation mode\n",
     ];
     for (const line of helpText) {
-      this.pc.screen.printString(line);
+      this.pc.std.writeConsole(line);
     }
   }
 

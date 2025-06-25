@@ -8,7 +8,7 @@ export class PrintArgs implements Executable {
   }
   async run(args: string[]) {
     for (const arg of args) {
-      this.pc.screen.printString(`"${arg}"\n`);
+      this.pc.std.writeConsole(`"${arg}"\n`);
     }
   }
 }

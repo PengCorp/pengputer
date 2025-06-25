@@ -7,6 +7,6 @@ export class HelloWorld implements Executable {
     this.pc = pc;
   }
   async run(args: string[]) {
-    this.pc.screen.printString("Hello, world!\n");
+    this.pc.std.writeConsole("Hello, world!\n");
   }
 }

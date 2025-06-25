@@ -1,13 +1,7 @@
 import { loadFont9x16 } from "../Screen/font9x16";
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import {
-  loadImageBitmapFromUrl,
-  readKey,
-  readLine,
-  waitFor,
-  waitForKeysUp,
-} from "../Functions";
+import { loadImageBitmapFromUrl, waitFor } from "../Functions";
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
 import { HelloWorld } from "./HelloWorld";
@@ -30,6 +24,7 @@ import { argparse } from "../Functions/argparse";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 import { Ped } from "./Ped";
+import { Std } from "../Std";
 
 const PATH_SEPARATOR = "/";
 
@@ -51,13 +46,14 @@ class PengOS {
   private takenPrograms: Array<TakenProgram>;
 
   constructor(screen: Screen, keyboard: Keyboard) {
+    const std = new Std(screen, keyboard);
     this.pc = {
-      screen,
       keyboard,
       currentDrive: "C",
       currentPath: [],
       prompt: "%D%P",
       fileSystem: new FileSystem(),
+      std,
     };
     this.takenPrograms = [];
 
@@ -65,8 +61,6 @@ class PengOS {
   }
 
   async startup() {
-    const { screen } = this.pc;
-
     this.pc.currentDrive = "C";
     this.pc.currentPath = [];
     this.pc.prompt = "%D%P>";
@@ -179,81 +173,79 @@ class PengOS {
   }
 
   private async runStartupAnimation() {
-    const { screen, keyboard } = this.pc;
-    screen.clear();
+    const { std } = this.pc;
+    std.clearConsole();
     if (!localStorage.getItem("hasStartedUp")) {
       window.startupNoise.volume = 0.7;
       window.startupNoise.play();
-      screen.hideCursor();
-      screen.drawImageAt(await loadImageBitmapFromUrl(energyStar), -135, 0);
+      std.setIsConsoleCursorVisible(false);
+      std.drawConsoleImage(await loadImageBitmapFromUrl(energyStar), -135, 0);
 
-      screen.printString(
-        "    Penger Modular BIOS v5.22, An Energy Star Ally\n"
-      );
-      screen.printString("    Copyright (C) 1982-85, PengCorp\n");
-      screen.printString("\n");
-      screen.drawImageAt(await loadImageBitmapFromUrl(biosPenger), 0, 0);
-      const curPos = screen.getCursorPosition();
-      screen.setCursorPosition({ x: 0, y: 24 });
-      screen.printString("05/02/1984-ALADDIN5-P2B");
-      screen.setCursorPosition(curPos);
+      std.writeConsole("    Penger Modular BIOS v5.22, An Energy Star Ally\n");
+      std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
+      std.writeConsole("\n");
+      std.drawConsoleImage(await loadImageBitmapFromUrl(biosPenger), 0, 0);
+      const curPos = std.getConsoleCursorPosition();
+      std.setConsoleCursorPosition({ x: 0, y: 24 });
+      std.writeConsole("05/02/1984-ALADDIN5-P2B");
+      std.setConsoleCursorPosition(curPos);
       await waitFor(1000);
-      screen.printString("AMD-K6(rm)-III/450 Processor\n");
-      screen.printString("Memory Test :        ");
+      std.writeConsole("AMD-K6(rm)-III/450 Processor\n");
+      std.writeConsole("Memory Test :        ");
       await waitFor(500);
       for (let i = 0; i <= 262144; i += 1024) {
-        screen.setCursorPositionDelta({ x: -7, y: 0 }, false);
-        screen.printString(`${padStart(String(i), 6, " ")}K`);
+        std.moveConsoleCursor({ x: -7, y: 0 });
+        std.writeConsole(`${padStart(String(i), 6, " ")}K`);
         await waitFor(7);
       }
       await waitFor(500);
-      screen.printString(` OK\n`);
-      screen.printString("\n");
+      std.writeConsole(` OK\n`);
+      std.writeConsole("\n");
       await waitFor(750);
-      screen.printString("Initialize Plug and Play Cards...\n");
+      std.writeConsole("Initialize Plug and Play Cards...\n");
       await waitFor(1000);
-      screen.printString("PNP Init Completed");
+      std.writeConsole("PNP Init Completed");
       await waitFor(2500);
-      screen.clear();
-      screen.printString(
+      std.clearConsole();
+      std.writeConsole(
         "╔═══════════════════════════════════════════════════════════════════════════╗\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "╠═════════════════════════════════════╤═════════════════════════════════════╣\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n"
       ); // 1.44 MB, 3½"
-      screen.printString(
+      std.writeConsole(
         "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n"
       );
-      screen.printString(
+      std.writeConsole(
         "╚═════════════════════════════════════╧═════════════════════════════════════╝\n"
       );
       await waitFor(1500);
-      screen.printString("Starting PengOS...\n\n");
+      std.writeConsole("Starting PengOS...\n\n");
       await waitFor(1000);
       localStorage.setItem("hasStartedUp", "yes");
     }
 
-    screen.printString("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
+    std.writeConsole("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
 
-    screen.showCursor();
+    std.setIsConsoleCursorVisible(true);
   }
 
   formatPath(path: string[]): string {
@@ -263,35 +255,36 @@ class PengOS {
   }
 
   printPrompt() {
-    const { screen, prompt, currentDrive, currentPath } = this.pc;
-    screen.showCursor();
-    screen.setCurrentAttributes({
-      ...screen.getCurrentAttributes(),
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-      bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-    });
+    const { std, prompt, currentDrive, currentPath } = this.pc;
+    std.setIsConsoleCursorVisible(true);
+
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    std.setConsoleAttributes(currentAttributes);
+
     let pathString = this.formatPath(currentPath);
     const promptString = prompt
       .replace("%D", `${currentDrive}:`)
       .replace("%P", pathString);
-    screen.printString(
+    std.writeConsole(
       `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`
     );
     this.suppressNextPromptNewline = false;
   }
 
   private commandPrompt(args: string[]) {
-    const { screen } = this.pc;
+    const { std } = this.pc;
     if (args.length === 0) {
-      screen.printString(`${this.pc.prompt}\n`);
+      std.writeConsole(`${this.pc.prompt}\n`);
       return;
     }
     this.pc.prompt = args[0];
   }
 
   private commandLook() {
-    const { fileSystem, currentPath, screen } = this.pc;
-    screen.printString(
+    const { fileSystem, currentPath, std } = this.pc;
+    std.writeConsole(
       `Currently in ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n\n`
     );
     const entry = fileSystem.getAtPath(currentPath);
@@ -325,12 +318,12 @@ class PengOS {
         });
         for (const directoryEntry of items) {
           const isDir = directoryEntry.type === FileSystemObjectType.Directory;
-          screen.printString(
+          std.writeConsole(
             `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`
           );
         }
       } else {
-        screen.printString(`Directory is empty\n`);
+        std.writeConsole(`Directory is empty\n`);
       }
     }
   }
@@ -338,10 +331,10 @@ class PengOS {
   private commandGo(args: string[]) {
     const [dirName] = args;
 
-    const { fileSystem, currentPath, screen } = this.pc;
+    const { fileSystem, currentPath, std } = this.pc;
 
     if (!dirName) {
-      screen.printString("Must provide a new path\n");
+      std.writeConsole("Must provide a new path\n");
       return;
     }
 
@@ -350,53 +343,53 @@ class PengOS {
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
         this.pc.currentPath = newPath;
-        screen.printString(
+        std.writeConsole(
           `Now in ${this.pc.currentDrive}:${this.formatPath(
             this.pc.currentPath
           )}\n`
         );
       } else {
-        screen.printString("Not a directory\n");
+        std.writeConsole("Not a directory\n");
       }
     } else {
-      screen.printString("Does not exist\n");
+      std.writeConsole("Does not exist\n");
     }
   }
 
   private commandUp() {
-    const { currentPath, screen } = this.pc;
+    const { currentPath, std } = this.pc;
     if (currentPath.length > 0) {
       currentPath.splice(currentPath.length - 1, 1);
-      screen.printString(
+      std.writeConsole(
         `Went up to ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n`
       );
     } else {
-      screen.printString("Already at the root of the drive.\n");
+      std.writeConsole("Already at the root of the drive.\n");
     }
   }
 
   private commandMakedir(args: string[]) {
-    const { currentPath, fileSystem, screen } = this.pc;
+    const { currentPath, fileSystem, std } = this.pc;
     const [newDirName] = args;
     if (!newDirName) {
-      screen.printString("Must provide a name\n");
+      std.writeConsole("Must provide a name\n");
     }
 
     const currentDirEntry = fileSystem.getAtPath(currentPath);
     if (currentDirEntry?.type === FileSystemObjectType.Directory) {
       const currentDir = currentDirEntry.data;
       currentDir.mkdir(newDirName);
-      screen.printString("Directory created\n");
+      std.writeConsole("Directory created\n");
     } else {
-      screen.printString("Current path is not a directory\n");
+      std.writeConsole("Current path is not a directory\n");
     }
   }
 
   private async commandRun(args: string[]) {
-    const { screen, keyboard, fileSystem, currentPath } = this.pc;
+    const { std, fileSystem, currentPath } = this.pc;
     const [fileName] = args;
     if (!fileName) {
-      screen.printString("Must provide a file name\n");
+      std.writeConsole("Must provide a file name\n");
       return;
     }
 
@@ -408,64 +401,65 @@ class PengOS {
         fileEntry.type === FileSystemObjectType.Link &&
         fileEntry.openType === "run"
       ) {
-        screen.printString("Running...\n");
-        await waitForKeysUp(keyboard);
+        std.writeConsole("Running...\n");
+        await std.waitForKeyboardKeysUp();
         fileEntry.data.open();
       } else {
-        screen.printString(`Not executable\n`);
+        std.writeConsole(`Not executable\n`);
       }
     } else {
-      screen.printString(`Does not exist\n`);
+      std.writeConsole(`Does not exist\n`);
     }
   }
 
   private async commandOpen(args: string[]) {
-    const { screen, keyboard, fileSystem, currentPath } = this.pc;
+    const { std, fileSystem, currentPath } = this.pc;
     const [fileName] = args;
     if (!fileName) {
-      screen.printString("Must provide a file name\n");
+      std.writeConsole("Must provide a file name\n");
       return;
     }
 
     const fileEntry = fileSystem.getAtPath([...currentPath, fileName]);
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
-        screen.printString(`${fileEntry.data.getText()}`);
+        std.writeConsole(`${fileEntry.data.getText()}`);
       } else if (fileEntry.type === FileSystemObjectType.Audio) {
-        screen.printString(`Playing ${fileEntry.name}...\n`);
-        screen.printString(`Press any key to exit.`);
+        std.writeConsole(`Playing ${fileEntry.name}...\n`);
+        std.writeConsole(`Press any key to exit.`);
         fileEntry.data.play();
-        await readKey(keyboard);
+        await std.readConsoleKey();
         fileEntry.data.stop();
-        screen.printString(`\n`);
+        std.writeConsole(`\n`);
       } else if (fileEntry.type === FileSystemObjectType.Image) {
-        screen.clear();
+        std.clearConsole();
         const image = await fileEntry.data.load();
         if (image) {
-          screen.drawImageAt(image, 0, 0);
-          screen.setCursorPositionDelta({
+          std.drawConsoleImage(image, 0, 0);
+          const screenSize = std.getConsoleSizeInCharacters();
+          std.moveConsoleCursor({
             x: 0,
-            y: Math.ceil(image.height / screen.getCharacterSize().h),
+            y: Math.ceil(image.height / screenSize.h),
           });
         }
       } else if (
         fileEntry.type === FileSystemObjectType.Link &&
         fileEntry.openType === "open"
       ) {
-        screen.printString("Opening...\n");
-        await waitForKeysUp(keyboard);
+        std.writeConsole("Opening...\n");
+        await std.waitForKeyboardKeysUp();
         fileEntry.data.open();
       } else {
-        screen.printString(`Not readable\n`);
+        std.writeConsole(`Not readable\n`);
       }
     } else {
-      screen.printString(`Does not exist\n`);
+      std.writeConsole(`Does not exist\n`);
     }
   }
 
   private commandClear() {
-    const { screen } = this.pc;
-    screen.clear();
+    const { std } = this.pc;
+    std.clearConsole();
     this.suppressNextPromptNewline = true;
   }
 
@@ -475,25 +469,25 @@ class PengOS {
   }
 
   private commandTake(args: string[]) {
-    const { screen, fileSystem } = this.pc;
+    const { std, fileSystem } = this.pc;
     const [argsName] = args;
     if (!argsName) {
-      screen.printString(`Must provide name\n`);
+      std.writeConsole(`Must provide name\n`);
       return;
     }
     const strippedNameMatch = argsName.match(/^[^.]+/);
     if (!strippedNameMatch) {
-      screen.printString(`Invalid name provided\n`);
+      std.writeConsole(`Invalid name provided\n`);
       return;
     }
     const path = [...this.pc.currentPath, argsName];
     const target = fileSystem.getAtPath(path);
     if (!target) {
-      screen.printString("Program not found\n");
+      std.writeConsole("Program not found\n");
       return;
     }
     if (target.type !== FileSystemObjectType.Executable) {
-      screen.printString("Not executable\n");
+      std.writeConsole("Not executable\n");
       return;
     }
     const strippedName = strippedNameMatch[0];
@@ -504,7 +498,7 @@ class PengOS {
       candidateName = `${strippedName}~${dedupIndex}`;
     }
 
-    screen.printString(
+    std.writeConsole(
       `Added "${argsName}" as "${candidateName}" to command list\n`
     );
     this.takenPrograms.push({
@@ -514,62 +508,60 @@ class PengOS {
   }
 
   private commandDrop(args: string[]) {
-    const { screen } = this.pc;
+    const { std } = this.pc;
     const [name] = args;
     if (!name) {
-      screen.printString("Must provide a name\n");
+      std.writeConsole("Must provide a name\n");
       return;
     }
     const filteredPrograms = this.takenPrograms.filter((p) => p.name !== name);
     if (filteredPrograms.length < this.takenPrograms.length) {
-      screen.printString(`"${name}" dropped from command list\n`);
+      std.writeConsole(`"${name}" dropped from command list\n`);
     } else {
-      screen.printString(`"${name} not found in the taken command list\n`);
+      std.writeConsole(`"${name} not found in the taken command list\n`);
     }
   }
 
   private commandHistory(args: string[], previousEntries: string[]) {
-    const { screen } = this.pc;
-    screen.printString(`Last run commands:\n`);
+    const { std } = this.pc;
+    std.writeConsole(`Last run commands:\n`);
     for (const cmd of previousEntries) {
-      screen.printString(`${cmd}\n`);
+      std.writeConsole(`${cmd}\n`);
     }
   }
 
   private commandHelp() {
-    const { screen } = this.pc;
-    screen.printString("\x1Bbshelp      \x1BbrList available commands\n");
-    screen.printString("\x1Bbshistory   \x1BbrView previously run commands\n");
-    screen.printString(
+    const { std } = this.pc;
+    std.writeConsole("\x1Bbshelp      \x1BbrList available commands\n");
+    std.writeConsole("\x1Bbshistory   \x1BbrView previously run commands\n");
+    std.writeConsole(
       "\x1Bbslook      \x1BbrDisplay contents of current directory\n"
     );
-    screen.printString("\x1Bbsgo        \x1BbrNavigate directories\n");
-    screen.printString("\x1Bbsup        \x1BbrNavigate to parent directory\n");
-    screen.printString("\x1Bbsmakedir   \x1BbrCreate a directory\n");
-    screen.printString("\x1Bbsrun       \x1BbrExecute program\n");
-    screen.printString("\x1Bbsopen      \x1BbrDisplay file\n");
-    screen.printString("\x1Bbsclear     \x1BbrClear screen\n");
-    screen.printString(
-      "\x1Bbsprompt    \x1BbrChange your command prompt text\n"
-    );
-    screen.printString(
+    std.writeConsole("\x1Bbsgo        \x1BbrNavigate directories\n");
+    std.writeConsole("\x1Bbsup        \x1BbrNavigate to parent directory\n");
+    std.writeConsole("\x1Bbsmakedir   \x1BbrCreate a directory\n");
+    std.writeConsole("\x1Bbsrun       \x1BbrExecute program\n");
+    std.writeConsole("\x1Bbsopen      \x1BbrDisplay file\n");
+    std.writeConsole("\x1Bbsclear     \x1BbrClear screen\n");
+    std.writeConsole("\x1Bbsprompt    \x1BbrChange your command prompt text\n");
+    std.writeConsole(
       "\x1Bbstake      \x1BbrAdd a program to the command list\n"
     );
-    screen.printString(
+    std.writeConsole(
       "\x1Bbsdrop      \x1BbrRemove a program from the command list\n"
     );
-    screen.printString("\x1Bbsreboot    \x1BbrRestart the system\n");
+    std.writeConsole("\x1Bbsreboot    \x1BbrRestart the system\n");
 
     if (this.takenPrograms.length > 0) {
-      screen.printString("\nAvailable programs:\n");
+      std.writeConsole("\nAvailable programs:\n");
       for (const takenProgram of this.takenPrograms) {
-        screen.printString(`${takenProgram.name}\n`);
+        std.writeConsole(`${takenProgram.name}\n`);
       }
     }
   }
 
   async mainLoop() {
-    const { screen, keyboard, fileSystem } = this.pc;
+    const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
 
@@ -623,7 +615,7 @@ class PengOS {
       ];
 
       const commandString =
-        (await readLine(screen, keyboard, {
+        (await std.readConsoleLine({
           autoCompleteStrings,
           previousEntries,
         })) ?? "";
@@ -648,11 +640,11 @@ class PengOS {
           if (app && app.type === FileSystemObjectType.Executable) {
             app.createInstance().run(args);
           } else {
-            screen.printString(`Executable not found. Consider dropping`);
+            std.writeConsole(`Executable not found. Consider dropping`);
           }
         } else {
-          screen.printString("Unknown command: " + commandName + "\n");
-          screen.printString('Try "help" or "h" to see available commands\n');
+          std.writeConsole("Unknown command: " + commandName + "\n");
+          std.writeConsole('Try "help" or "h" to see available commands\n');
         }
       }
     }

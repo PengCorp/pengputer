@@ -1,6 +1,5 @@
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
-import { readLine } from "../Functions";
 import { getIsPrintable } from "../Screen/getIsPrintable";
 import {
   Vector,
@@ -175,10 +174,10 @@ export class Ped implements Executable {
   }
 
   private async redrawScreen() {
-    const { screen } = this.pc;
+    const { std } = this.pc;
     const { textBuffer } = this;
 
-    screen.clear();
+    std.clearConsole();
 
     let windowY = 0;
     let viewY = this.viewRect.y;
@@ -187,21 +186,21 @@ export class Ped implements Executable {
       viewY < this.viewRect.y + this.viewRect.h &&
       viewY < textBuffer.rows.length
     ) {
-      screen.displayString(
-        vectorAdd(this.windowRect, { x: 0, y: windowY }),
+      std.setConsoleCursorPosition(
+        vectorAdd(this.windowRect, { x: 0, y: windowY })
+      );
+      std.writeConsole(
         textBuffer.rows[viewY].slice(
           this.viewRect.x,
           this.viewRect.x + this.viewRect.w
-        ),
-        undefined,
-        false
+        )
       );
 
       windowY += 1;
       viewY += 1;
     }
 
-    this.pc.screen.setCursorPosition(
+    this.pc.std.setConsoleCursorPosition(
       vectorAdd(
         this.windowRect,
         vectorSubtract(this.textBuffer.getCursorPosition(), this.viewRect)
@@ -210,14 +209,12 @@ export class Ped implements Executable {
   }
 
   async run(args: string[]) {
-    this.pc.screen.updateCurrentAttributes((cur) => ({
-      ...cur,
-      bgColor: CGA_PALETTE_DICT[CgaColors.Blue],
-      fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-    }));
-    this.pc.screen.clear();
+    const { std, keyboard } = this.pc;
+    const currentAttributes = std.getConsoleAttributes();
+    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Blue];
+    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    std.clearConsole();
 
-    const { screen, keyboard } = this.pc;
     const { textBuffer } = this;
 
     const update = () => {

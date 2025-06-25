@@ -48,14 +48,11 @@ export const readLine = (
             const autoCompleteString = matchingAutoCompleteStrings[0];
             let prefix = autoCompleteString.slice(0, token.length);
             if (prefix === token) {
-              screen.setCursorPositionDelta(
-                {
-                  x: -token.length,
-                  y: 0,
-                },
-                true
-              );
-              screen.printString(autoCompleteString);
+              screen.setCursorPositionDelta({
+                x: -token.length,
+                y: 0,
+              });
+              screen.displayString(autoCompleteString);
               result =
                 result.slice(0, result.length - token.length) +
                 autoCompleteString;
@@ -63,19 +60,16 @@ export const readLine = (
             }
           }
         } else if (key === "Home") {
-          screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
+          screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
           curIndex = 0;
         } else if (key === "End") {
-          screen.setCursorPositionDelta(
-            {
-              x: result.length - curIndex,
-              y: 0,
-            },
-            true
-          );
+          screen.setCursorPositionDelta({
+            x: result.length - curIndex,
+            y: 0,
+          });
           curIndex = result.length;
         } else if (char === "\n") {
-          screen.printChar(char);
+          screen.displayString([char]);
           resolve(result);
           return;
         } else if (char === "\b") {
@@ -85,12 +79,9 @@ export const readLine = (
             const stringEnd = result.slice(curIndex);
             result = stringStart + stringEnd;
             curIndex = curIndex - 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 }, true);
-            screen.printString(stringEnd + " ");
-            screen.setCursorPositionDelta(
-              { x: -(stringEnd.length + 1), y: 0 },
-              true
-            );
+            screen.setCursorPositionDelta({ x: -1, y: 0 });
+            screen.displayString(stringEnd + " ");
+            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
           }
         } else if (key === "Delete") {
           if (curIndex < result.length) {
@@ -98,21 +89,18 @@ export const readLine = (
             const stringStart = result.slice(0, curIndex);
             const stringEnd = result.slice(curIndex + 1);
             result = stringStart + stringEnd;
-            screen.printString(stringEnd + " ");
-            screen.setCursorPositionDelta(
-              { x: -(stringEnd.length + 1), y: 0 },
-              true
-            );
+            screen.displayString(stringEnd + " ");
+            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
           }
         } else if (key === "ArrowLeft") {
           if (curIndex > 0) {
             curIndex -= 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 }, true);
+            screen.setCursorPositionDelta({ x: -1, y: 0 });
           }
         } else if (key === "ArrowRight") {
           if (curIndex < result.length) {
             curIndex += 1;
-            screen.setCursorPositionDelta({ x: 1, y: 0 }, true);
+            screen.setCursorPositionDelta({ x: 1, y: 0 });
           }
         } else if (key === "ArrowUp") {
           if (previousEntries.length > 0) {
@@ -127,10 +115,10 @@ export const readLine = (
               replaceWith = previousEntries[previousEntryIndex];
             }
             if (replaceWith) {
-              screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
-              screen.printString(" ".repeat(result.length));
-              screen.setCursorPositionDelta({ x: -result.length, y: 0 }, true);
-              screen.printString(replaceWith);
+              screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
+              screen.displayString(" ".repeat(result.length));
+              screen.setCursorPositionDelta({ x: -result.length, y: 0 });
+              screen.displayString(replaceWith);
               result = replaceWith;
               curIndex = replaceWith.length;
             }
@@ -147,18 +135,18 @@ export const readLine = (
             } else {
               replaceWith = savedResult;
             }
-            screen.setCursorPositionDelta({ x: -curIndex, y: 0 }, true);
-            screen.printString(" ".repeat(result.length));
-            screen.setCursorPositionDelta({ x: -result.length, y: 0 }, true);
-            screen.printString(replaceWith);
+            screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
+            screen.displayString(" ".repeat(result.length));
+            screen.setCursorPositionDelta({ x: -result.length, y: 0 });
+            screen.displayString(replaceWith);
             result = replaceWith;
             curIndex = replaceWith.length;
           }
         } else if (char) {
           isUsingPreviousEntry = false;
           const rest = char + result.slice(curIndex);
-          screen.printString(rest);
-          screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 }, true);
+          screen.displayString(rest);
+          screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 });
           result = result.slice(0, curIndex) + rest;
           curIndex += 1;
         }
