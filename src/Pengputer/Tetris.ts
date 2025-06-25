@@ -682,7 +682,7 @@ class FallingPiece {
     });
   }
 
-  public setPushdown(isPushdown: boolean) {
+  public setIsPushdown(isPushdown: boolean) {
     if (!isPushdown && !this.getIsResting()) {
       this.pushdownLength = 0;
     }
@@ -1172,6 +1172,9 @@ class Tetris implements GameState {
     if (!this.hasHeld) {
       let currentFallingPiece =
         this.fallingPiece?.getPiece().getDescriptor().key ?? null;
+
+      if (!currentFallingPiece) return;
+
       if (this.heldPiece) {
         let currentHeldPiece = this.heldPiece;
         this.heldPiece = currentFallingPiece;
@@ -1247,7 +1250,7 @@ class Tetris implements GameState {
       return;
     }
     if (this.fallingPiece) {
-      this.fallingPiece.setPushdown(keyboard.getIsKeyPressed("ArrowDown"));
+      this.fallingPiece.setIsPushdown(keyboard.getIsKeyPressed("ArrowDown"));
       if (keyboard.getIsKeyPressed("ArrowLeft")) {
         this.fallingPiece.setDirection({ x: -1, y: 0 });
       } else if (keyboard.getIsKeyPressed("ArrowRight")) {
