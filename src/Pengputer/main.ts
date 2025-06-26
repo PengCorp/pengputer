@@ -83,7 +83,7 @@ class PengOS {
     const licenseTxt = new TextFile();
     licenseTxt.replace(
       "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
-        "BY VIEWING THIS FILE YOU ARE COMMITING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
+        "BY VIEWING THIS FILE YOU ARE COMMITTING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
         "XII OF THE PENGER CRIMINAL JUSTICE CODE"
     );
     pengOSDir.addItem({
@@ -368,7 +368,7 @@ class PengOS {
     }
   }
 
-  private commandMakedir(args: string[]) {
+  private commandMakeDir(args: string[]) {
     const { currentPath, fileSystem, std } = this.pc;
     const [newDirName] = args;
     if (!newDirName) {
@@ -574,7 +574,7 @@ class PengOS {
       look: this.commandLook.bind(this),
       go: this.commandGo.bind(this),
       up: this.commandUp.bind(this),
-      makedir: this.commandMakedir.bind(this),
+      makedir: this.commandMakeDir.bind(this),
       run: this.commandRun.bind(this),
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),

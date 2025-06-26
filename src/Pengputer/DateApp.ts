@@ -6,6 +6,7 @@ export class DateApp implements Executable {
   constructor(pc: PC) {
     this.pc = pc;
   }
+
   async run(args: string[]) {
     this.pc.std.writeConsole(`${new Date()}\n`);
   }
