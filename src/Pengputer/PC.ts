@@ -4,8 +4,7 @@ import { Std } from "../Std/Std";
 import { FileSystem } from "./FileSystem";
 
 export interface PC {
-  // screen: Screen;
-  keyboard: Keyboard;
+  // keyboard: Keyboard;
   currentDrive: string;
   currentPath: string[];
   prompt: string;

@@ -209,7 +209,7 @@ export class Ped implements Executable {
   }
 
   async run(args: string[]) {
-    const { std, keyboard } = this.pc;
+    const { std } = this.pc;
     const currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Blue];
     currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
@@ -224,7 +224,7 @@ export class Ped implements Executable {
 
     return new Promise<void>((resolve) => {
       update();
-      const unsubKeyboard = keyboard.addTypeListener((char, keyCode, ev) => {
+      const unsubKeyboard = std.addKeyTypeListener((char, keyCode, ev) => {
         if (keyCode === "ArrowLeft") {
           textBuffer.moveCursor({ x: -1, y: 0 });
           update();

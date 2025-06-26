@@ -1,4 +1,5 @@
 import { Keyboard } from "../Keyboard";
+import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { Screen } from "../Screen";
 import { ScreenCharacterAttributes } from "../Screen/types";
 import { Vector, zeroVector } from "../Toolbox/Vector";
@@ -14,6 +15,8 @@ export class Std {
     this.screen = screen;
     this.keyboard = keyboard;
   }
+
+  // Screen
 
   clearConsole() {
     return this.screen.clear();
@@ -117,6 +120,8 @@ export class Std {
     this.screen.drawImageAt(image, dx, dy);
   }
 
+  // Keyboard
+
   readConsoleLine(
     ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
       ? R
@@ -131,5 +136,29 @@ export class Std {
 
   waitForKeyboardKeysUp() {
     return waitForKeysUp(this.keyboard);
+  }
+
+  getIsKeyPressed(keyCode: string) {
+    return this.keyboard.getIsKeyPressed(keyCode);
+  }
+
+  getLastKeyPressedOf(keyCodes: string[]) {
+    return this.keyboard.getLastPressedOf(keyCodes);
+  }
+
+  addKeyTypeListener(callback: TypeListener) {
+    return this.keyboard.addTypeListener(callback);
+  }
+
+  addAllKeysUpListener(callback: VoidListener) {
+    return this.keyboard.addAllKeysUpListener(callback);
+  }
+
+  getWasKeyPressed(keyCode: string) {
+    return this.keyboard.getWasKeyPressed(keyCode);
+  }
+
+  resetKeyPressedHistory() {
+    return this.keyboard.resetWereKeysPressed();
   }
 }

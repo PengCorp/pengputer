@@ -63,8 +63,8 @@ export class Keyboard {
   }
 
   /** Get whether any key was pressed since last wasPressed reset. */
-  public getWasKeyPressed(): Set<string> {
-    return this.werePressed;
+  public getWasKeyPressed(keyCode: string): boolean {
+    return this.werePressed.has(keyCode);
   }
 
   /** Reset wasPressed state. */
