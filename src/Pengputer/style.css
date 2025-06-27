@@ -70,13 +70,15 @@ header a {
   height: auto;
 }
 
-#screen {
-  height: 70vh;
-  width: calc((4 / 3) * 70vh);
-
+#screen-box {
   border: 10px inset #999;
   padding: 24px;
   background-color: black;
+}
+
+#screen {
+  height: calc(70vh - 68px);
+  width: calc((4 / 3) * 70vh - 68px);
 }
 
 #screen-scanlines::before {

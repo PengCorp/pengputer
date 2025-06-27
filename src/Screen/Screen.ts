@@ -6,9 +6,14 @@ import {
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
-import { getRectFromPositionAndSize, Rect, Size, StringLike } from "../types";
+import { getRectFromVectorAndSize, Rect, Size, StringLike } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
-import { Vector, zeroVector } from "../Toolbox/Vector";
+import {
+  Vector,
+  vectorClamp,
+  vectorDivideComponents,
+  zeroVector,
+} from "../Toolbox/Vector";
 import { Cursor } from "./Cursor";
 
 const stringLikeToArray = (s: StringLike) => {
@@ -18,6 +23,11 @@ const stringLikeToArray = (s: StringLike) => {
 
   return s.split("");
 };
+
+export type ClickListener = (clickEvent: {
+  position: Vector;
+  mouseButton: number;
+}) => void;
 
 export class Screen {
   private widthInCharacters: number;
@@ -146,6 +156,9 @@ export class Screen {
   }
 
   initCanvas(containerEl: HTMLElement) {
+    const canvasBox = document.createElement("div");
+    canvasBox.setAttribute("id", "screen-box");
+
     const canvas = document.createElement("canvas");
     this.canvas = canvas;
 
@@ -155,7 +168,8 @@ export class Screen {
 
     this.ctx = canvas.getContext("2d")!;
 
-    containerEl.replaceChildren(canvas);
+    canvasBox.appendChild(canvas);
+    containerEl.replaceChildren(canvasBox);
   }
 
   /** Resets screen attributes and parameters to sensible defaults. */
@@ -702,7 +716,7 @@ export class Screen {
     const screenSize = this.getSizeInCharacters();
     if (finalPosition.y >= screenSize.h) {
       this.scrollUpRect(
-        getRectFromPositionAndSize(zeroVector, this.getSizeInCharacters()),
+        getRectFromVectorAndSize(zeroVector, this.getSizeInCharacters()),
         finalPosition.y - (screenSize.h - 1)
       );
       this.cursor.setPosition({
@@ -723,5 +737,41 @@ export class Screen {
     }
 
     this.graphicsCtx.drawImage(image, dx, dy);
+  }
+
+  /*=============================== MOUSE ====================================*/
+
+  private getMousePosition(event: MouseEvent): Vector {
+    const canvas = this.canvas;
+
+    const rect = canvas.getBoundingClientRect();
+
+    const cssX = event.clientX - rect.left;
+    const cssY = event.clientY - rect.top;
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = cssX * scaleX;
+    const y = cssY * scaleY;
+
+    return { x: Math.floor(x), y: Math.floor(y) };
+  }
+
+  addMouseClickListener(listener: ClickListener) {
+    const fn = (ev: MouseEvent) => {
+      const charSize = this.getCharacterSize();
+      listener({
+        position: vectorDivideComponents(this.getMousePosition(ev), {
+          x: charSize.w,
+          y: charSize.h,
+        }),
+        mouseButton: ev.button,
+      });
+    };
+    this.canvas.addEventListener("mousedown", fn);
+    return () => {
+      this.canvas.removeEventListener("mousedown", fn);
+    };
   }
 }

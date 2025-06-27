@@ -23,7 +23,6 @@ import { ImageFile, TextFile, AudioFile, LinkFile } from "./fileTypes";
 import { argparse } from "../Functions/argparse";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
-import { Ped } from "./Ped";
 import { Std } from "../Std";
 
 const PATH_SEPARATOR = "/";
@@ -48,7 +47,6 @@ class PengOS {
   constructor(screen: Screen, keyboard: Keyboard) {
     const std = new Std(screen, keyboard);
     this.pc = {
-      keyboard,
       currentDrive: "C",
       currentPath: [],
       prompt: "%D%P",
@@ -194,7 +192,7 @@ class PengOS {
       std.writeConsole("Memory Test :        ");
       await waitFor(500);
       for (let i = 0; i <= 262144; i += 1024) {
-        std.moveConsoleCursor({ x: -7, y: 0 });
+        std.moveConsoleCursorBy({ x: -7, y: 0 });
         std.writeConsole(`${padStart(String(i), 6, " ")}K`);
         await waitFor(7);
       }
@@ -437,7 +435,7 @@ class PengOS {
         if (image) {
           std.drawConsoleImage(image, 0, 0);
           const screenSize = std.getConsoleSize();
-          std.moveConsoleCursor({
+          std.moveConsoleCursorBy({
             x: 0,
             y: Math.ceil(image.height / screenSize.h),
           });
@@ -564,8 +562,6 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
-
-    // await new Ped(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),

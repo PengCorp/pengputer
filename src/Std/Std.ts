@@ -1,9 +1,10 @@
 import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { Screen } from "../Screen";
+import { ClickListener } from "../Screen/Screen";
 import { ScreenCharacterAttributes } from "../Screen/types";
 import { Vector, zeroVector } from "../Toolbox/Vector";
-import { getRectFromPositionAndSize, Rect, StringLike } from "../types";
+import { getRectFromVectorAndSize, Rect, StringLike } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
 
 export class Std {
@@ -46,6 +47,10 @@ export class Std {
     }
   }
 
+  setIsConsoleScrollable(isScrollable: boolean) {
+    this.screen.setIsScrollable(isScrollable);
+  }
+
   getConsoleCursorSize() {
     return this.screen.getCursorSize();
   }
@@ -62,7 +67,7 @@ export class Std {
     return this.screen.setCursorPosition(newPosition);
   }
 
-  moveConsoleCursor(delta: Vector) {
+  moveConsoleCursorBy(delta: Vector) {
     return this.screen.setCursorPositionDelta(delta);
   }
 
@@ -86,18 +91,12 @@ export class Std {
 
     if (numberOfLines > 0) {
       this.screen.scrollUpRect(
-        getRectFromPositionAndSize(
-          zeroVector,
-          this.screen.getSizeInCharacters()
-        ),
+        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
         numberOfLines
       );
     } else {
       this.screen.scrollDownRect(
-        getRectFromPositionAndSize(
-          zeroVector,
-          this.screen.getSizeInCharacters()
-        ),
+        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
         -numberOfLines
       );
     }
@@ -160,5 +159,11 @@ export class Std {
 
   resetKeyPressedHistory() {
     return this.keyboard.resetWereKeysPressed();
+  }
+
+  // Mouse
+
+  addMouseScreenClickListener(listener: ClickListener) {
+    return this.screen.addMouseClickListener(listener);
   }
 }

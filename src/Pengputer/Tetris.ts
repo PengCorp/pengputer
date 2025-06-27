@@ -9,8 +9,8 @@ Sources:
 
 import _ from "lodash";
 import {
-  getIsPositionInRect,
-  getRectFromPositionAndSize,
+  getIsVectorInRect,
+  getRectFromVectorAndSize,
   Rect,
   Size,
 } from "../types";
@@ -533,7 +533,7 @@ class Piece {
     let isColliding = false;
     // add two rows to the top of the board rect for rotations
     this.doForEachSquare((pos) => {
-      isColliding = isColliding || !getIsPositionInRect(pos, BOARD_RECT);
+      isColliding = isColliding || !getIsVectorInRect(pos, BOARD_RECT);
     });
     return isColliding;
   }
@@ -907,7 +907,7 @@ class Tetris implements GameState {
     boardPosition: Vector
   ): Vector | null {
     const { std } = this.pc;
-    if (!getIsPositionInRect(boardPosition, BOARD_RECT)) return null;
+    if (!getIsVectorInRect(boardPosition, BOARD_RECT)) return null;
 
     const screenPos = {
       x: this.boardScreenRect.x + boardPosition.x * CELL_WIDTH,
@@ -915,9 +915,9 @@ class Tetris implements GameState {
     };
 
     if (
-      !getIsPositionInRect(
+      !getIsVectorInRect(
         screenPos,
-        getRectFromPositionAndSize(zeroVector, std.getConsoleSize())
+        getRectFromVectorAndSize(zeroVector, std.getConsoleSize())
       )
     )
       return null;
@@ -1495,6 +1495,7 @@ export class TetrisApp implements Executable {
         if (this.isQuitting) {
           std.clearConsole();
           std.writeConsole("Thank you for playing!\n");
+          this.currentState?.onLeave();
           resolve();
           return;
         }
