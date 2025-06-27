@@ -1097,10 +1097,13 @@ class Tetris implements GameState {
     currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
     currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
     std.setConsoleAttributes(currentAttributes);
-    const levelString =
+    let levelString =
       this.currentLevel < levels.length - 1
         ? String(this.currentLevel)
         : `* ${this.currentLevel} *`;
+    if (this.currentLevel === 69) {
+      levelString = "69, nice";
+    }
     std.setConsoleCursorPosition({ x: 14, y: 21 });
     std.writeConsole(` ${_.padStart(levelString, 9)} `);
   }
