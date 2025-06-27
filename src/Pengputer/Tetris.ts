@@ -1100,7 +1100,7 @@ class Tetris implements GameState {
     const levelString =
       this.currentLevel < levels.length - 1
         ? String(this.currentLevel)
-        : "* MAX *";
+        : `* ${this.currentLevel} *`;
     std.setConsoleCursorPosition({ x: 14, y: 21 });
     std.writeConsole(` ${_.padStart(levelString, 9)} `);
   }
@@ -1140,7 +1140,11 @@ class Tetris implements GameState {
 
   private spawnPiece(key: PieceKey) {
     this.hasHeld = false;
-    const fallingPiece = new FallingPiece(this, key, levels[this.currentLevel]);
+    const fallingPiece = new FallingPiece(
+      this,
+      key,
+      levels[Math.min(this.currentLevel, levels.length - 1)]
+    );
     this.fallingPiece = fallingPiece;
     fallingPiece.onPlaced.listen(() => {
       this.areCounter = ARE_DELAY;
@@ -1203,7 +1207,7 @@ class Tetris implements GameState {
   private setLinesCleared(linesCleared: number) {
     this.linesCleared = linesCleared;
     this.currentLevel = Math.max(
-      Math.min(Math.floor(linesCleared / 10), levels.length - 1),
+      Math.floor(linesCleared / 10),
       this.currentLevel
     );
   }
