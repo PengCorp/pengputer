@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
 import { ClickListener } from "../Screen/Screen";
@@ -34,6 +35,7 @@ interface FieldCell {
   isFlagged: boolean;
   isOpened: boolean;
   adjacentMines: number;
+  position: Vector;
 }
 
 const CELL_SIZE: Size = { w: 3, h: 1 };
@@ -83,6 +85,7 @@ class Pengsweeper implements GameState {
     }
 
     this.makeGrid();
+    this.generateField();
   }
 
   private unsubscribeFromClicks!: () => void;
@@ -121,15 +124,53 @@ class Pengsweeper implements GameState {
       vectorAdd(this.cursor, delta),
       getRectFromVectorAndSize(zeroVector, this.fieldSize)
     );
+
     this.needsRedraw = true;
   }
 
-  private openCell() {
-    if (!this.cursor) return;
-    const cell = this.field[this.cursor.y * this.fieldSize.w + this.cursor.x];
-    if (cell.isOpened) return;
+  private openCell(pos: Vector) {
+    const cell = this.getCell(pos);
+
+    if (!cell || cell.isFlagged) return;
+
+    if (cell.isOpened && cell.adjacentMines > 0) {
+      const adjacentCells = this.getAdjacentCells(pos);
+      const flaggedCount = adjacentCells.filter(
+        (cell) => cell.isFlagged
+      ).length;
+      if (flaggedCount === cell.adjacentMines) {
+        for (const adjacentCell of adjacentCells) {
+          if (!adjacentCell.isFlagged && !adjacentCell.isOpened) {
+            this.openCell(adjacentCell.position);
+          }
+        }
+      }
+    }
 
     cell.isOpened = true;
+
+    if (!cell.isMine && cell.adjacentMines === 0) {
+      const adjacentCells = this.getAdjacentCells(pos);
+
+      for (const adjacentCell of adjacentCells) {
+        if (!adjacentCell.isOpened) {
+          this.openCell(adjacentCell.position);
+        }
+      }
+    }
+
+    this.needsRedraw = true;
+  }
+
+  private flagCell() {
+    if (!this.cursor) return;
+
+    const cell = this.getCell(this.cursor);
+
+    if (!cell || cell.isOpened) return;
+
+    cell.isFlagged = !cell.isFlagged;
+
     this.needsRedraw = true;
   }
 
@@ -148,7 +189,12 @@ class Pengsweeper implements GameState {
       this.moveCursor({ x: 0, y: 1 });
     }
     if (std.getWasKeyPressed("Space")) {
-      this.openCell();
+      if (this.cursor) {
+        this.openCell(this.cursor);
+      }
+    }
+    if (std.getWasKeyPressed("KeyF")) {
+      this.flagCell();
     }
     std.resetKeyPressedHistory();
 
@@ -167,6 +213,69 @@ class Pengsweeper implements GameState {
       x: Math.floor((screenSize.w - this.fieldSize.w * CELL_SIZE.w) / 2),
       y: Math.floor((screenSize.h - this.fieldSize.h * CELL_SIZE.h) / 2),
     };
+  }
+
+  private getCell(pos: Vector) {
+    if (
+      !getIsVectorInRect(
+        pos,
+        getRectFromVectorAndSize(zeroVector, this.fieldSize)
+      )
+    )
+      return null;
+
+    return this.field[pos.y * this.fieldSize.w + pos.x];
+  }
+
+  private getAdjacentCells(pos: Vector) {
+    return [
+      this.getCell(vectorAdd(pos, { x: -1, y: -1 })),
+      this.getCell(vectorAdd(pos, { x: 0, y: -1 })),
+      this.getCell(vectorAdd(pos, { x: 1, y: -1 })),
+      this.getCell(vectorAdd(pos, { x: -1, y: 0 })),
+      this.getCell(vectorAdd(pos, { x: 1, y: 0 })),
+      this.getCell(vectorAdd(pos, { x: -1, y: 1 })),
+      this.getCell(vectorAdd(pos, { x: 0, y: 1 })),
+      this.getCell(vectorAdd(pos, { x: 1, y: 1 })),
+    ].filter((c) => c !== null);
+  }
+
+  private generateField() {
+    for (let y = 0; y < this.fieldSize.h; y += 1) {
+      for (let x = 0; x < this.fieldSize.w; x += 1) {
+        const cell = this.getCell({ x, y });
+        if (!cell) continue;
+        cell.isOpened = false;
+        cell.isMine = false;
+        cell.adjacentMines = 0;
+        cell.isExploded = false;
+        cell.isFlagged = false;
+      }
+    }
+
+    let minesAdded = 0;
+    while (minesAdded < this.minesCount) {
+      const x = _.random(0, this.fieldSize.w - 1);
+      const y = _.random(0, this.fieldSize.h - 1);
+      const cell = this.getCell({ x, y });
+      if (!cell || cell.isMine) {
+        continue;
+      }
+
+      cell.isMine = true;
+      minesAdded += 1;
+    }
+
+    for (let y = 0; y < this.fieldSize.h; y += 1) {
+      for (let x = 0; x < this.fieldSize.w; x += 1) {
+        const cell = this.getCell({ x, y });
+        if (!cell) continue;
+        const mineCount = this.getAdjacentCells({ x, y }).filter(
+          (c) => c.isMine
+        ).length;
+        cell.adjacentMines = mineCount;
+      }
+    }
   }
 
   private redraw() {
@@ -189,7 +298,8 @@ class Pengsweeper implements GameState {
         attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
 
         if (cell.isFlagged) {
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightRed];
+          attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
         } else if (!cell.isOpened) {
           attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
         } else if (cell.isMine) {
@@ -210,16 +320,20 @@ class Pengsweeper implements GameState {
 
         std.setConsoleAttributes(attributes);
 
-        if (cell.isFlagged) {
-          cellString = "?";
-        } else if (!cell.isOpened) {
-          cellString = ".";
-        } else if (cell.isMine) {
-          cellString = "@";
-        } else if (cell.adjacentMines > 0) {
-          cellString = String(cell.adjacentMines);
-        } else if (cell.isOpened) {
-          cellString = " ";
+        if (!cell.isOpened) {
+          if (cell.isFlagged) {
+            cellString = "?";
+          } else {
+            cellString = ".";
+          }
+        } else {
+          if (cell.isMine) {
+            cellString = "@";
+          } else if (cell.adjacentMines > 0) {
+            cellString = String(cell.adjacentMines);
+          } else {
+            cellString = " ";
+          }
         }
 
         if (this.cursor && x === this.cursor.x && y === this.cursor.y) {
@@ -238,12 +352,16 @@ class Pengsweeper implements GameState {
   private makeGrid() {
     this.field = new Array(this.fieldSize.w * this.fieldSize.h)
       .fill(null)
-      .map(() => ({
+      .map<FieldCell>((c, i) => ({
         isFlagged: false,
         isMine: false,
         isOpened: false,
         isExploded: false,
         adjacentMines: 0,
+        position: {
+          x: i % this.fieldSize.w,
+          y: Math.floor(i / this.fieldSize.w),
+        },
       }));
   }
 }
