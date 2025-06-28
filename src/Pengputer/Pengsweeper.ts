@@ -30,16 +30,31 @@ enum DifficultyLevel {
 
 interface FieldCell {
   isMine: boolean;
+  isExploded: boolean;
   isFlagged: boolean;
   isOpened: boolean;
+  adjacentMines: number;
 }
+
+const CELL_SIZE: Size = { w: 3, h: 1 };
+
+const NUMBER_COLORS: Record<string, string> = {
+  "1": CGA_PALETTE_DICT[CgaColors.Azure],
+  "2": CGA_PALETTE_DICT[CgaColors.Green],
+  "3": CGA_PALETTE_DICT[CgaColors.LightRed],
+  "4": CGA_PALETTE_DICT[CgaColors.LightViolet],
+  "5": CGA_PALETTE_DICT[CgaColors.LightOrange],
+  "6": CGA_PALETTE_DICT[CgaColors.Cyan],
+  "7": CGA_PALETTE_DICT[CgaColors.LightBlue],
+  "8": CGA_PALETTE_DICT[CgaColors.White],
+};
 
 class Pengsweeper implements GameState {
   private pc: PC;
 
   private fieldSize: Size;
   private minesCount: number;
-  private cursor: Vector;
+  private cursor: Vector | null;
 
   private field!: FieldCell[];
 
@@ -62,8 +77,8 @@ class Pengsweeper implements GameState {
         this.minesCount = 40;
         break;
       case DifficultyLevel.Expert:
-        this.fieldSize = { w: 30, h: 16 };
-        this.minesCount = 99;
+        this.fieldSize = { w: 25, h: 16 };
+        this.minesCount = 80;
         break;
     }
 
@@ -79,10 +94,16 @@ class Pengsweeper implements GameState {
       if (
         getIsVectorInRect(
           boardPosition,
-          getRectFromVectorAndSize(zeroVector, this.fieldSize)
+          getRectFromVectorAndSize(zeroVector, {
+            w: this.fieldSize.w * CELL_SIZE.w,
+            h: this.fieldSize.h * CELL_SIZE.h,
+          })
         )
       ) {
-        this.cursor = boardPosition;
+        this.cursor = {
+          x: Math.floor(boardPosition.x / CELL_SIZE.w),
+          y: Math.floor(boardPosition.y / CELL_SIZE.h),
+        };
         this.needsRedraw = true;
       }
     };
@@ -94,10 +115,21 @@ class Pengsweeper implements GameState {
   }
 
   private moveCursor(delta: Vector) {
+    if (!this.cursor) return;
+
     this.cursor = vectorClamp(
       vectorAdd(this.cursor, delta),
       getRectFromVectorAndSize(zeroVector, this.fieldSize)
     );
+    this.needsRedraw = true;
+  }
+
+  private openCell() {
+    if (!this.cursor) return;
+    const cell = this.field[this.cursor.y * this.fieldSize.w + this.cursor.x];
+    if (cell.isOpened) return;
+
+    cell.isOpened = true;
     this.needsRedraw = true;
   }
 
@@ -115,6 +147,9 @@ class Pengsweeper implements GameState {
     if (std.getWasKeyPressed("ArrowDown")) {
       this.moveCursor({ x: 0, y: 1 });
     }
+    if (std.getWasKeyPressed("Space")) {
+      this.openCell();
+    }
     std.resetKeyPressedHistory();
 
     if (this.needsRedraw) {
@@ -129,8 +164,8 @@ class Pengsweeper implements GameState {
     const screenSize = std.getConsoleSize();
 
     return {
-      x: Math.floor((screenSize.w - this.fieldSize.w) / 2),
-      y: Math.floor((screenSize.h - this.fieldSize.h) / 2),
+      x: Math.floor((screenSize.w - this.fieldSize.w * CELL_SIZE.w) / 2),
+      y: Math.floor((screenSize.h - this.fieldSize.h * CELL_SIZE.h) / 2),
     };
   }
 
@@ -143,8 +178,8 @@ class Pengsweeper implements GameState {
       for (let x = 0; x < this.fieldSize.w; x += 1) {
         const idx = y * this.fieldSize.w + x;
         std.setConsoleCursorPosition({
-          x: fieldOrigin.x + x,
-          y: fieldOrigin.y + y,
+          x: fieldOrigin.x + x * CELL_SIZE.w,
+          y: fieldOrigin.y + y * CELL_SIZE.h,
         });
         const cell = this.field[idx];
 
@@ -156,29 +191,44 @@ class Pengsweeper implements GameState {
         if (cell.isFlagged) {
           attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightRed];
         } else if (!cell.isOpened) {
-          attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
         } else if (cell.isMine) {
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightMagenta];
+          if (cell.isExploded) {
+            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+          } else {
+            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+          }
+        } else if (cell.adjacentMines > 0) {
+          attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
         } else {
           attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
         }
 
-        if (x === this.cursor.x && y === this.cursor.y) {
-          attributes.blink = true;
-        }
+        let cellString = "X";
 
         std.setConsoleAttributes(attributes);
 
         if (cell.isFlagged) {
-          std.writeConsole("f");
+          cellString = "?";
         } else if (!cell.isOpened) {
-          std.writeConsole(".");
+          cellString = ".";
         } else if (cell.isMine) {
-          std.writeConsole("*");
-        } else {
-          std.writeConsole(".");
+          cellString = "@";
+        } else if (cell.adjacentMines > 0) {
+          cellString = String(cell.adjacentMines);
+        } else if (cell.isOpened) {
+          cellString = " ";
         }
+
+        if (this.cursor && x === this.cursor.x && y === this.cursor.y) {
+          cellString = `[${cellString}]`;
+        } else {
+          cellString = ` ${cellString} `;
+        }
+
+        std.writeConsole(cellString);
 
         std.setConsoleAttributes(previousAttributes);
       }
@@ -188,10 +238,13 @@ class Pengsweeper implements GameState {
   private makeGrid() {
     this.field = new Array(this.fieldSize.w * this.fieldSize.h)
       .fill(null)
-      .map(() => ({ isFlagged: false, isMine: false, isOpened: false }));
-
-    this.field[1].isMine = true;
-    this.field[1 * this.fieldSize.w + 1].isMine = true;
+      .map(() => ({
+        isFlagged: false,
+        isMine: false,
+        isOpened: false,
+        isExploded: false,
+        adjacentMines: 0,
+      }));
   }
 }
 

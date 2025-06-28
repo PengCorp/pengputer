@@ -24,6 +24,8 @@ import { argparse } from "../Functions/argparse";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 import { Std } from "../Std";
+import { Ped } from "./Ped";
+import { PengsweeperApp } from "./Pengsweeper";
 
 const PATH_SEPARATOR = "/";
 
@@ -562,6 +564,8 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
+
+    await new PengsweeperApp(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
