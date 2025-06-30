@@ -168,7 +168,12 @@ export class Screen {
 
     this.ctx = canvas.getContext("2d")!;
 
+    const scanLines = document.createElement("div");
+
+    scanLines.setAttribute("id", "screen-scanlines");
+
     canvasBox.appendChild(canvas);
+    canvasBox.appendChild(scanLines);
     containerEl.replaceChildren(canvasBox);
   }
 

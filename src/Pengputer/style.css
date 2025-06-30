@@ -74,6 +74,7 @@ header a {
   border: 10px inset #999;
   padding: 24px;
   background-color: black;
+  position: relative;
 }
 
 #screen {
@@ -81,19 +82,17 @@ header a {
   width: calc((4 / 3) * 70vh - 68px);
 }
 
-#screen-scanlines::before {
-  /* crt effect by aleclownes.com */
-  content: " ";
+#screen-scanlines {
   display: block;
   position: absolute;
-  top: 16px;
-  left: 16px;
-  bottom: 20px;
-  right: 16px;
-  background: linear-gradient(rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0) 50%);
-  z-index: 2;
+  background: linear-gradient(rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0) 50%);
   background-size: 100% 2px;
   pointer-events: none;
+  z-index: 2;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
 }
 
 .keyboard-box-container {

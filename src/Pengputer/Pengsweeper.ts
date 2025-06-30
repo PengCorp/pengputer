@@ -159,6 +159,10 @@ class Pengsweeper implements GameState {
       }
     }
 
+    if (cell.isMine) {
+      this.explodeCell(cell.position);
+    }
+
     this.needsRedraw = true;
   }
 
@@ -172,6 +176,28 @@ class Pengsweeper implements GameState {
     cell.isFlagged = !cell.isFlagged;
 
     this.needsRedraw = true;
+  }
+
+  private explodeCell(pos: Vector) {
+    const explodedCell = this.getCell(pos);
+
+    if (!explodedCell || !explodedCell.isMine) {
+      throw new Error("Attempting to explode a mine that does not exist.");
+    }
+
+    explodedCell.isExploded = true;
+
+    for (let y = 0; y < this.fieldSize.h; y += 1) {
+      for (let x = 0; x < this.fieldSize.w; x += 1) {
+        const cell = this.getCell({ x, y })!;
+
+        if (cell.isMine || cell.isFlagged) {
+          cell.isOpened = true;
+        }
+      }
+    }
+
+    this.cursor = null;
   }
 
   update(dt: number) {
@@ -297,51 +323,55 @@ class Pengsweeper implements GameState {
         const attributes = std.getConsoleAttributes();
         attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
 
-        if (cell.isFlagged) {
-          attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
-        } else if (!cell.isOpened) {
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-        } else if (cell.isMine) {
-          if (cell.isExploded) {
-            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
-          } else {
-            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
-          }
-        } else if (cell.adjacentMines > 0) {
-          attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
-        } else {
-          attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-        }
-
         let cellString = "X";
-
-        std.setConsoleAttributes(attributes);
 
         if (!cell.isOpened) {
           if (cell.isFlagged) {
+            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
             cellString = "?";
           } else {
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
             cellString = ".";
           }
         } else {
-          if (cell.isMine) {
+          if (cell.isMine && cell.isFlagged) {
+            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
             cellString = "@";
+          } else if (cell.isMine && !cell.isFlagged) {
+            if (cell.isExploded) {
+              attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
+              attributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+              cellString = "@";
+            } else {
+              attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
+              attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+              cellString = "@";
+            }
+          } else if (!cell.isMine && cell.isFlagged) {
+            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+
+            cellString = " ";
           } else if (cell.adjacentMines > 0) {
+            attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
             cellString = String(cell.adjacentMines);
           } else {
+            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
             cellString = " ";
           }
         }
 
-        if (this.cursor && x === this.cursor.x && y === this.cursor.y) {
+        if (cell.isOpened && cell.isMine && cell.isExploded) {
+          cellString = `>@<`;
+        } else if (this.cursor && x === this.cursor.x && y === this.cursor.y) {
           cellString = `[${cellString}]`;
         } else {
           cellString = ` ${cellString} `;
         }
 
+        std.setConsoleAttributes(attributes);
         std.writeConsole(cellString);
 
         std.setConsoleAttributes(previousAttributes);
