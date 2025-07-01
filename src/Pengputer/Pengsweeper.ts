@@ -56,7 +56,9 @@ class Pengsweeper implements GameState {
 
   private fieldSize: Size;
   private minesCount: number;
+  private flagCount: number;
   private cursor: Vector | null;
+  private isFirstCellOpened: boolean;
 
   private field!: FieldCell[];
 
@@ -66,6 +68,8 @@ class Pengsweeper implements GameState {
     this.pc = pc;
     this.needsRedraw = true;
     this.cursor = { x: 0, y: 0 };
+    this.isFirstCellOpened = false;
+    this.flagCount = 0;
 
     const { difficultyLevel } = options;
 
@@ -84,7 +88,6 @@ class Pengsweeper implements GameState {
         break;
     }
 
-    this.makeGrid();
     this.generateField();
   }
 
@@ -133,6 +136,12 @@ class Pengsweeper implements GameState {
 
     if (!cell || cell.isFlagged) return;
 
+    if (!this.isFirstCellOpened && cell.isMine) {
+      this.generateField();
+      this.openCell(pos);
+      return;
+    }
+
     if (cell.isOpened && cell.adjacentMines > 0) {
       const adjacentCells = this.getAdjacentCells(pos);
       const flaggedCount = adjacentCells.filter(
@@ -164,16 +173,22 @@ class Pengsweeper implements GameState {
     }
 
     this.needsRedraw = true;
+
+    this.checkWin();
   }
 
-  private flagCell() {
-    if (!this.cursor) return;
-
-    const cell = this.getCell(this.cursor);
+  private toggleCellFlag(pos: Vector) {
+    const cell = this.getCell(pos);
 
     if (!cell || cell.isOpened) return;
 
-    cell.isFlagged = !cell.isFlagged;
+    if (cell.isFlagged) {
+      cell.isFlagged = false;
+      this.flagCount -= 1;
+    } else {
+      cell.isFlagged = true;
+      this.flagCount += 1;
+    }
 
     this.needsRedraw = true;
   }
@@ -187,6 +202,39 @@ class Pengsweeper implements GameState {
 
     explodedCell.isExploded = true;
 
+    this.reveal();
+  }
+
+  private checkWin() {
+    let existCovered = false;
+    for (let y = 0; y < this.fieldSize.h; y += 1) {
+      for (let x = 0; x < this.fieldSize.w; x += 1) {
+        const cell = this.getCell({ x, y })!;
+
+        if (!cell.isOpened && !cell.isMine) {
+          existCovered = true;
+        }
+      }
+    }
+
+    if (existCovered) {
+      return;
+    }
+
+    for (let y = 0; y < this.fieldSize.h; y += 1) {
+      for (let x = 0; x < this.fieldSize.w; x += 1) {
+        const cell = this.getCell({ x, y })!;
+
+        if (cell.isMine && !cell.isFlagged) {
+          this.toggleCellFlag(cell.position);
+        }
+      }
+    }
+
+    this.reveal();
+  }
+
+  private reveal() {
     for (let y = 0; y < this.fieldSize.h; y += 1) {
       for (let x = 0; x < this.fieldSize.w; x += 1) {
         const cell = this.getCell({ x, y })!;
@@ -198,6 +246,8 @@ class Pengsweeper implements GameState {
     }
 
     this.cursor = null;
+
+    this.needsRedraw = true;
   }
 
   update(dt: number) {
@@ -220,7 +270,9 @@ class Pengsweeper implements GameState {
       }
     }
     if (std.getWasKeyPressed("KeyF")) {
-      this.flagCell();
+      if (this.cursor) {
+        this.toggleCellFlag(this.cursor);
+      }
     }
     std.resetKeyPressedHistory();
 
@@ -267,6 +319,20 @@ class Pengsweeper implements GameState {
   }
 
   private generateField() {
+    this.field = new Array(this.fieldSize.w * this.fieldSize.h)
+      .fill(null)
+      .map<FieldCell>((c, i) => ({
+        isFlagged: false,
+        isMine: false,
+        isOpened: false,
+        isExploded: false,
+        adjacentMines: 0,
+        position: {
+          x: i % this.fieldSize.w,
+          y: Math.floor(i / this.fieldSize.w),
+        },
+      }));
+
     for (let y = 0; y < this.fieldSize.h; y += 1) {
       for (let x = 0; x < this.fieldSize.w; x += 1) {
         const cell = this.getCell({ x, y });
@@ -302,9 +368,28 @@ class Pengsweeper implements GameState {
         cell.adjacentMines = mineCount;
       }
     }
+
+    this.flagCount = 0;
+    this.isFirstCellOpened = false;
+
+    this.needsRedraw = true;
   }
 
   private redraw() {
+    this.drawCounts();
+    this.drawBoard();
+  }
+
+  private drawCounts() {
+    const { std } = this.pc;
+
+    std.setConsoleCursorPosition({ x: 0, y: 0 });
+    std.writeConsole(
+      `Mines left: ${_.padStart(String(this.minesCount - this.flagCount), 2)}`
+    );
+  }
+
+  private drawBoard() {
     const { std } = this.pc;
 
     const fieldOrigin = this.getFieldOrigin();
@@ -377,22 +462,6 @@ class Pengsweeper implements GameState {
         std.setConsoleAttributes(previousAttributes);
       }
     }
-  }
-
-  private makeGrid() {
-    this.field = new Array(this.fieldSize.w * this.fieldSize.h)
-      .fill(null)
-      .map<FieldCell>((c, i) => ({
-        isFlagged: false,
-        isMine: false,
-        isOpened: false,
-        isExploded: false,
-        adjacentMines: 0,
-        position: {
-          x: i % this.fieldSize.w,
-          y: Math.floor(i / this.fieldSize.w),
-        },
-      }));
   }
 }
 
