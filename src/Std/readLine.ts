@@ -69,7 +69,7 @@ export const readLine = (
           });
           curIndex = result.length;
         } else if (char === "\n") {
-          screen.displayString([char]);
+          screen.displayString(char);
           resolve(result);
           return;
         } else if (char === "\b") {

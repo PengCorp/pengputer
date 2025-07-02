@@ -6,7 +6,7 @@ import {
 import { font9x16 } from "./font9x16";
 import { CgaColors } from "../Color/types";
 import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
-import { getRectFromVectorAndSize, Rect, Size, StringLike } from "../types";
+import { getRectFromVectorAndSize, Rect, Size } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 import {
   Vector,
@@ -15,14 +15,10 @@ import {
   zeroVector,
 } from "../Toolbox/Vector";
 import { Cursor } from "./Cursor";
-
-const stringLikeToArray = (s: StringLike) => {
-  if (Array.isArray(s)) {
-    return s;
-  }
-
-  return s.split("");
-};
+import {
+  getEscapeSequence,
+  splitStringIntoCharacters,
+} from "../Toolbox/String";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -436,21 +432,17 @@ export class Screen {
   /*================================ TTY EMULATION =============================*/
 
   /** Handles escape code. Index should point to first character after escape character. Returns new index into string just after the escape sequence. */
-  private handleEscape(string: StringLike, index: number): number {
-    const cmdChar = string[index];
+  private handleEscape(sequence: string): number {
+    let index = 0;
+    const cmdChar = sequence[index];
     index += 1;
     switch (cmdChar) {
       case "s": {
-        const setChar = string[index];
+        const setChar = sequence[index];
         index += 1;
         switch (setChar) {
           case "f": {
-            const colorIndex = parseInt(
-              stringLikeToArray(string)
-                .slice(index, index + 2)
-                .join(""),
-              16
-            );
+            const colorIndex = parseInt(sequence.slice(index, index + 2), 16);
             if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
               this.currentAttributes.fgColor =
                 CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
@@ -459,12 +451,7 @@ export class Screen {
             break;
           }
           case "b": {
-            const colorIndex = parseInt(
-              stringLikeToArray(string)
-                .slice(index, index + 2)
-                .join(""),
-              16
-            );
+            const colorIndex = parseInt(sequence.slice(index, index + 2), 16);
             if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
               this.currentAttributes.bgColor =
                 CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
@@ -483,7 +470,7 @@ export class Screen {
         break;
       }
       case "b": {
-        const boldCommand = string[index];
+        const boldCommand = sequence[index];
         index += 1;
         switch (boldCommand) {
           case "s": {
@@ -524,10 +511,11 @@ export class Screen {
   }
 
   /** Updates screen by writing a string with provided attributes. */
-  displayString(string: StringLike) {
+  displayString(string: string) {
+    const chars = splitStringIntoCharacters(string);
     let i = 0;
-    while (i < string.length) {
-      const ch = string[i];
+    while (i < chars.length) {
+      const ch = chars[i];
       if (ch === "\n") {
         this.cursor.moveBy({ x: 0, y: 1 });
         this.cursor.moveToStartOfLine();
@@ -558,7 +546,11 @@ export class Screen {
       } else {
         i += 1;
         if (ch === "\x1B") {
-          i = this.handleEscape(string, i);
+          const escapeSequence = getEscapeSequence(chars.slice(i - 1).join(""));
+          if (escapeSequence) {
+            this.handleEscape(escapeSequence);
+            i = i + escapeSequence.length;
+          }
         }
         continue;
       }
@@ -566,6 +558,7 @@ export class Screen {
       if (this.isScrollable) {
         this.scrollInCursor();
       }
+
       i += 1;
     }
   }

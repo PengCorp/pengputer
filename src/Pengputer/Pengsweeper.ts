@@ -12,15 +12,13 @@ import {
 import { getIsVectorInRect, getRectFromVectorAndSize, Size } from "../types";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
-
-interface GameState {
-  onEnter: () => void;
-  update: (dt: number) => void;
-  onLeave: () => void;
-}
+import { State, StateManager } from "../Toolbox/StateManager";
+import { Signal } from "../Toolbox/Signal";
 
 enum GameStateKey {
+  MainMenu,
   Pengsweeper,
+  Help,
 }
 
 enum DifficultyLevel {
@@ -51,7 +49,14 @@ const NUMBER_COLORS: Record<string, string> = {
   "8": CGA_PALETTE_DICT[CgaColors.White],
 };
 
-class Pengsweeper implements GameState {
+type PengsweeperSignalData =
+  | {
+      key: "reset";
+    }
+  | { key: "help" }
+  | { key: "quit" };
+
+class Pengsweeper extends State {
   private pc: PC;
 
   private fieldSize: Size;
@@ -63,8 +68,14 @@ class Pengsweeper implements GameState {
   private field!: FieldCell[];
 
   private needsRedraw: boolean;
+  private isWin: boolean = false;
+  private isLoss: boolean = false;
+
+  public signal = new Signal<PengsweeperSignalData>();
 
   constructor(pc: PC, options: { difficultyLevel: DifficultyLevel }) {
+    super();
+
     this.pc = pc;
     this.needsRedraw = true;
     this.cursor = { x: 0, y: 0 };
@@ -93,7 +104,9 @@ class Pengsweeper implements GameState {
 
   private unsubscribeFromClicks!: () => void;
 
-  onEnter() {
+  override onEnter() {
+    super.onEnter();
+
     const { std } = this.pc;
     const clickListener: ClickListener = ({ position }) => {
       const boardPosition = vectorSubtract(position, this.getFieldOrigin());
@@ -116,8 +129,27 @@ class Pengsweeper implements GameState {
     this.unsubscribeFromClicks = std.addMouseScreenClickListener(clickListener);
   }
 
-  onLeave() {
+  override onLeave() {
+    super.onLeave();
+
     this.unsubscribeFromClicks();
+  }
+
+  override onFocus() {
+    super.onFocus();
+
+    const { std } = this.pc;
+
+    std.resetConsole();
+    std.clearConsole();
+    std.setIsConsoleCursorVisible(false);
+    std.setIsConsoleScrollable(false);
+
+    this.needsRedraw = true;
+  }
+
+  override onBlur() {
+    super.onBlur();
   }
 
   private moveCursor(delta: Vector) {
@@ -141,6 +173,8 @@ class Pengsweeper implements GameState {
       this.openCell(pos);
       return;
     }
+
+    this.isFirstCellOpened = true;
 
     if (cell.isOpened && cell.adjacentMines > 0) {
       const adjacentCells = this.getAdjacentCells(pos);
@@ -203,6 +237,7 @@ class Pengsweeper implements GameState {
     explodedCell.isExploded = true;
 
     this.reveal();
+    this.isLoss = true;
   }
 
   private checkWin() {
@@ -232,6 +267,7 @@ class Pengsweeper implements GameState {
     }
 
     this.reveal();
+    this.isWin = true;
   }
 
   private reveal() {
@@ -252,29 +288,40 @@ class Pengsweeper implements GameState {
 
   update(dt: number) {
     const { std } = this.pc;
-    if (std.getWasKeyPressed("ArrowRight")) {
-      this.moveCursor({ x: 1, y: 0 });
-    }
-    if (std.getWasKeyPressed("ArrowLeft")) {
-      this.moveCursor({ x: -1, y: 0 });
-    }
-    if (std.getWasKeyPressed("ArrowUp")) {
-      this.moveCursor({ x: 0, y: -1 });
-    }
-    if (std.getWasKeyPressed("ArrowDown")) {
-      this.moveCursor({ x: 0, y: 1 });
-    }
-    if (std.getWasKeyPressed("Space")) {
-      if (this.cursor) {
-        this.openCell(this.cursor);
+    if (this.getIsFocused()) {
+      if (std.getWasKeyPressed("ArrowRight")) {
+        this.moveCursor({ x: 1, y: 0 });
       }
-    }
-    if (std.getWasKeyPressed("KeyF")) {
-      if (this.cursor) {
-        this.toggleCellFlag(this.cursor);
+      if (std.getWasKeyPressed("ArrowLeft")) {
+        this.moveCursor({ x: -1, y: 0 });
       }
+      if (std.getWasKeyPressed("ArrowUp")) {
+        this.moveCursor({ x: 0, y: -1 });
+      }
+      if (std.getWasKeyPressed("ArrowDown")) {
+        this.moveCursor({ x: 0, y: 1 });
+      }
+      if (std.getWasKeyPressed("Space")) {
+        if (this.cursor) {
+          this.openCell(this.cursor);
+        }
+      }
+      if (std.getWasKeyPressed("KeyF")) {
+        if (this.cursor) {
+          this.toggleCellFlag(this.cursor);
+        }
+      }
+      if (std.getWasKeyPressed("KeyR")) {
+        this.signal.emit({ key: "reset" });
+      }
+      if (std.getWasKeyPressed("F1")) {
+        this.signal.emit({ key: "help" });
+      }
+      if (std.getWasKeyPressed("Escape")) {
+        this.signal.emit({ key: "quit" });
+      }
+      std.resetKeyPressedHistory();
     }
-    std.resetKeyPressedHistory();
 
     if (this.needsRedraw) {
       this.redraw();
@@ -376,17 +423,30 @@ class Pengsweeper implements GameState {
   }
 
   private redraw() {
-    this.drawCounts();
+    this.drawStatus();
     this.drawBoard();
   }
 
-  private drawCounts() {
+  private drawStatus() {
     const { std } = this.pc;
 
     std.setConsoleCursorPosition({ x: 0, y: 0 });
     std.writeConsole(
-      `Mines left: ${_.padStart(String(this.minesCount - this.flagCount), 2)}`
+      `Mines left: \x1Bsb24\x1Bsf04${_.padStart(
+        String(this.minesCount - this.flagCount),
+        3
+      )}\x1Bsb00\x1Bsf07. \x1Bbs<F1>\x1Bbr for help. \x1Bbs<esc>\x1Bbr to quit. \x1Bbs<r>\x1Bbr to restart.`
     );
+
+    if (this.isWin) {
+      const screenSize = std.getConsoleSize();
+      std.setConsoleCursorPosition({ x: screenSize.w - 8, y: 0 });
+      std.writeConsole("You win!");
+    } else if (this.isLoss) {
+      const screenSize = std.getConsoleSize();
+      std.setConsoleCursorPosition({ x: screenSize.w - 5, y: 0 });
+      std.writeConsole("Oops!");
+    }
   }
 
   private drawBoard() {
@@ -438,7 +498,7 @@ class Pengsweeper implements GameState {
             attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
             attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
 
-            cellString = " ";
+            cellString = "_";
           } else if (cell.adjacentMines > 0) {
             attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
             cellString = String(cell.adjacentMines);
@@ -465,41 +525,206 @@ class Pengsweeper implements GameState {
   }
 }
 
+type HelpSignalData = { key: "exit" };
+
+class Help extends State {
+  private pc: PC;
+  public signal: Signal<HelpSignalData> = new Signal();
+
+  constructor(pc: PC) {
+    super();
+
+    this.pc = pc;
+  }
+
+  override onEnter() {
+    super.onEnter();
+
+    const { std } = this.pc;
+
+    std.resetKeyPressedHistory();
+  }
+
+  override onFocus() {
+    super.onFocus();
+
+    const { std } = this.pc;
+    std.resetConsole();
+    std.clearConsole();
+    std.setIsConsoleCursorVisible(false);
+    std.writeConsole("\x1Bbs== Pengsweeper ==\x1Bbr\n");
+    std.writeConsole("\n");
+    std.writeConsole("Use <space> to uncover fields.\n");
+    std.writeConsole(
+      "Use <f> to flag fields if you think they contain a mine.\n"
+    );
+    std.writeConsole("\n");
+    std.writeConsole(
+      "Each field is either empty, contains a mine or contains a number that shows how\n"
+    );
+    std.writeConsole("many adjacent mines there are.\n");
+    std.writeConsole("\n");
+    std.writeConsole(
+      "If you try to open a field that has the same number of flags as its value\n"
+    );
+    std.writeConsole(
+      "all adjacent unflagged fields will be opened. If your flag was not correct\n"
+    );
+    std.writeConsole("this can open a mine!\n");
+    std.writeConsole("\n");
+    std.writeConsole(
+      "Game is complete when all fields that don't contain a mine are opened.\n"
+    );
+    std.writeConsole("\n");
+    std.writeConsole("\x1BbsPress any key to continue...\x1Bbr");
+  }
+
+  override update(dt: number) {
+    super.update(dt);
+
+    const { std } = this.pc;
+
+    if (std.getWasAnyKeyPressed()) {
+      this.signal.emit({ key: "exit" });
+    }
+
+    std.resetKeyPressedHistory();
+  }
+}
+
+type MainMenuSignalData =
+  | { key: "exit" }
+  | { key: "select"; value: "1" | "2" | "3" };
+
+class MainMenu extends State {
+  private pc: PC;
+  public signal: Signal<MainMenuSignalData> = new Signal();
+
+  constructor(pc: PC) {
+    super();
+
+    this.pc = pc;
+  }
+
+  override onFocus() {
+    super.onFocus();
+
+    const { std } = this.pc;
+    std.resetConsole();
+    std.clearConsole();
+    std.setIsConsoleCursorVisible(false);
+    std.writeConsole("\x1Bbs== Pengsweeper ==\x1Bbr\n");
+    std.writeConsole("\n");
+    std.writeConsole("Select your difficulty level:\n\n");
+    std.writeConsole("  1) beginner\n");
+    std.writeConsole("  2) intermediate\n");
+    std.writeConsole("  3) expert\n");
+    std.writeConsole("\n");
+    std.writeConsole("or press \x1Bbs<esc>\x1Bbr to exit.");
+  }
+
+  override update(dt: number) {
+    super.update(dt);
+
+    const { std } = this.pc;
+
+    if (!this.getIsFocused()) {
+      return;
+    }
+
+    if (std.getWasKeyPressed("Digit1") || std.getWasKeyPressed("Numpad1")) {
+      this.signal.emit({ key: "select", value: "1" });
+    }
+    if (std.getWasKeyPressed("Digit2") || std.getWasKeyPressed("Numpad2")) {
+      this.signal.emit({ key: "select", value: "2" });
+    }
+    if (std.getWasKeyPressed("Digit3") || std.getWasKeyPressed("Numpad3")) {
+      this.signal.emit({ key: "select", value: "3" });
+    }
+    if (std.getWasKeyPressed("Escape")) {
+      this.signal.emit({ key: "exit" });
+    }
+
+    std.resetKeyPressedHistory();
+  }
+}
+
 export class PengsweeperApp implements Executable {
   private pc: PC;
 
-  private currentState: GameState | null = null;
-  private isQuitting: boolean = false;
+  private stateManager: StateManager = new StateManager();
 
-  private changeState(newStateKey: GameStateKey) {
-    const { std } = this.pc;
-    std.resetKeyPressedHistory();
-    this.currentState?.onLeave();
-    switch (newStateKey) {
-      case GameStateKey.Pengsweeper:
-        const pengsweeper = new Pengsweeper(this.pc, {
-          difficultyLevel: DifficultyLevel.Beginner,
-        });
-        this.currentState = pengsweeper;
-        break;
-    }
-    this.currentState?.onEnter();
-  }
+  private difficultyLevel: DifficultyLevel = DifficultyLevel.Beginner;
 
   constructor(pc: PC) {
     this.pc = pc;
   }
 
+  private changeState(newStateKey: GameStateKey, shouldPush: boolean = false) {
+    let newState = null;
+
+    switch (newStateKey) {
+      case GameStateKey.MainMenu:
+        newState = new MainMenu(this.pc);
+        newState.signal.listen((s) => {
+          if (s.key === "select") {
+            switch (s.value) {
+              case "1":
+                this.difficultyLevel = DifficultyLevel.Beginner;
+                break;
+              case "2":
+                this.difficultyLevel = DifficultyLevel.Intermediate;
+                break;
+              case "3":
+                this.difficultyLevel = DifficultyLevel.Expert;
+                break;
+            }
+            this.changeState(GameStateKey.Pengsweeper, true);
+          }
+          if (s.key === "exit") {
+            this.stateManager.popState();
+          }
+        });
+        break;
+      case GameStateKey.Pengsweeper:
+        newState = new Pengsweeper(this.pc, {
+          difficultyLevel: this.difficultyLevel,
+        });
+        newState.signal.listen((s) => {
+          if (s.key === "reset") {
+            this.changeState(GameStateKey.Pengsweeper);
+          } else if (s.key === "help") {
+            this.changeState(GameStateKey.Help, true);
+          } else if (s.key === "quit") {
+            this.stateManager.popState();
+          }
+        });
+        break;
+      case GameStateKey.Help:
+        newState = new Help(this.pc);
+        newState.signal.listen((s) => {
+          if (s.key === "exit") {
+            this.stateManager.popState();
+          }
+        });
+        break;
+    }
+
+    if (!newState) {
+      throw new Error("Cannot create new state.");
+    }
+
+    if (shouldPush) {
+      this.stateManager.pushState(newState);
+    } else {
+      this.stateManager.replaceState(newState);
+    }
+  }
+
   async run(args: string[]) {
     const { std } = this.pc;
 
-    std.resetConsole();
-    std.clearConsole();
-    std.setIsConsoleCursorVisible(false);
-    std.setIsConsoleScrollable(false);
-    std.resetKeyPressedHistory();
-
-    this.changeState(GameStateKey.Pengsweeper);
+    this.changeState(GameStateKey.MainMenu);
 
     return new Promise<void>((resolve) => {
       let lastTime = performance.now();
@@ -507,12 +732,11 @@ export class PengsweeperApp implements Executable {
         const dt = performance.now() - lastTime;
         lastTime = performance.now();
 
-        this.currentState?.update(dt);
+        this.stateManager.update(dt);
 
-        if (this.isQuitting) {
+        if (this.stateManager.getIsEmpty()) {
           std.clearConsole();
           std.writeConsole("Thank you for playing!\n");
-          this.currentState?.onLeave();
           resolve();
           return;
         }

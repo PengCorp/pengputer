@@ -1,4 +1,6 @@
 import { ANSI_LAYOUT } from "./ansiLayout";
+import { getIsModifierKey } from "./isModifierKey";
+import { KeyCode } from "./types";
 
 export type TypeListener = (
   char: string | null,
@@ -9,7 +11,7 @@ export type VoidListener = () => void;
 
 export class Keyboard {
   private pressed: string[];
-  private werePressed: Set<string>;
+  private werePressed: Set<KeyCode>;
   private layout: any;
 
   private typeListeners: Array<TypeListener>;
@@ -63,8 +65,21 @@ export class Keyboard {
   }
 
   /** Get whether any key was pressed since last wasPressed reset. */
-  public getWasKeyPressed(keyCode: string): boolean {
+  public getWasKeyPressed(keyCode: KeyCode): boolean {
     return this.werePressed.has(keyCode);
+  }
+
+  /** Returns true if any non-modifier key was pressed. */
+  public getWasAnyKeyPressed() {
+    let anyKeyPressed = false;
+    for (const key of this.werePressed) {
+      if (!getIsModifierKey(key)) {
+        anyKeyPressed = true;
+        break;
+      }
+    }
+
+    return anyKeyPressed;
   }
 
   /** Reset wasPressed state. */

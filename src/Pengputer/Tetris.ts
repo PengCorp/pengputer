@@ -27,6 +27,7 @@ import {
 import { CgaColors } from "../Color/types";
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { wrapMax } from "../Toolbox/Math";
+import { Signal } from "../Toolbox/Signal";
 
 const msPerFrame = 16.666666666;
 
@@ -82,31 +83,6 @@ const levels: Level[] = [
   { msPerCell: 1 * msPerFrame },
   { msPerCell: 0 * msPerFrame },
 ];
-
-type SignalListener<D> = (data: D) => void;
-
-class Signal<D = void> {
-  private listeners: Array<SignalListener<D>>;
-  constructor() {
-    this.listeners = [];
-  }
-
-  public listen(l: SignalListener<D>) {
-    this.listeners.push(l);
-
-    return () => {
-      this.listeners = this.listeners.filter(
-        (currentListener) => currentListener !== l
-      );
-    };
-  }
-
-  public emit(data: D) {
-    for (const l of this.listeners) {
-      l(data);
-    }
-  }
-}
 
 const WIDTH = 10;
 const HEIGHT = 40;

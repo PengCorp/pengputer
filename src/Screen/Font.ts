@@ -1,4 +1,3 @@
-import { StringLike } from "../types";
 import { dataURLToImageBitmap } from "../util";
 
 /** Represents a font that contains character glyphs. Single font can contain multiple atlases with character maps. */
@@ -22,7 +21,7 @@ export class Font {
    * @param valueMap - A 2D array or array of strings that maps characters to their positions in the atlas. The array should be the same size as the atlas image, where each element corresponds to a character in the atlas.
    * @returns A promise that resolves when the atlas is loaded.
    */
-  async loadAtlas(key: string, dataURL: string, valueMap: Array<StringLike>) {
+  async loadAtlas(key: string, dataURL: string, valueMap: string[][]) {
     this.atlases[key] = {};
     const atlas = this.atlases[key];
 

@@ -1,10 +1,11 @@
 import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
+import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
 import { ScreenCharacterAttributes } from "../Screen/types";
 import { Vector, zeroVector } from "../Toolbox/Vector";
-import { getRectFromVectorAndSize, Rect, StringLike } from "../types";
+import { getRectFromVectorAndSize, Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
 
 export class Std {
@@ -79,7 +80,7 @@ export class Std {
     return this.screen.setCurrentAttributes(attributes);
   }
 
-  writeConsole(string: StringLike) {
+  writeConsole(string: string) {
     return this.screen.displayString(string);
   }
 
@@ -153,8 +154,12 @@ export class Std {
     return this.keyboard.addAllKeysUpListener(callback);
   }
 
-  getWasKeyPressed(keyCode: string) {
+  getWasKeyPressed(keyCode: KeyCode) {
     return this.keyboard.getWasKeyPressed(keyCode);
+  }
+
+  getWasAnyKeyPressed() {
+    return this.keyboard.getWasAnyKeyPressed();
   }
 
   resetKeyPressedHistory() {

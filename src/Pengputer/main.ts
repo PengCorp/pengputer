@@ -138,6 +138,11 @@ class PengOS {
       name: "pengtris.exe",
       createInstance: () => new TetrisApp(this.pc),
     });
+    gamesDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "pengswp.exe",
+      createInstance: () => new PengsweeperApp(this.pc),
+    });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
@@ -564,8 +569,6 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
-
-    await new PengsweeperApp(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
