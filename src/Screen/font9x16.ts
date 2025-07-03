@@ -19,7 +19,6 @@ const cp437CharacterValueMap = [
 
 // Sourced from: https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_9x16
 // 74 characters wide, 11 characters high
-// wonky chars: "⌂", "⊙", "⌀"
 export const cp437plusCharacterValueMap = [
   " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghi",
   "jklmnopqrstuvwxyz{|}~⌂ ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ",
