@@ -78,7 +78,7 @@ header a {
 }
 
 #screen {
-  height: calc(70vh - 68px);
+  aspect-ratio: 4/3;
   width: calc((4 / 3) * 70vh - 68px);
 }
 
