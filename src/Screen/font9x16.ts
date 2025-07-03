@@ -3,6 +3,7 @@ import { Font } from "./Font";
 import cp437 from "./cp437_9x16.png";
 import cp437plus from "./cp437plus_9x16.png";
 import cp437legacy from "./cp437legacy_9x16_2x.png";
+import cp437patterns from "./cp437patterns_9x16.png";
 
 // 32 characters wide, 8 characters high
 const cp437CharacterValueMap = [
@@ -52,9 +53,20 @@ export const cp437legacyCharacterValueMap = [
   "🯰🯱🯲🯳🯴🯵🯶🯷🯸🯹",
 ].map((l) => splitStringIntoCharacters(l));
 
-export const font9x16 = new Font(9, 16);
+export const cp437patternsCharacterValueMap = ["░", "▒", "▓"].map((l) =>
+  splitStringIntoCharacters(l)
+);
+
+export const font9x16 = new Font(9, 16, "░▒▓");
 
 export const loadFont9x16 = async () => {
+  await font9x16.loadAtlas(
+    "cp437patterns",
+    cp437patterns,
+    cp437patternsCharacterValueMap,
+    1,
+    4
+  );
   await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap);
   await font9x16.loadAtlas("cp437plus", cp437plus, cp437plusCharacterValueMap);
   await font9x16.loadAtlas(

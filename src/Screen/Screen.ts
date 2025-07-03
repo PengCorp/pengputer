@@ -418,7 +418,7 @@ export class Screen {
       this.characterWidth * this.charScale,
       this.characterHeight * this.charScale
     );
-    const atlasRegion = font9x16.getCharacter(bufferCharacter.character);
+    const atlasRegion = font9x16.getCharacter(bufferCharacter.character, x);
     if (atlasRegion) {
       const { canvas, x: cx, y: cy, w: cw, h: ch } = atlasRegion;
 
@@ -454,6 +454,22 @@ export class Screen {
       this.characterWidth * this.graphicsScale,
       this.characterHeight * this.graphicsScale
     );
+  }
+
+  private redrawUnstable() {
+    console.log("redraw");
+    const screenSize = this.getSizeInCharacters();
+    const unstableCharacters = font9x16.getUnstableCharacters();
+    for (let y = 0; y < screenSize.h; y += 1) {
+      for (let x = 0; x < screenSize.w; x += 1) {
+        const char = this.screenBuffer[this._getScreenBufferIndex(x, y)];
+
+        const isUnstable = unstableCharacters.includes(char.character);
+        if (isUnstable) {
+          this.redrawCharacter(x, y);
+        }
+      }
+    }
   }
 
   //================================================== BIOS FUNCTIONS =========================================
@@ -746,6 +762,8 @@ export class Screen {
       clear.w * this.attributeScale,
       clear.h * this.attributeScale
     );
+
+    this.redrawUnstable();
   }
 
   scrollUpRect(

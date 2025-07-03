@@ -1,3 +1,4 @@
+import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { dataURLToImageBitmap } from "../util";
 
@@ -6,6 +7,7 @@ interface Atlas {
   ctx: CanvasRenderingContext2D;
   characterLocations: Record<string, Vector>;
   scale: number;
+  patternRunLength: number;
 }
 
 /** Represents a font that contains character glyphs. Single font can contain multiple atlases with character maps. */
@@ -15,11 +17,26 @@ export class Font {
 
   private atlases: Record<string, Atlas>;
 
-  constructor(characterWidth: number, characterHeight: number) {
+  private unstableCharacters: string[];
+
+  constructor(
+    characterWidth: number,
+    characterHeight: number,
+    unstableCharacters: string = ""
+  ) {
     this.characterWidth = characterWidth;
     this.characterHeight = characterHeight;
+    this.unstableCharacters = splitStringIntoCharacters(unstableCharacters);
 
     this.atlases = {};
+  }
+
+  /**
+   * Unstable characters are characters that might change appearance depending on their position on the screen.
+   * This requires extra handling and thus such characters have to be marked as unstable.
+   */
+  public getUnstableCharacters(): string[] {
+    return this.unstableCharacters;
   }
 
   /**
@@ -33,7 +50,8 @@ export class Font {
     key: string,
     dataURL: string,
     valueMap: string[][],
-    scale: number = 1
+    scale: number = 1,
+    patternRunLength: number = 1
   ) {
     // load image
 
@@ -69,19 +87,22 @@ export class Font {
       ctx,
       characterLocations,
       scale,
+      patternRunLength,
     };
   }
 
   /** Retrieves a descriptor of the character with the atlas, x, y, w, and h of the character. */
-  getCharacter(char: string) {
+  getCharacter(char: string, screenX: number) {
     for (let atlasKey in this.atlases) {
       const atlas = this.atlases[atlasKey];
 
       const characterLocation = atlas.characterLocations[char];
       if (characterLocation) {
+        const variantOffset =
+          this.characterWidth * (screenX % atlas.patternRunLength);
         return {
           canvas: atlas.canvas,
-          x: characterLocation.x,
+          x: characterLocation.x + variantOffset,
           y: characterLocation.y,
           w: this.characterWidth * atlas.scale,
           h: this.characterHeight * atlas.scale,
