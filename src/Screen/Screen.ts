@@ -40,21 +40,27 @@ export class Screen {
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
+  private canvasScale: number = 1;
 
   private bufferCanvas!: HTMLCanvasElement;
   private bufferCtx!: CanvasRenderingContext2D;
+  private bufferScale: number = RENDER_SCALE;
 
   private bgCanvas!: HTMLCanvasElement;
   private bgCtx!: CanvasRenderingContext2D;
+  private bgScale: number = 1;
 
   private charCanvas!: HTMLCanvasElement;
   private charCtx!: CanvasRenderingContext2D;
+  private charScale: number = RENDER_SCALE;
 
   private attributeCanvas!: HTMLCanvasElement;
   private attributeCtx!: CanvasRenderingContext2D;
+  private attributeScale: number = 1;
 
   private graphicsCanvas!: HTMLCanvasElement;
   private graphicsCtx!: CanvasRenderingContext2D;
+  private graphicsScale: number = 1;
 
   private currentAttributes: ScreenCharacterAttributes;
 
@@ -124,33 +130,38 @@ export class Screen {
     this.initCanvas(containerEl);
 
     this.bufferCanvas = document.createElement("canvas");
-    this.bufferCanvas.width = this.widthInPixels;
-    this.bufferCanvas.height = this.heightInPixels;
+    this.bufferCanvas.width = this.widthInPixels * this.bufferScale;
+    this.bufferCanvas.height = this.heightInPixels * this.bufferScale;
     this.bufferCtx = this.bufferCanvas.getContext("2d")!;
+    this.bufferCtx.imageSmoothingEnabled = false;
     this.bufferCtx.fillStyle = "white";
 
     this.bgCanvas = document.createElement("canvas");
-    this.bgCanvas.width = this.widthInPixels;
-    this.bgCanvas.height = this.heightInPixels;
+    this.bgCanvas.width = this.widthInPixels * this.bgScale;
+    this.bgCanvas.height = this.heightInPixels * this.bgScale;
     this.bgCtx = this.bgCanvas.getContext("2d")!;
+    this.bgCtx.imageSmoothingEnabled = false;
 
     this.charCanvas = document.createElement("canvas");
-    this.charCanvas.width = this.widthInPixels;
-    this.charCanvas.height = this.heightInPixels;
+    this.charCanvas.width = this.widthInPixels * this.charScale;
+    this.charCanvas.height = this.heightInPixels * this.charScale;
     this.charCtx = this.charCanvas.getContext("2d")!;
+    this.charCtx.imageSmoothingEnabled = false;
     this.charCtx.fillStyle = "white";
 
     this.attributeCanvas = document.createElement("canvas");
-    this.attributeCanvas.width = this.widthInPixels;
-    this.attributeCanvas.height = this.heightInPixels;
+    this.attributeCanvas.width = this.widthInPixels * this.attributeScale;
+    this.attributeCanvas.height = this.heightInPixels * this.attributeScale;
     this.attributeCtx = this.attributeCanvas.getContext("2d")!;
+    this.attributeCtx.imageSmoothingEnabled = false;
     this.attributeCtx.fillStyle = this.currentAttributes.fgColor;
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
 
     this.graphicsCanvas = document.createElement("canvas");
-    this.graphicsCanvas.width = this.widthInPixels;
-    this.graphicsCanvas.height = this.heightInPixels;
+    this.graphicsCanvas.width = this.widthInPixels * this.graphicsScale;
+    this.graphicsCanvas.height = this.heightInPixels * this.graphicsScale;
     this.graphicsCtx = this.graphicsCanvas.getContext("2d")!;
+    this.graphicsCtx.imageSmoothingEnabled = false;
   }
 
   initCanvas(containerEl: HTMLElement) {
@@ -161,8 +172,11 @@ export class Screen {
     this.canvas = canvas;
 
     canvas.setAttribute("id", "screen");
-    canvas.setAttribute("width", String(this.widthInPixels * RENDER_SCALE));
-    canvas.setAttribute("height", String(this.heightInPixels * RENDER_SCALE));
+    canvas.setAttribute("width", String(this.widthInPixels * this.canvasScale));
+    canvas.setAttribute(
+      "height",
+      String(this.heightInPixels * this.canvasScale)
+    );
 
     this.ctx = canvas.getContext("2d")!;
 
@@ -200,13 +214,28 @@ export class Screen {
 
     // clear screen
     this.ctx.globalCompositeOperation = "source-over";
-    this.ctx.imageSmoothingEnabled = false;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // draw background
     this.bufferCtx.globalCompositeOperation = "copy";
-    this.bufferCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
-    this.bufferCtx.drawImage(this.bgCanvas, 0, 0);
+
+    this.bufferCtx.clearRect(
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height
+    );
+    this.bufferCtx.drawImage(
+      this.bgCanvas,
+      0,
+      0,
+      this.bgCanvas.width,
+      this.bgCanvas.height,
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height
+    );
     this.ctx.drawImage(
       this.bufferCanvas,
       0,
@@ -220,9 +249,24 @@ export class Screen {
     );
 
     // draw character layer
-    this.bufferCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
+    this.bufferCtx.clearRect(
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height
+    );
     this.bufferCtx.globalCompositeOperation = "source-over";
-    this.bufferCtx.drawImage(this.charCanvas, 0, 0);
+    this.bufferCtx.drawImage(
+      this.charCanvas,
+      0,
+      0,
+      this.charCanvas.width,
+      this.charCanvas.height,
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height
+    );
 
     // clear blinking characters
     if (this.charBlinkState === false) {
@@ -231,10 +275,10 @@ export class Screen {
           const ch = this.getCharacterAt({ x, y });
           if (ch.attributes.blink) {
             this.bufferCtx.clearRect(
-              x * this.characterWidth,
-              y * this.characterHeight,
-              this.characterWidth,
-              this.characterHeight
+              x * this.characterWidth * this.bufferScale,
+              y * this.characterHeight * this.bufferScale,
+              this.characterWidth * this.bufferScale,
+              this.characterHeight * this.bufferScale
             );
           }
         }
@@ -244,21 +288,32 @@ export class Screen {
     // draw cursor
     if (this.curDisplay && this.curBlinkState) {
       const cursorPosition = this.cursor.getPosition();
-      const curW = this.characterWidth;
-      const curH = this.curEnd - this.curStart + 1;
-      const curX = cursorPosition.x * this.characterWidth;
-      const curY = cursorPosition.y * this.characterHeight + this.curStart;
+      const curW = this.characterWidth * this.bufferScale;
+      const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
+      const curX = cursorPosition.x * this.characterWidth * this.bufferScale;
+      const curY =
+        (cursorPosition.y * this.characterHeight + this.curStart) *
+        this.bufferScale;
       this.bufferCtx.globalCompositeOperation = "xor";
       this.bufferCtx.fillRect(curX, curY, curW, curH);
     }
 
     // apply attribute layer
     this.bufferCtx.globalCompositeOperation = "source-atop";
-    this.bufferCtx.drawImage(this.attributeCanvas, 0, 0);
-
-    this.ctx.imageSmoothingEnabled = true;
+    this.bufferCtx.drawImage(
+      this.attributeCanvas,
+      0,
+      0,
+      this.attributeCanvas.width,
+      this.attributeCanvas.height,
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height
+    );
 
     // commit characters
+    this.ctx.imageSmoothingEnabled = true;
     this.ctx.drawImage(
       this.bufferCanvas,
       0,
@@ -270,8 +325,6 @@ export class Screen {
       this.canvas.width,
       this.canvas.height
     );
-
-    this.ctx.imageSmoothingEnabled = true;
 
     // display graphics
     this.ctx.drawImage(
@@ -285,6 +338,7 @@ export class Screen {
       this.canvas.width,
       this.canvas.height
     );
+    this.ctx.imageSmoothingEnabled = false;
   }
 
   /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
@@ -293,16 +347,26 @@ export class Screen {
 
     bgCtx.globalCompositeOperation = "source-over";
     bgCtx.fillStyle = this.currentAttributes.bgColor;
-    bgCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
+    bgCtx.fillRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
 
     attributeCtx.globalCompositeOperation = "source-over";
-    charCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
+    charCtx.clearRect(0, 0, this.charCanvas.width, this.charCanvas.height);
 
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = this.currentAttributes.fgColor;
-    attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
+    attributeCtx.fillRect(
+      0,
+      0,
+      this.attributeCanvas.width,
+      this.attributeCanvas.height
+    );
 
-    graphicsCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
+    graphicsCtx.clearRect(
+      0,
+      0,
+      this.graphicsCanvas.width,
+      this.graphicsCanvas.height
+    );
 
     this.cursor.moveToStartOfScreen();
   }
@@ -342,17 +406,17 @@ export class Screen {
     bgCtx.globalCompositeOperation = "source-over";
     bgCtx.fillStyle = bufferCharacter.attributes.bgColor;
     bgCtx.fillRect(
-      x * this.characterWidth,
-      y * this.characterHeight,
-      this.characterWidth,
-      this.characterHeight
+      x * this.characterWidth * this.bgScale,
+      y * this.characterHeight * this.bgScale,
+      this.characterWidth * this.bgScale,
+      this.characterHeight * this.bgScale
     );
 
     charCtx.clearRect(
-      x * this.characterWidth,
-      y * this.characterHeight,
-      this.characterWidth,
-      this.characterHeight
+      x * this.characterWidth * this.charScale,
+      y * this.characterHeight * this.charScale,
+      this.characterWidth * this.charScale,
+      this.characterHeight * this.charScale
     );
     const atlasRegion = font9x16.getCharacter(bufferCharacter.character);
     if (atlasRegion) {
@@ -366,10 +430,10 @@ export class Screen {
         cy,
         cw,
         ch,
-        x * this.characterWidth,
-        y * this.characterHeight,
-        this.characterWidth,
-        this.characterHeight
+        x * this.characterWidth * this.charScale,
+        y * this.characterHeight * this.charScale,
+        this.characterWidth * this.charScale,
+        this.characterHeight * this.charScale
       );
     }
 
@@ -377,18 +441,18 @@ export class Screen {
     attributeCtx.globalCompositeOperation = "source-over";
     attributeCtx.fillStyle = bufferCharacter.attributes.fgColor;
     attributeCtx.fillRect(
-      x * this.characterWidth,
-      y * this.characterHeight,
-      this.characterWidth,
-      this.characterHeight
+      x * this.characterWidth * this.attributeScale,
+      y * this.characterHeight * this.attributeScale,
+      this.characterWidth * this.attributeScale,
+      this.characterHeight * this.attributeScale
     );
 
     // clear graphics
     graphicsCtx.clearRect(
-      x * this.characterWidth,
-      y * this.characterHeight,
-      this.characterWidth,
-      this.characterHeight
+      x * this.characterWidth * this.graphicsScale,
+      y * this.characterHeight * this.graphicsScale,
+      this.characterWidth * this.graphicsScale,
+      this.characterHeight * this.graphicsScale
     );
   }
 
@@ -616,43 +680,72 @@ export class Screen {
       {
         ctx: this.bgCtx,
         canvas: this.bgCanvas,
+        scale: this.bgScale,
       },
       {
         ctx: this.charCtx,
         canvas: this.charCanvas,
+        scale: this.charScale,
       },
       {
         ctx: this.attributeCtx,
         canvas: this.attributeCanvas,
+        scale: this.attributeScale,
       },
       {
         ctx: this.graphicsCtx,
         canvas: this.graphicsCanvas,
+        scale: this.graphicsScale,
       },
     ];
 
-    for (const { ctx, canvas } of scrollDraws) {
+    for (const { ctx, canvas, scale } of scrollDraws) {
       this.bufferCtx.globalCompositeOperation = "copy";
       this.bufferCtx.drawImage(
         canvas,
-        src.x,
-        src.y,
-        src.w,
-        src.h,
-        dst.x,
-        dst.y,
-        dst.w,
-        dst.h
+        src.x * scale,
+        src.y * scale,
+        src.w * scale,
+        src.h * scale,
+        dst.x * this.bufferScale,
+        dst.y * this.bufferScale,
+        dst.w * this.bufferScale,
+        dst.h * this.bufferScale
       );
-      ctx.clearRect(dst.x, dst.y, dst.w, dst.h);
-      ctx.drawImage(this.bufferCanvas, 0, 0);
+      ctx.clearRect(dst.x * scale, dst.y * scale, dst.w * scale, dst.h * scale);
+      ctx.drawImage(
+        this.bufferCanvas,
+        0,
+        0,
+        this.bufferCanvas.width,
+        this.bufferCanvas.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
     }
 
     this.bgCtx.fillStyle = attributes.bgColor;
-    this.bgCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
-    this.charCtx.clearRect(clear.x, clear.y, clear.w, clear.h);
+    this.bgCtx.fillRect(
+      clear.x * this.bgScale,
+      clear.y * this.bgScale,
+      clear.w * this.bgScale,
+      clear.h * this.bgScale
+    );
+    this.charCtx.clearRect(
+      clear.x * this.charScale,
+      clear.y * this.charScale,
+      clear.w * this.charScale,
+      clear.h * this.charScale
+    );
     this.attributeCtx.fillStyle = attributes.fgColor;
-    this.attributeCtx.fillRect(clear.x, clear.y, clear.w, clear.h);
+    this.attributeCtx.fillRect(
+      clear.x * this.attributeScale,
+      clear.y * this.attributeScale,
+      clear.w * this.attributeScale,
+      clear.h * this.attributeScale
+    );
   }
 
   scrollUpRect(
@@ -771,7 +864,11 @@ export class Screen {
       dy += this.heightInPixels;
     }
 
-    this.graphicsCtx.drawImage(image, dx, dy);
+    this.graphicsCtx.drawImage(
+      image,
+      dx * this.graphicsScale,
+      dy * this.graphicsScale
+    );
   }
 
   /*=============================== MOUSE ====================================*/

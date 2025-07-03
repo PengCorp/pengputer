@@ -441,10 +441,10 @@ class PengOS {
         const image = await fileEntry.data.load();
         if (image) {
           std.drawConsoleImage(image, 0, 0);
-          const screenSize = std.getConsoleSize();
+          const characterSize = std.getConsoleCharacterSize();
           std.moveConsoleCursorBy({
             x: 0,
-            y: Math.ceil(image.height / screenSize.h),
+            y: Math.ceil(image.height / characterSize.h),
           });
         }
       } else if (

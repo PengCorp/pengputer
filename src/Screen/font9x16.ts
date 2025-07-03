@@ -2,7 +2,7 @@ import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Font } from "./Font";
 import cp437 from "./cp437_9x16.png";
 import cp437plus from "./cp437plus_9x16.png";
-import cp437legacy from "./cp437legacy_9x16.png";
+import cp437legacy from "./cp437legacy_9x16_2x.png";
 
 // 32 characters wide, 8 characters high
 const cp437CharacterValueMap = [
@@ -60,6 +60,7 @@ export const loadFont9x16 = async () => {
   await font9x16.loadAtlas(
     "cp437legacy",
     cp437legacy,
-    cp437legacyCharacterValueMap
+    cp437legacyCharacterValueMap,
+    2
   );
 };
