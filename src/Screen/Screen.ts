@@ -25,6 +25,8 @@ export type ClickListener = (clickEvent: {
   mouseButton: number;
 }) => void;
 
+const RENDER_SCALE = 2;
+
 export class Screen {
   private widthInCharacters: number;
   private heightInCharacters: number;
@@ -122,32 +124,32 @@ export class Screen {
     this.initCanvas(containerEl);
 
     this.bufferCanvas = document.createElement("canvas");
-    this.bufferCanvas.width = this.canvas.width;
-    this.bufferCanvas.height = this.canvas.height;
+    this.bufferCanvas.width = this.widthInPixels;
+    this.bufferCanvas.height = this.heightInPixels;
     this.bufferCtx = this.bufferCanvas.getContext("2d")!;
     this.bufferCtx.fillStyle = "white";
 
     this.bgCanvas = document.createElement("canvas");
-    this.bgCanvas.width = this.canvas.width;
-    this.bgCanvas.height = this.canvas.height;
+    this.bgCanvas.width = this.widthInPixels;
+    this.bgCanvas.height = this.heightInPixels;
     this.bgCtx = this.bgCanvas.getContext("2d")!;
 
     this.charCanvas = document.createElement("canvas");
-    this.charCanvas.width = this.canvas.width;
-    this.charCanvas.height = this.canvas.height;
+    this.charCanvas.width = this.widthInPixels;
+    this.charCanvas.height = this.heightInPixels;
     this.charCtx = this.charCanvas.getContext("2d")!;
     this.charCtx.fillStyle = "white";
 
     this.attributeCanvas = document.createElement("canvas");
-    this.attributeCanvas.width = this.canvas.width;
-    this.attributeCanvas.height = this.canvas.height;
+    this.attributeCanvas.width = this.widthInPixels;
+    this.attributeCanvas.height = this.heightInPixels;
     this.attributeCtx = this.attributeCanvas.getContext("2d")!;
     this.attributeCtx.fillStyle = this.currentAttributes.fgColor;
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
 
     this.graphicsCanvas = document.createElement("canvas");
-    this.graphicsCanvas.width = this.canvas.width;
-    this.graphicsCanvas.height = this.canvas.height;
+    this.graphicsCanvas.width = this.widthInPixels;
+    this.graphicsCanvas.height = this.heightInPixels;
     this.graphicsCtx = this.graphicsCanvas.getContext("2d")!;
   }
 
@@ -159,8 +161,8 @@ export class Screen {
     this.canvas = canvas;
 
     canvas.setAttribute("id", "screen");
-    canvas.setAttribute("width", String(this.widthInPixels));
-    canvas.setAttribute("height", String(this.heightInPixels));
+    canvas.setAttribute("width", String(this.widthInPixels * RENDER_SCALE));
+    canvas.setAttribute("height", String(this.heightInPixels * RENDER_SCALE));
 
     this.ctx = canvas.getContext("2d")!;
 
@@ -198,13 +200,24 @@ export class Screen {
 
     // clear screen
     this.ctx.globalCompositeOperation = "source-over";
-    this.ctx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // draw background
     this.bufferCtx.globalCompositeOperation = "copy";
     this.bufferCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
     this.bufferCtx.drawImage(this.bgCanvas, 0, 0);
-    this.ctx.drawImage(this.bufferCanvas, 0, 0);
+    this.ctx.drawImage(
+      this.bufferCanvas,
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height,
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    );
 
     // draw character layer
     this.bufferCtx.clearRect(0, 0, this.widthInPixels, this.heightInPixels);
@@ -243,11 +256,35 @@ export class Screen {
     this.bufferCtx.globalCompositeOperation = "source-atop";
     this.bufferCtx.drawImage(this.attributeCanvas, 0, 0);
 
+    this.ctx.imageSmoothingEnabled = true;
+
     // commit characters
-    this.ctx.drawImage(this.bufferCanvas, 0, 0);
+    this.ctx.drawImage(
+      this.bufferCanvas,
+      0,
+      0,
+      this.bufferCanvas.width,
+      this.bufferCanvas.height,
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    );
+
+    this.ctx.imageSmoothingEnabled = true;
 
     // display graphics
-    this.ctx.drawImage(this.graphicsCanvas, 0, 0);
+    this.ctx.drawImage(
+      this.graphicsCanvas,
+      0,
+      0,
+      this.graphicsCanvas.width,
+      this.graphicsCanvas.height,
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    );
   }
 
   /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
