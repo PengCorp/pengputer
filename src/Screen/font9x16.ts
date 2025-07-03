@@ -10,7 +10,7 @@ const cp437CharacterValueMap = [
   " ☺︎☻♥︎♦︎♣︎♠︎•◘○◙♂︎♀︎♪♫☼►◄↕︎‼︎¶§▬↨↑↓→←∟↔︎▲▼",
   " !\"#$%&'()*+,-./0123456789:;<=>?",
   "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
-  "`abcdefghijklmnopqrstuvwxyz{|}~ ",
+  "`abcdefghijklmnopqrstuvwxyz{|}~⌂",
   "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ",
   "áíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐",
   "└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀",
