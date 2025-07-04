@@ -24,7 +24,30 @@ export const splitStringIntoCharacters = (string: string): string[] => {
   return splitter.splitGraphemes(string);
 };
 
-const escapeRegex = /^\x1B(s(f|b)[0-9a-f]{2}|i|b(s|r)|r|f)/;
+const escapeRegex = /^\x1b(\[(\d+;?)+.|.)/;
+const controlCodeEscapeRegex = /^\x1b(.)/; // group 1 - character
+const csiEscapeRegex = /^\x1b(\[((\d+;?)*)(.))/; // group 2 - numbers split by ;, group 4 - character
+
+export const matchControlEscape = (s: string) => {
+  const match = s.match(controlCodeEscapeRegex);
+  if (match) {
+    return {
+      character: match[1],
+    };
+  }
+  return null;
+};
+
+export const matchCsiEscape = (s: string) => {
+  const match = s.match(csiEscapeRegex);
+  if (match) {
+    return {
+      attributes: match[2].split(";").map((a) => Number(a)),
+      character: match[4],
+    };
+  }
+  return null;
+};
 
 export const getEscapeSequence = (string: string): string | null => {
   const match = string.match(escapeRegex);
@@ -41,8 +64,10 @@ export const getPlainStringFromString = (string: string): string => {
   while (i < chars.length) {
     const ch = chars[i];
     i += 1;
-    if (ch === "\x1B") {
-      const escapeSequence = getEscapeSequence(chars.slice(i - 1).join(""));
+    if (ch === "\x1b") {
+      const escapeSequence = getEscapeSequence(
+        `\x1b${chars.slice(i).join("")}`
+      );
       if (escapeSequence) {
         chars.splice(i - 1, escapeSequence.length + 1);
       }

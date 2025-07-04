@@ -27,6 +27,9 @@ import { Std } from "../Std";
 import { Ped } from "./Ped";
 import { PengsweeperApp } from "./Pengsweeper";
 
+import "../Color/ansi";
+import { Colors } from "./Colors";
+
 const PATH_SEPARATOR = "/";
 
 declare global {
@@ -537,25 +540,27 @@ class PengOS {
 
   private commandHelp() {
     const { std } = this.pc;
-    std.writeConsole("\x1Bbshelp      \x1BbrList available commands\n");
-    std.writeConsole("\x1Bbshistory   \x1BbrView previously run commands\n");
+    std.writeConsole("\x1b[1mhelp      \x1b[22mList available commands\n");
+    std.writeConsole("\x1b[1mhistory   \x1b[22mView previously run commands\n");
     std.writeConsole(
-      "\x1Bbslook      \x1BbrDisplay contents of current directory\n"
+      "\x1b[1mlook      \x1b[22mDisplay contents of current directory\n"
     );
-    std.writeConsole("\x1Bbsgo        \x1BbrNavigate directories\n");
-    std.writeConsole("\x1Bbsup        \x1BbrNavigate to parent directory\n");
-    std.writeConsole("\x1Bbsmakedir   \x1BbrCreate a directory\n");
-    std.writeConsole("\x1Bbsrun       \x1BbrExecute program\n");
-    std.writeConsole("\x1Bbsopen      \x1BbrDisplay file\n");
-    std.writeConsole("\x1Bbsclear     \x1BbrClear screen\n");
-    std.writeConsole("\x1Bbsprompt    \x1BbrChange your command prompt text\n");
+    std.writeConsole("\x1b[1mgo        \x1b[22mNavigate directories\n");
+    std.writeConsole("\x1b[1mup        \x1b[22mNavigate to parent directory\n");
+    std.writeConsole("\x1b[1mmakedir   \x1b[22mCreate a directory\n");
+    std.writeConsole("\x1b[1mrun       \x1b[22mExecute program\n");
+    std.writeConsole("\x1b[1mopen      \x1b[22mDisplay file\n");
+    std.writeConsole("\x1b[1mclear     \x1b[22mClear screen\n");
     std.writeConsole(
-      "\x1Bbstake      \x1BbrAdd a program to the command list\n"
+      "\x1b[1mprompt    \x1b[22mChange your command prompt text\n"
     );
     std.writeConsole(
-      "\x1Bbsdrop      \x1BbrRemove a program from the command list\n"
+      "\x1b[1mtake      \x1b[22mAdd a program to the command list\n"
     );
-    std.writeConsole("\x1Bbsreboot    \x1BbrRestart the system\n");
+    std.writeConsole(
+      "\x1b[1mdrop      \x1b[22mRemove a program from the command list\n"
+    );
+    std.writeConsole("\x1b[1mreboot    \x1b[22mRestart the system\n");
 
     if (this.takenPrograms.length > 0) {
       std.writeConsole("\nAvailable programs:\n");
@@ -569,6 +574,8 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
+
+    await new Colors(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),

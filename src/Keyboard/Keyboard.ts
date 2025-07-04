@@ -47,7 +47,7 @@ export class Keyboard {
 
     if (e.repeat) return;
     this.pressed.push(e.code);
-    this.werePressed.add(e.code);
+    this.werePressed.add(e.code as KeyCode);
     this._onKeyTyped(e);
   }
 

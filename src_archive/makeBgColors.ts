@@ -7,7 +7,7 @@ export function makeBgColors(colors: Record<string, string>) {
   const bgColors: Record<string, string> = {};
 
   for (const [key, intenseKey] of Object.entries(colors)) {
-    console.log(
+    console["log"](
       `${key}/${intenseKey}: ${
         tc(CGA_PALETTE_DICT[key]).toHsl().l /
         tc(CGA_PALETTE_DICT[intenseKey]).toHsl().l
@@ -21,7 +21,7 @@ export function makeBgColors(colors: Record<string, string>) {
     bgColors[key] = tc(bgColor).toHexString();
   }
 
-  console.log(bgColors);
+  console["log"](bgColors);
 }
 
 makeBgColors({

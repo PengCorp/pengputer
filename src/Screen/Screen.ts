@@ -17,8 +17,12 @@ import {
 import { Cursor } from "./Cursor";
 import {
   getEscapeSequence,
+  matchControlEscape,
+  matchCsiEscape,
   splitStringIntoCharacters,
 } from "../Toolbox/String";
+import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
+import tc from "tinycolor2";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -26,6 +30,10 @@ export type ClickListener = (clickEvent: {
 }) => void;
 
 const RENDER_SCALE = 2;
+
+const isColorValue = (a: number | undefined) => {
+  return a !== undefined && a >= 0 && a < 256;
+};
 
 export class Screen {
   private widthInCharacters: number;
@@ -97,6 +105,8 @@ export class Screen {
       bgColor: CGA_PALETTE_DICT["black"],
       fgColor: CGA_PALETTE_DICT["lightGray"],
       blink: false,
+      bold: false,
+      reverseVideo: false,
     };
 
     this.cursor = new Cursor({
@@ -191,9 +201,11 @@ export class Screen {
 
   /** Resets screen attributes and parameters to sensible defaults. */
   public reset() {
-    this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    this.currentAttributes.bgColor = x256Colors[x256Color.Black];
+    this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     this.currentAttributes.blink = false;
+    this.currentAttributes.bold = false;
+    this.currentAttributes.reverseVideo = false;
     this.setIsScrollable(true);
     this.showCursor();
     this.setCursorSize(14, 15);
@@ -402,9 +414,22 @@ export class Screen {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
 
+    let fgColor = bufferCharacter.attributes.fgColor;
+    if (bufferCharacter.attributes.bold) {
+      fgColor = getBoldColor(fgColor);
+    }
+
+    let bgColor = bufferCharacter.attributes.bgColor;
+
+    if (bufferCharacter.attributes.reverseVideo) {
+      let t = fgColor;
+      fgColor = bgColor;
+      bgColor = t;
+    }
+
     // fill background
     bgCtx.globalCompositeOperation = "source-over";
-    bgCtx.fillStyle = bufferCharacter.attributes.bgColor;
+    bgCtx.fillStyle = bgColor;
     bgCtx.fillRect(
       x * this.characterWidth * this.bgScale,
       y * this.characterHeight * this.bgScale,
@@ -439,7 +464,7 @@ export class Screen {
 
     // fill attribute
     attributeCtx.globalCompositeOperation = "source-over";
-    attributeCtx.fillStyle = bufferCharacter.attributes.fgColor;
+    attributeCtx.fillStyle = fgColor;
     attributeCtx.fillRect(
       x * this.characterWidth * this.attributeScale,
       y * this.characterHeight * this.attributeScale,
@@ -457,7 +482,6 @@ export class Screen {
   }
 
   private redrawUnstable() {
-    console.log("redraw");
     const screenSize = this.getSizeInCharacters();
     const unstableCharacters = font9x16.getUnstableCharacters();
     for (let y = 0; y < screenSize.h; y += 1) {
@@ -523,6 +547,8 @@ export class Screen {
       fgColor: this.currentAttributes.fgColor,
       bgColor: this.currentAttributes.bgColor,
       blink: this.currentAttributes.blink,
+      bold: this.currentAttributes.bold,
+      reverseVideo: this.currentAttributes.reverseVideo,
     };
   }
 
@@ -531,6 +557,8 @@ export class Screen {
       fgColor: attributes.fgColor,
       bgColor: attributes.bgColor,
       blink: attributes.blink,
+      bold: attributes.bold,
+      reverseVideo: attributes.reverseVideo,
     };
   }
 
@@ -548,83 +576,129 @@ export class Screen {
 
   /*================================ TTY EMULATION =============================*/
 
-  /** Handles escape code. Index should point to first character after escape character. Returns new index into string just after the escape sequence. */
-  private handleEscape(sequence: string): number {
-    let index = 0;
-    const cmdChar = sequence[index];
-    index += 1;
-    switch (cmdChar) {
-      case "s": {
-        const setChar = sequence[index];
-        index += 1;
-        switch (setChar) {
-          case "f": {
-            const colorIndex = parseInt(sequence.slice(index, index + 2), 16);
-            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
-              this.currentAttributes.fgColor =
-                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
-            }
-            index += 2;
-            break;
-          }
-          case "b": {
-            const colorIndex = parseInt(sequence.slice(index, index + 2), 16);
-            if (colorIndex >= 0 && colorIndex < CGA_PALETTE.length) {
-              this.currentAttributes.bgColor =
-                CGA_PALETTE_DICT[CGA_PALETTE[colorIndex]];
-            }
-            index += 2;
-            break;
+  private handleControlCharacter(
+    match: NonNullable<ReturnType<typeof matchControlEscape>>
+  ) {
+    return;
+  }
+
+  private handleCSISequence(
+    match: NonNullable<ReturnType<typeof matchCsiEscape>>
+  ) {
+    let { attributes, character } = match;
+
+    console.log(attributes);
+
+    if (character === "m") {
+      if (attributes.length === 0) {
+        attributes = [0];
+      }
+      while (attributes.length > 0) {
+        let a = attributes.shift()!;
+        if (a >= 30 && a < 38) {
+          this.currentAttributes.fgColor = x256Colors[0 + (a - 30)];
+        } else if (a >= 40 && a < 48) {
+          this.currentAttributes.bgColor = x256Colors[0 + (a - 40)];
+        } else if (a >= 90 && a < 98) {
+          this.currentAttributes.fgColor = x256Colors[8 + (a - 90)];
+        } else if (a >= 100 && a < 108) {
+          this.currentAttributes.bgColor = x256Colors[8 + (a - 100)];
+        } else {
+          switch (a) {
+            case 0:
+              this.currentAttributes.bgColor = x256Colors[x256Color.Black];
+              this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
+              this.currentAttributes.blink = false;
+              this.currentAttributes.bold = false;
+              this.currentAttributes.reverseVideo = false;
+              break;
+            case 1:
+              this.currentAttributes.bold = true;
+              break;
+            case 5:
+              this.currentAttributes.blink = true;
+              break;
+            case 7:
+              this.currentAttributes.reverseVideo = true;
+              break;
+            case 22:
+              this.currentAttributes.bold = false;
+              break;
+            case 25:
+              this.currentAttributes.blink = false;
+              break;
+            case 27:
+              this.currentAttributes.reverseVideo = false;
+              break;
+            case 38:
+              {
+                console.log("38");
+                let b = attributes.shift();
+                if (b === 2) {
+                  let r = attributes.shift();
+                  let g = attributes.shift();
+                  let b = attributes.shift();
+                  if (isColorValue(r) && isColorValue(g) && isColorValue(b)) {
+                    this.currentAttributes.fgColor = tc({
+                      r: r!,
+                      g: g!,
+                      b: b!,
+                    }).toHexString();
+                  }
+                } else if (b === 5) {
+                  let c = attributes.shift();
+                  if (c !== undefined && c > 0 && c < x256Colors.length) {
+                    this.currentAttributes.fgColor = x256Colors[c];
+                  }
+                }
+              }
+              break;
+            case 39:
+              this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
+              break;
+            case 48:
+              {
+                let b = attributes.shift();
+                if (b === 2) {
+                  let r = attributes.shift();
+                  let g = attributes.shift();
+                  let b = attributes.shift();
+                  if (isColorValue(r) && isColorValue(g) && isColorValue(b)) {
+                    this.currentAttributes.bgColor = tc({
+                      r: r!,
+                      g: g!,
+                      b: b!,
+                    }).toHexString();
+                  }
+                } else if (b === 5) {
+                  let c = attributes.shift();
+                  if (c !== undefined && c > 0 && c < x256Colors.length) {
+                    this.currentAttributes.bgColor = x256Colors[c];
+                  }
+                }
+              }
+              break;
+            case 49:
+              this.currentAttributes.bgColor = x256Colors[x256Color.Black];
+              break;
           }
         }
-        break;
       }
-      case "i": {
-        const fgColor = this.currentAttributes.fgColor;
-        const bgColor = this.currentAttributes.bgColor;
-        this.currentAttributes.fgColor = bgColor;
-        this.currentAttributes.bgColor = fgColor;
-        break;
-      }
-      case "b": {
-        const boldCommand = sequence[index];
-        index += 1;
-        switch (boldCommand) {
-          case "s": {
-            const boldColor = CGA_BOLD_MAP[this.currentAttributes.fgColor];
-            if (boldColor) {
-              this.currentAttributes.fgColor = boldColor;
-            }
-            break;
-          }
-          case "r": {
-            const fgColor = this.currentAttributes.fgColor;
-            const result = Object.entries(CGA_BOLD_MAP).find(
-              ([k, v]) => v === fgColor
-            );
-            if (result) {
-              this.currentAttributes.fgColor = result[0];
-            }
-            break;
-          }
-        }
-        break;
-      }
-      case "r": {
-        this.currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-        this.currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-        this.currentAttributes.blink = false;
-        break;
-      }
-      case "f": {
-        this.currentAttributes.blink = !this.currentAttributes.blink;
-        break;
-      }
-      default:
-        index -= 1;
-        break;
     }
-    return index;
+  }
+
+  /** Handles escape code. Index should point to first character after escape character. Returns new index offset just after the escape sequence. */
+  private handleEscape(sequence: string): number {
+    const csiMatch = matchCsiEscape(`\x1b${sequence}`);
+    if (csiMatch) {
+      this.handleCSISequence(csiMatch);
+    } else {
+      const controlMatch = matchControlEscape(`\x1b${sequence}`);
+      if (controlMatch) {
+        this.handleControlCharacter(controlMatch);
+      }
+    }
+    return sequence.length;
   }
 
   /** Updates screen by writing a string with provided attributes. */
@@ -662,8 +736,10 @@ export class Screen {
         }
       } else {
         i += 1;
-        if (ch === "\x1B") {
-          const escapeSequence = getEscapeSequence(chars.slice(i - 1).join(""));
+        if (ch === "\x1b") {
+          const escapeSequence = getEscapeSequence(
+            `\x1b${chars.slice(i).join("")}`
+          );
           if (escapeSequence) {
             this.handleEscape(escapeSequence);
             i = i + escapeSequence.length;

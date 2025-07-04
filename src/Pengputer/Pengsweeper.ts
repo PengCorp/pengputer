@@ -432,10 +432,10 @@ class Pengsweeper extends State {
 
     std.setConsoleCursorPosition({ x: 0, y: 0 });
     std.writeConsole(
-      `Mines left: \x1Bsb24\x1Bsf04${_.padStart(
+      `Mines left: \x1b[48;5;273;31m${_.padStart(
         String(this.minesCount - this.flagCount),
         3
-      )}\x1Bsb00\x1Bsf07. \x1Bbs<F1>\x1Bbr for help. \x1Bbs<esc>\x1Bbr to quit. \x1Bbs<r>\x1Bbr to restart.`
+      )}\x1b[40;37m. \x1b[1m<F1>\x1b[22m for help. \x1b[1m<esc>\x1b[22m to quit. \x1b[1m<r>\x1b[22m to restart.`
     );
 
     if (this.isWin) {
@@ -552,7 +552,7 @@ class Help extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
-    std.writeConsole("\x1Bbs== Pengsweeper ==\x1Bbr\n");
+    std.writeConsole("\x1b[1m== Pengsweeper ==\x1b[22m\n");
     std.writeConsole("\n");
     std.writeConsole("Use <space> to uncover fields.\n");
     std.writeConsole(
@@ -576,7 +576,7 @@ class Help extends State {
       "Game is complete when all fields that don't contain a mine are opened.\n"
     );
     std.writeConsole("\n");
-    std.writeConsole("\x1BbsPress any key to continue...\x1Bbr");
+    std.writeConsole("\x1b[1mPress any key to continue...\x1b[22m");
   }
 
   override update(dt: number) {
@@ -613,14 +613,14 @@ class MainMenu extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
-    std.writeConsole("\x1Bbs== Pengsweeper ==\x1Bbr\n");
+    std.writeConsole("\x1b[1m== Pengsweeper ==\x1b[22m\n");
     std.writeConsole("\n");
     std.writeConsole("Select your difficulty level:\n\n");
     std.writeConsole("  1) beginner\n");
     std.writeConsole("  2) intermediate\n");
     std.writeConsole("  3) expert\n");
     std.writeConsole("\n");
-    std.writeConsole("or press \x1Bbs<esc>\x1Bbr to exit.");
+    std.writeConsole("or press \x1b[1m<esc>\x1b[22m to exit.");
   }
 
   override update(dt: number) {

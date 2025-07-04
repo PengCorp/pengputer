@@ -32,7 +32,7 @@ import "./pengos.js";
     let modifier = event.altKey || event.ctrlKey;
     let input = prompt.input;
 
-    console.log(event.code);
+    console["log"](event.code);
 
     if (event.code == "Backspace") {
       input.innerText = input.innerText.substring(

@@ -939,7 +939,7 @@ class Tetris implements GameState {
         x: this.boardScreenRect.x - BORDER_SIZE_H,
         y,
       });
-      std.writeConsole("\x1Bsf08\x1Bsb00  " + "  ".repeat(WIDTH) + "  ");
+      std.writeConsole("\x1b[90;40m  " + "  ".repeat(WIDTH) + "  ");
     }
     for (
       let y = this.boardScreenRect.y + TOP_PADDING;
@@ -951,18 +951,14 @@ class Tetris implements GameState {
         y,
       });
       std.writeConsole(
-        "\x1Bsb07\x1Bsf08<!\x1Bsf08\x1Bsb00" +
-          " .".repeat(WIDTH) +
-          "\x1Bsb07\x1Bsf08!>"
+        "\x1b[47;90m<!\x1b[90;40m" + " .".repeat(WIDTH) + "\x1b[47;90m!>"
       );
     }
     std.setConsoleCursorPosition({
       x: this.boardScreenRect.x - BORDER_SIZE_H,
       y: this.boardScreenRect.y + HEIGHT * CELL_HEIGHT,
     });
-    std.writeConsole(
-      "\x1Bsb07\x1Bsf08<!" + "=".repeat(WIDTH * CELL_WIDTH) + "!>"
-    );
+    std.writeConsole("\x1b[47;90m<!" + "=".repeat(WIDTH * CELL_WIDTH) + "!>");
   }
 
   private drawBoardPieces() {
@@ -1313,28 +1309,28 @@ class MainMenu implements GameState {
         let string = "";
         switch (char) {
           case " ":
-            string = "\x1bsb00  ";
+            string = "\x1b[40m  ";
             break;
           case "c":
-            string = "\x1bsb0b\x1bsf03[]";
+            string = "\x1b[106;36m[]";
             break;
           case "b":
-            string = "\x1bsb09\x1bsf01[]";
+            string = "\x1b[104;34m[]";
             break;
           case "o":
-            string = "\x1bsb18\x1bsf10[]";
+            string = "\x1b[48;5;264;38;5;256m[]";
             break;
           case "y":
-            string = "\x1bsb0e\x1bsf06[]";
+            string = "\x1b[103;33m[]";
             break;
           case "g":
-            string = "\x1bsb0a\x1bsf02[]";
+            string = "\x1b[102;32m[]";
             break;
           case "p":
-            string = "\x1bsb1c\x1bsf14[]";
+            string = "\x1b[48;5;268;38;5;260m[]";
             break;
           case "r":
-            string = "\x1bsb0c\x1bsf04[]";
+            string = "\x1b[101;31m[]";
             break;
         }
         std.writeConsole(string);
