@@ -1,10 +1,4 @@
-import {
-  CGA_BOLD_MAP,
-  CGA_PALETTE,
-  CGA_PALETTE_DICT,
-} from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
-import { CgaColors } from "../Color/types";
 import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
 import { getRectFromVectorAndSize, Rect, Size } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
@@ -102,8 +96,8 @@ export class Screen {
     this.heightInPixels = this.heightInCharacters * this.characterHeight;
 
     this.currentAttributes = {
-      bgColor: CGA_PALETTE_DICT["black"],
-      fgColor: CGA_PALETTE_DICT["lightGray"],
+      bgColor: x256Colors[x256Color.Black],
+      fgColor: x256Colors[x256Color.LightGray],
       blink: false,
       bold: false,
       reverseVideo: false,

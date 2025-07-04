@@ -1,6 +1,4 @@
 import _ from "lodash";
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
-import { CgaColors } from "../Color/types";
 import { ClickListener } from "../Screen/Screen";
 import {
   Vector,
@@ -14,6 +12,7 @@ import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 import { State, StateManager } from "../Toolbox/StateManager";
 import { Signal } from "../Toolbox/Signal";
+import { x256Color, x256Colors } from "../Color/ansi";
 
 enum GameStateKey {
   MainMenu,
@@ -39,14 +38,14 @@ interface FieldCell {
 const CELL_SIZE: Size = { w: 3, h: 1 };
 
 const NUMBER_COLORS: Record<string, string> = {
-  "1": CGA_PALETTE_DICT[CgaColors.Azure],
-  "2": CGA_PALETTE_DICT[CgaColors.Green],
-  "3": CGA_PALETTE_DICT[CgaColors.LightRed],
-  "4": CGA_PALETTE_DICT[CgaColors.LightViolet],
-  "5": CGA_PALETTE_DICT[CgaColors.LightOrange],
-  "6": CGA_PALETTE_DICT[CgaColors.Cyan],
-  "7": CGA_PALETTE_DICT[CgaColors.LightBlue],
-  "8": CGA_PALETTE_DICT[CgaColors.White],
+  "1": x256Colors[x256Color.Azure],
+  "2": x256Colors[x256Color.Green],
+  "3": x256Colors[x256Color.LightRed],
+  "4": x256Colors[x256Color.LightViolet],
+  "5": x256Colors[x256Color.LightOrange],
+  "6": x256Colors[x256Color.Cyan],
+  "7": x256Colors[x256Color.LightBlue],
+  "8": x256Colors[x256Color.White],
 };
 
 type PengsweeperSignalData =
@@ -241,6 +240,10 @@ class Pengsweeper extends State {
   }
 
   private checkWin() {
+    if (this.isLoss) {
+      return false;
+    }
+
     let existCovered = false;
     for (let y = 0; y < this.fieldSize.h; y += 1) {
       for (let x = 0; x < this.fieldSize.w; x += 1) {
@@ -432,7 +435,7 @@ class Pengsweeper extends State {
 
     std.setConsoleCursorPosition({ x: 0, y: 0 });
     std.writeConsole(
-      `Mines left: \x1b[48;5;273;31m${_.padStart(
+      `Mines left: \x1b[48;5;52;31m${_.padStart(
         String(this.minesCount - this.flagCount),
         3
       )}\x1b[40;37m. \x1b[1m<F1>\x1b[22m for help. \x1b[1m<esc>\x1b[22m to quit. \x1b[1m<r>\x1b[22m to restart.`
@@ -466,44 +469,44 @@ class Pengsweeper extends State {
         const previousAttributes = std.getConsoleAttributes();
 
         const attributes = std.getConsoleAttributes();
-        attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+        attributes.bgColor = x256Colors[x256Color.Black];
 
         let cellString = "X";
 
         if (!cell.isOpened) {
           if (cell.isFlagged) {
-            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+            attributes.bgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = x256Colors[x256Color.Black];
             cellString = "?";
           } else {
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+            attributes.fgColor = x256Colors[x256Color.LightGray];
             cellString = ".";
           }
         } else {
           if (cell.isMine && cell.isFlagged) {
-            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+            attributes.bgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = x256Colors[x256Color.Black];
             cellString = "@";
           } else if (cell.isMine && !cell.isFlagged) {
             if (cell.isExploded) {
-              attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
-              attributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+              attributes.bgColor = x256Colors[x256Color.Red];
+              attributes.fgColor = x256Colors[x256Color.White];
               cellString = "@";
             } else {
-              attributes.bgColor = CGA_PALETTE_DICT[CgaColors.Red];
-              attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+              attributes.bgColor = x256Colors[x256Color.Red];
+              attributes.fgColor = x256Colors[x256Color.Black];
               cellString = "@";
             }
           } else if (!cell.isMine && cell.isFlagged) {
-            attributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+            attributes.bgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = x256Colors[x256Color.Black];
 
             cellString = "_";
           } else if (cell.adjacentMines > 0) {
             attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
             cellString = String(cell.adjacentMines);
           } else {
-            attributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+            attributes.fgColor = x256Colors[x256Color.LightGray];
             cellString = " ";
           }
         }

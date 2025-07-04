@@ -1,5 +1,4 @@
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
-import { CgaColors } from "../Color/types";
+import { x256Color, x256Colors } from "../Color/ansi";
 import { getIsPrintable } from "../Screen/getIsPrintable";
 import {
   Vector,
@@ -211,8 +210,8 @@ export class Ped implements Executable {
   async run(args: string[]) {
     const { std } = this.pc;
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Blue];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Blue];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.clearConsole();
 
     const { textBuffer } = this;
