@@ -588,8 +588,6 @@ export class Screen {
   ) {
     let { attributes, character } = match;
 
-    console.log(attributes);
-
     if (character === "m") {
       if (attributes.length === 0) {
         attributes = [0];
@@ -629,7 +627,6 @@ export class Screen {
               break;
             case 38:
               {
-                console.log("38");
                 let b = attributes.shift();
                 if (b === 2) {
                   let r = attributes.shift();
