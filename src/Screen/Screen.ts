@@ -29,6 +29,9 @@ const isColorValue = (a: number | undefined) => {
   return a !== undefined && a >= 0 && a < 256;
 };
 
+const defaultBgColor = x256Colors[x256Color.Black];
+const defaultFgColor = x256Colors[x256Color.LightGray];
+
 export class Screen {
   private widthInCharacters: number;
   private heightInCharacters: number;
@@ -193,13 +196,17 @@ export class Screen {
     containerEl.replaceChildren(canvasBox);
   }
 
-  /** Resets screen attributes and parameters to sensible defaults. */
-  public reset() {
-    this.currentAttributes.bgColor = x256Colors[x256Color.Black];
-    this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
+  private resetAttributes() {
+    this.currentAttributes.bgColor = defaultBgColor;
+    this.currentAttributes.fgColor = defaultFgColor;
     this.currentAttributes.blink = false;
     this.currentAttributes.bold = false;
     this.currentAttributes.reverseVideo = false;
+  }
+
+  /** Resets screen attributes and parameters to sensible defaults. */
+  public reset() {
+    this.resetAttributes();
     this.setIsScrollable(true);
     this.showCursor();
     this.setCursorSize(14, 15);
@@ -600,11 +607,7 @@ export class Screen {
         } else {
           switch (a) {
             case 0:
-              this.currentAttributes.bgColor = x256Colors[x256Color.Black];
-              this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
-              this.currentAttributes.blink = false;
-              this.currentAttributes.bold = false;
-              this.currentAttributes.reverseVideo = false;
+              this.resetAttributes();
               break;
             case 1:
               this.currentAttributes.bold = true;
