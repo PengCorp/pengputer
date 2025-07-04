@@ -1,2 +1,24 @@
 node_modules
 dist
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS folder attributes
+Icon?
+._*
+
+# macOS indexing files
+.Spotlight-V100
+.Trashes
+
+# macOS-specific metadata files
+ehthumbs.db
+Thumbs.db
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
