@@ -24,9 +24,9 @@ export const splitStringIntoCharacters = (string: string): string[] => {
   return splitter.splitGraphemes(string);
 };
 
-const escapeRegex = /^\x1b(\[(\d+;?)+.|.)/;
+const escapeRegex = /^\x1b(\[(\d*;?)+.|.)/;
 const controlCodeEscapeRegex = /^\x1b(.)/; // group 1 - character
-const csiEscapeRegex = /^\x1b(\[((\d+;?)*)(.))/; // group 2 - numbers split by ;, group 4 - character
+const csiEscapeRegex = /^\x1b(\[((\d*;?)*)(.))/; // group 2 - numbers split by ;, group 4 - character
 
 export const matchControlEscape = (s: string) => {
   const match = s.match(controlCodeEscapeRegex);
@@ -42,7 +42,7 @@ export const matchCsiEscape = (s: string) => {
   const match = s.match(csiEscapeRegex);
   if (match) {
     return {
-      attributes: match[2].split(";").map((a) => Number(a)),
+      attributes: match[2].split(";").map((a) => (a ? Number(a) : 0)),
       character: match[4],
     };
   }

@@ -33,6 +33,8 @@ export class Colors implements Executable {
     std.writeConsole("\x1b[5mBlink\x1b[25m and no blink\x1b[0m\n");
     std.writeConsole("\x1b[1mBold\x1b[22m and no bold\x1b[0m\n");
     std.writeConsole("\x1b[7mReverse\x1b[27m and no reverse\x1b[0m\n");
+    std.writeConsole("\x1b[21mUnderline\x1b[24m and no underline\x1b[0m\n");
+    std.writeConsole("\x1b[2mHalf-bright\x1b[22m and regular\x1b[0m\n");
 
     std.writeConsole("Press ENTER to continue...");
     await std.readConsoleLine();

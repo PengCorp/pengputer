@@ -4,6 +4,8 @@ export interface ScreenCharacterAttributes {
   blink: boolean;
   bold: boolean;
   reverseVideo: boolean;
+  underline: boolean;
+  halfBright: boolean;
 }
 
 export interface ScreenCharacter {
