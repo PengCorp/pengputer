@@ -129,6 +129,12 @@ class PengOS {
       createInstance: () => new Ped(this.pc),
     });
 
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "colors.exe",
+      createInstance: () => new Colors(this.pc),
+    });
+
     const gamesDir = rootDir.mkdir("games");
     gamesDir.addItem({
       type: FileSystemObjectType.Link,
@@ -574,8 +580,6 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
-
-    await new Colors(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
