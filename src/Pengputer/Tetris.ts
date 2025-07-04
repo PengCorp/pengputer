@@ -24,10 +24,9 @@ import {
   vectorMultiplyComponents,
   zeroVector,
 } from "../Toolbox/Vector";
-import { CgaColors } from "../Color/types";
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { wrapMax } from "../Toolbox/Math";
 import { Signal } from "../Toolbox/Signal";
+import { x256Color, x256Colors } from "../Color/ansi";
 
 const msPerFrame = 16.666666666;
 
@@ -292,8 +291,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 0 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Cyan],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightCyan],
+      fgColor: x256Colors[x256Color.Cyan],
+      bgColor: x256Colors[x256Color.LightCyan],
     },
   },
   [PieceKey.O]: {
@@ -303,8 +302,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 4, y: -1 + TOP_PADDING },
     nextOffset: { x: 1, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Yellow],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightYellow],
+      fgColor: x256Colors[x256Color.Yellow],
+      bgColor: x256Colors[x256Color.LightYellow],
     },
   },
   [PieceKey.J]: {
@@ -314,8 +313,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Blue],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightBlue],
+      fgColor: x256Colors[x256Color.Blue],
+      bgColor: x256Colors[x256Color.LightBlue],
     },
   },
   [PieceKey.L]: {
@@ -325,8 +324,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Orange],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightOrange],
+      fgColor: x256Colors[x256Color.Orange],
+      bgColor: x256Colors[x256Color.LightOrange],
     },
   },
   [PieceKey.S]: {
@@ -336,8 +335,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Green],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightGreen],
+      fgColor: x256Colors[x256Color.Green],
+      bgColor: x256Colors[x256Color.LightGreen],
     },
   },
   [PieceKey.T]: {
@@ -347,8 +346,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Violet],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightViolet],
+      fgColor: x256Colors[x256Color.Violet],
+      bgColor: x256Colors[x256Color.LightViolet],
     },
   },
   [PieceKey.Z]: {
@@ -358,8 +357,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: CGA_PALETTE_DICT[CgaColors.Red],
-      bgColor: CGA_PALETTE_DICT[CgaColors.LightRed],
+      fgColor: x256Colors[x256Color.Red],
+      bgColor: x256Colors[x256Color.LightRed],
     },
   },
 };
@@ -399,8 +398,8 @@ class Piece {
     this.descriptor = {
       ...this.descriptor,
       color: {
-        fgColor: CGA_PALETTE_DICT[CgaColors.LightGray],
-        bgColor: CGA_PALETTE_DICT[CgaColors.Black],
+        fgColor: x256Colors[x256Color.LightGray],
+        bgColor: x256Colors[x256Color.Black],
       },
     };
   }
@@ -763,8 +762,8 @@ class Board {
     return {
       filled: false,
       color: {
-        bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-        fgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
+        bgColor: x256Colors[x256Color.Black],
+        fgColor: x256Colors[x256Color.DarkGray],
       },
     };
   }
@@ -927,8 +926,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     for (
       let y = this.boardScreenRect.y + TOP_PADDING - 2;
@@ -997,8 +996,8 @@ class Tetris implements GameState {
             pos
           ),
           {
-            bgColor: CGA_PALETTE_DICT[CgaColors.Black],
-            fgColor: CGA_PALETTE_DICT[CgaColors.DarkGray],
+            bgColor: x256Colors[x256Color.Black],
+            fgColor: x256Colors[x256Color.DarkGray],
           },
           " ."
         );
@@ -1029,8 +1028,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition(this.nextOrigin);
     std.writeConsole("= NEXT =");
@@ -1045,8 +1044,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition(this.holdOrigin);
     std.writeConsole("= HOLD =");
@@ -1061,13 +1060,13 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 20 });
     std.writeConsole("== LEVEL ==");
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    currentAttributes.bgColor = x256Colors[x256Color.DarkGray];
+    currentAttributes.fgColor = x256Colors[x256Color.White];
     std.setConsoleAttributes(currentAttributes);
     let levelString =
       this.currentLevel < levels.length - 1
@@ -1084,13 +1083,13 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 23 });
     std.writeConsole("== LINES ==");
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    currentAttributes.bgColor = x256Colors[x256Color.DarkGray];
+    currentAttributes.fgColor = x256Colors[x256Color.White];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 24 });
     std.writeConsole(` ${_.padStart(String(this.linesCleared), 9)} `);
@@ -1100,14 +1099,14 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 17 });
     std.writeConsole("== SCORE ==");
 
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.DarkGray];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.White];
+    currentAttributes.bgColor = x256Colors[x256Color.DarkGray];
+    currentAttributes.fgColor = x256Colors[x256Color.White];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 18 });
     std.writeConsole(` ${_.padStart(String(this.score), 9)} `);
@@ -1191,8 +1190,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.clearConsole();
     std.setConsoleCursorPosition({ x: 0, y: 0 });
@@ -1297,8 +1296,8 @@ class MainMenu implements GameState {
     const { std } = this.pc;
 
     let currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.clearConsole();
 
@@ -1338,8 +1337,8 @@ class MainMenu implements GameState {
     }
 
     currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 0, y: start + 3 });
     std.writeConsole(
@@ -1382,8 +1381,8 @@ class GameOver implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.bgColor = x256Colors[x256Color.LightGray];
+    currentAttributes.fgColor = x256Colors[x256Color.Black];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 27, y: 13 });
     std.writeConsole("  ==   GAME  OVER   ==  ");

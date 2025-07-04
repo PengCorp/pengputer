@@ -1,10 +1,4 @@
-import {
-  CGA_BOLD_MAP,
-  CGA_PALETTE,
-  CGA_PALETTE_DICT,
-} from "../Color/cgaPalette";
 import { font9x16 } from "./font9x16";
-import { CgaColors } from "../Color/types";
 import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
 import { getRectFromVectorAndSize, Rect, Size } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
@@ -34,6 +28,9 @@ const RENDER_SCALE = 2;
 const isColorValue = (a: number | undefined) => {
   return a !== undefined && a >= 0 && a < 256;
 };
+
+const defaultBgColor = x256Colors[x256Color.Black];
+const defaultFgColor = x256Colors[x256Color.LightGray];
 
 export class Screen {
   private widthInCharacters: number;
@@ -102,8 +99,8 @@ export class Screen {
     this.heightInPixels = this.heightInCharacters * this.characterHeight;
 
     this.currentAttributes = {
-      bgColor: CGA_PALETTE_DICT["black"],
-      fgColor: CGA_PALETTE_DICT["lightGray"],
+      bgColor: x256Colors[x256Color.Black],
+      fgColor: x256Colors[x256Color.LightGray],
       blink: false,
       bold: false,
       reverseVideo: false,
@@ -199,13 +196,17 @@ export class Screen {
     containerEl.replaceChildren(canvasBox);
   }
 
-  /** Resets screen attributes and parameters to sensible defaults. */
-  public reset() {
-    this.currentAttributes.bgColor = x256Colors[x256Color.Black];
-    this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
+  private resetAttributes() {
+    this.currentAttributes.bgColor = defaultBgColor;
+    this.currentAttributes.fgColor = defaultFgColor;
     this.currentAttributes.blink = false;
     this.currentAttributes.bold = false;
     this.currentAttributes.reverseVideo = false;
+  }
+
+  /** Resets screen attributes and parameters to sensible defaults. */
+  public reset() {
+    this.resetAttributes();
     this.setIsScrollable(true);
     this.showCursor();
     this.setCursorSize(14, 15);
@@ -587,8 +588,6 @@ export class Screen {
   ) {
     let { attributes, character } = match;
 
-    console.log(attributes);
-
     if (character === "m") {
       if (attributes.length === 0) {
         attributes = [0];
@@ -606,11 +605,7 @@ export class Screen {
         } else {
           switch (a) {
             case 0:
-              this.currentAttributes.bgColor = x256Colors[x256Color.Black];
-              this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
-              this.currentAttributes.blink = false;
-              this.currentAttributes.bold = false;
-              this.currentAttributes.reverseVideo = false;
+              this.resetAttributes();
               break;
             case 1:
               this.currentAttributes.bold = true;
@@ -632,7 +627,6 @@ export class Screen {
               break;
             case 38:
               {
-                console.log("38");
                 let b = attributes.shift();
                 if (b === 2) {
                   let r = attributes.shift();

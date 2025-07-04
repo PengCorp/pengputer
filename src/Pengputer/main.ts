@@ -7,8 +7,6 @@ import { PC } from "./PC";
 import { HelloWorld } from "./HelloWorld";
 import { EightBall } from "./EightBall";
 import { DateApp } from "./DateApp";
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
-import { CgaColors } from "../Color/types";
 import { padStart } from "lodash";
 
 import energyStar from "./res/energyStar.png";
@@ -29,6 +27,7 @@ import { PengsweeperApp } from "./Pengsweeper";
 
 import "../Color/ansi";
 import { Colors } from "./Colors";
+import { x256Color, x256Colors } from "../Color/ansi";
 
 const PATH_SEPARATOR = "/";
 
@@ -127,6 +126,12 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "ped.exe",
       createInstance: () => new Ped(this.pc),
+    });
+
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "colors.exe",
+      createInstance: () => new Colors(this.pc),
     });
 
     const gamesDir = rootDir.mkdir("games");
@@ -267,8 +272,8 @@ class PengOS {
     std.setIsConsoleCursorVisible(true);
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.fgColor = CGA_PALETTE_DICT[CgaColors.LightGray];
-    currentAttributes.bgColor = CGA_PALETTE_DICT[CgaColors.Black];
+    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
+    currentAttributes.bgColor = x256Colors[x256Color.Black];
     std.setConsoleAttributes(currentAttributes);
 
     let pathString = this.formatPath(currentPath);
@@ -574,8 +579,6 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
-
-    await new Colors(this.pc).run([]);
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),

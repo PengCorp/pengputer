@@ -2,7 +2,7 @@ import { CGA_PALETTE_DICT } from "./cgaPalette";
 import { CgaColors } from "./types";
 import tc from "tinycolor2";
 
-const x256Colors = new Array(512).fill(null);
+const x256Colors = new Array(512).fill(CGA_PALETTE_DICT[CgaColors.Black]);
 
 x256Colors[0x00] = CGA_PALETTE_DICT[CgaColors.Black];
 x256Colors[0x01] = CGA_PALETTE_DICT[CgaColors.Red];
@@ -58,24 +58,6 @@ x256Colors[0x10d] = CGA_PALETTE_DICT[CgaColors.LightRose];
 x256Colors[0x10e] = CGA_PALETTE_DICT[CgaColors.Black];
 x256Colors[0x10f] = CGA_PALETTE_DICT[CgaColors.Black];
 
-x256Colors[0x110] = CGA_PALETTE_DICT[CgaColors.BackgroundBlack];
-x256Colors[0x111] = CGA_PALETTE_DICT[CgaColors.BackgroundRed];
-x256Colors[0x112] = CGA_PALETTE_DICT[CgaColors.BackgroundGreen];
-x256Colors[0x113] = CGA_PALETTE_DICT[CgaColors.BackgroundYellow];
-x256Colors[0x114] = CGA_PALETTE_DICT[CgaColors.BackgroundBlue];
-x256Colors[0x115] = CGA_PALETTE_DICT[CgaColors.BackgroundMagenta];
-x256Colors[0x116] = CGA_PALETTE_DICT[CgaColors.BackgroundCyan];
-x256Colors[0x117] = CGA_PALETTE_DICT[CgaColors.BackgroundLightGray];
-
-x256Colors[0x118] = CGA_PALETTE_DICT[CgaColors.BackgroundOrange];
-x256Colors[0x119] = CGA_PALETTE_DICT[CgaColors.BackgroundChartreuse];
-x256Colors[0x11a] = CGA_PALETTE_DICT[CgaColors.BackgroundSpringGreen];
-x256Colors[0x11b] = CGA_PALETTE_DICT[CgaColors.BackgroundAzure];
-x256Colors[0x11c] = CGA_PALETTE_DICT[CgaColors.BackgroundViolet];
-x256Colors[0x11d] = CGA_PALETTE_DICT[CgaColors.BackgroundRose];
-x256Colors[0x11e] = CGA_PALETTE_DICT[CgaColors.Black];
-x256Colors[0x11f] = CGA_PALETTE_DICT[CgaColors.Black];
-
 export { x256Colors };
 
 export enum x256Color {
@@ -109,22 +91,6 @@ export enum x256Color {
   LightAzure = 0x10b,
   LightViolet = 0x10c,
   LightRose = 0x10d,
-
-  BackgroundBlack = 0x110,
-  BackgroundRed = 0x111,
-  BackgroundGreen = 0x112,
-  BackgroundYellow = 0x113,
-  BackgroundBlue = 0x114,
-  BackgroundMagenta = 0x115,
-  BackgroundCyan = 0x116,
-  BackgroundLightGray = 0x117,
-
-  BackgroundOrange = 0x118,
-  BackgroundChartreuse = 0x119,
-  BackgroundSpringGreen = 0x11a,
-  BackgroundAzure = 0x11b,
-  BackgroundViolet = 0x11c,
-  BackgroundRose = 0x11d,
 }
 
 export const getBoldColor = (color: string) => {
