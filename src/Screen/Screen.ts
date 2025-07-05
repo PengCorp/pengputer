@@ -104,6 +104,8 @@ export class Screen {
       blink: false,
       bold: false,
       reverseVideo: false,
+      underline: false,
+      halfBright: false,
     };
 
     this.cursor = new Cursor({
@@ -202,6 +204,8 @@ export class Screen {
     this.currentAttributes.blink = false;
     this.currentAttributes.bold = false;
     this.currentAttributes.reverseVideo = false;
+    this.currentAttributes.underline = false;
+    this.currentAttributes.halfBright = false;
   }
 
   /** Resets screen attributes and parameters to sensible defaults. */
@@ -427,6 +431,14 @@ export class Screen {
       fgColor = bgColor;
       bgColor = t;
     }
+    if (bufferCharacter.attributes.halfBright) {
+      const f = tc(fgColor).toHsv();
+      f.v = f.v / 2;
+      fgColor = tc(f).toHexString();
+      const b = tc(bgColor).toHsv();
+      b.v = b.v / 2;
+      bgColor = tc(b).toHexString();
+    }
 
     // fill background
     bgCtx.globalCompositeOperation = "source-over";
@@ -460,6 +472,20 @@ export class Screen {
         y * this.characterHeight * this.charScale,
         this.characterWidth * this.charScale,
         this.characterHeight * this.charScale
+      );
+    }
+
+    if (bufferCharacter.attributes.underline) {
+      charCtx.globalCompositeOperation = "xor";
+      charCtx.fillStyle = "#ffffff";
+      const underlineHeight = Math.floor(
+        (this.characterHeight * this.charScale) / 10
+      );
+      charCtx.fillRect(
+        x * this.characterWidth * this.charScale,
+        (y + 1) * this.characterHeight * this.charScale - underlineHeight,
+        this.characterWidth * this.charScale,
+        underlineHeight * this.charScale
       );
     }
 
@@ -550,6 +576,8 @@ export class Screen {
       blink: this.currentAttributes.blink,
       bold: this.currentAttributes.bold,
       reverseVideo: this.currentAttributes.reverseVideo,
+      underline: this.currentAttributes.underline,
+      halfBright: this.currentAttributes.halfBright,
     };
   }
 
@@ -560,6 +588,8 @@ export class Screen {
       blink: attributes.blink,
       bold: attributes.bold,
       reverseVideo: attributes.reverseVideo,
+      underline: attributes.underline,
+      halfBright: attributes.halfBright,
     };
   }
 
@@ -610,14 +640,24 @@ export class Screen {
             case 1:
               this.currentAttributes.bold = true;
               break;
+            case 2:
+              this.currentAttributes.halfBright = true;
+              break;
             case 5:
               this.currentAttributes.blink = true;
               break;
             case 7:
               this.currentAttributes.reverseVideo = true;
               break;
+            case 21:
+              this.currentAttributes.underline = true;
+              break;
             case 22:
               this.currentAttributes.bold = false;
+              this.currentAttributes.halfBright = false;
+              break;
+            case 24:
+              this.currentAttributes.underline = false;
               break;
             case 25:
               this.currentAttributes.blink = false;
