@@ -580,8 +580,6 @@ class PengOS {
 
     let previousEntries: string[] = [];
 
-    await new Colors(this.pc).run([]);
-
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
       h: this.commandHelp.bind(this),
