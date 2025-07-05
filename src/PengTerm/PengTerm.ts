@@ -22,11 +22,6 @@ export type Color = ClassicColor | IndexedColor | DirectColor;
 export interface CellAttributes {
   fgColor: Color;
   bgColor: Color;
-  // blink: boolean;
-  // bold: boolean;
-  // reverseVideo: boolean;
-  // underline: boolean;
-  // halfBright: boolean;
 }
 
 export const numberOfAttributes = 2;
