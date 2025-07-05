@@ -2,16 +2,22 @@ const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
 const BUFFER_HEIGHT = 25;
 
+enum ColorType {
+  Classic = 0,
+  Indexed = 1,
+  Direct = 2,
+}
+
 export interface ClassicColor {
-  type: "classic";
+  type: ColorType.Classic;
   index: number;
 }
 export interface IndexedColor {
-  type: "indexed";
+  type: ColorType.Indexed;
   index: number;
 }
 export interface DirectColor {
-  type: "direct";
+  type: ColorType.Direct;
   r: number;
   g: number;
   b: number;
@@ -24,18 +30,15 @@ export interface CellAttributes {
   bgColor: Color;
 }
 
-export const numberOfAttributes = 2;
-
 class Cell {
   private attributes: CellAttributes;
   private rune: string;
 
   constructor() {
     this.attributes = {
-      fgColor: { type: "classic", index: 0 },
-      bgColor: { type: "classic", index: 0 },
+      fgColor: { type: ColorType.Indexed, index: 0 },
+      bgColor: { type: ColorType.Indexed, index: 0 },
     };
-    numberOfAttributes === 2;
     this.rune = "\x00";
   }
 
@@ -45,15 +48,16 @@ class Cell {
       fgColor: { ...c.attributes.fgColor },
       bgColor: { ...c.attributes.bgColor },
     };
-    numberOfAttributes === 2;
     c.rune = this.rune;
     return c;
   }
 }
 
-export interface Line {
-  cells: Cell[];
-  isWrapped: boolean;
+export class Line {
+  public cells: Cell[] = [];
+  public isWrapped: boolean = false;
+
+  constructor() {}
 }
 
 class Buffer {
@@ -70,15 +74,15 @@ class Buffer {
 
     if (bufferHeight > 0) {
       for (let i = 0; i < bufferHeight; i += 1) {
-        const line: Line = {
-          cells: new Array(bufferWidth).fill(null).map(() => new Cell()),
-          isWrapped: false,
-        };
+        const line = new Line();
+        line.cells = new Array(bufferWidth).fill(null).map(() => new Cell());
+        line.isWrapped = false;
         this.lines.push(line);
       }
     }
   }
 
+  /** Scrolls all lines up and adds new line to the bottom of the buffer. */
   public scrollLineIn(line: Line) {
     this.lines.push(line);
     if (this.lines.length > SCROLLBACK_LENGTH) {
@@ -97,9 +101,8 @@ export class PengTerm {
       bufferWidth: BUFFER_WIDTH,
       bufferHeight: BUFFER_HEIGHT,
     });
+    console.log("create");
 
     console.dir(this);
   }
 }
-
-new PengTerm();

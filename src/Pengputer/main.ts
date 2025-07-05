@@ -31,6 +31,8 @@ import { x256Color, x256Colors } from "../Color/ansi";
 
 import { PengTerm } from "../PengTerm/PengTerm";
 
+new PengTerm();
+
 const PATH_SEPARATOR = "/";
 
 declare global {
