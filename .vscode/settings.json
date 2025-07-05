@@ -22,6 +22,7 @@
         "pengers",
         "Pengsweeper",
         "PUSHDOWN",
+        "SCROLLBACK",
         "Tetris"
     ],
 }
