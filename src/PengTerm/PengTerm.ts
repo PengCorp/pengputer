@@ -1,8 +1,12 @@
+import { splitStringIntoCharacters } from "../Toolbox/String";
+import { Vector } from "../Toolbox/Vector";
+import { Size } from "../types";
+
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
 const BUFFER_HEIGHT = 25;
 
-enum ColorType {
+export enum ColorType {
   Classic = 0,
   Indexed = 1,
   Direct = 2,
@@ -31,15 +35,17 @@ export interface CellAttributes {
 }
 
 class Cell {
-  private attributes: CellAttributes;
-  private rune: string;
+  public attributes: CellAttributes;
+  public rune: string;
+  public dirty: boolean;
 
   constructor() {
     this.attributes = {
-      fgColor: { type: ColorType.Indexed, index: 0 },
+      fgColor: { type: ColorType.Indexed, index: 7 },
       bgColor: { type: ColorType.Indexed, index: 0 },
     };
     this.rune = "\x00";
+    this.dirty = true;
   }
 
   public clone(): Cell {
@@ -49,6 +55,7 @@ class Cell {
       bgColor: { ...c.attributes.bgColor },
     };
     c.rune = this.rune;
+    c.dirty = true;
     return c;
   }
 }
@@ -60,8 +67,10 @@ export class Line {
   constructor() {}
 }
 
-class Buffer {
+export class Buffer {
   private lines: Line[];
+  private width: number;
+  private height: number;
 
   constructor({
     bufferWidth,
@@ -71,6 +80,8 @@ class Buffer {
     bufferHeight?: number;
   }) {
     this.lines = [];
+    this.width = bufferWidth;
+    this.height = bufferHeight;
 
     if (bufferHeight > 0) {
       for (let i = 0; i < bufferHeight; i += 1) {
@@ -86,14 +97,38 @@ class Buffer {
   public scrollLineIn(line: Line) {
     this.lines.push(line);
     if (this.lines.length > SCROLLBACK_LENGTH) {
-      this.lines = this.lines.slice(this.lines.length - 1024);
+      this.lines = this.lines.slice(this.lines.length - SCROLLBACK_LENGTH);
     }
+  }
+
+  public getSize(): Size {
+    return { w: this.width, h: this.height };
+  }
+
+  public getCellAt(pos: Vector) {
+    return this.lines[pos.y].cells[pos.x];
+  }
+}
+
+export class Cursor {
+  public x: number;
+  public y: number;
+
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+  }
+
+  public getPosition(): Vector {
+    return { x: this.x, y: this.y };
   }
 }
 
 export class PengTerm {
   private scrollback: Buffer;
-  private screen: Buffer;
+  public screen: Buffer;
+  public cursor: Cursor;
+  private isWrapPending: boolean;
 
   constructor() {
     this.scrollback = new Buffer({ bufferWidth: BUFFER_WIDTH });
@@ -101,8 +136,34 @@ export class PengTerm {
       bufferWidth: BUFFER_WIDTH,
       bufferHeight: BUFFER_HEIGHT,
     });
-    console.log("create");
+    this.cursor = new Cursor();
+    this.isWrapPending = false;
+  }
 
-    console.dir(this);
+  public writeCharacter(character: string) {
+    if (this.isWrapPending) {
+      this.cursor.x = 0;
+      this.cursor.y += 1;
+      this.isWrapPending = false;
+    }
+
+    const cell = this.screen.getCellAt(this.cursor.getPosition());
+    cell.rune = character;
+    cell.dirty = true;
+
+    this.cursor.x += 1;
+    if (this.cursor.x === this.screen.getSize().w) {
+      this.cursor.x -= 1;
+      this.isWrapPending = true;
+    }
+  }
+
+  public write(string: string) {
+    const chars = splitStringIntoCharacters(string);
+
+    for (let i = 0; i < string.length; ) {
+      this.writeCharacter(chars[i]);
+      i += 1;
+    }
   }
 }

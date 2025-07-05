@@ -1,4 +1,5 @@
 import { Keyboard } from "../Keyboard";
+import { PengTerm } from "../PengTerm";
 import { Screen } from "../Screen";
 import { Std } from "../Std/Std";
 import { FileSystem } from "./FileSystem";
@@ -10,4 +11,5 @@ export interface PC {
   prompt: string;
   fileSystem: FileSystem;
   std: Std;
+  term: PengTerm;
 }

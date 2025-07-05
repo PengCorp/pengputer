@@ -1,5 +1,10 @@
 import { font9x16 } from "./font9x16";
-import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
+import {
+  cloneScreenBufferCharacter,
+  compareScreenBufferCharacter,
+  ScreenBufferCharacter,
+  ScreenCharacterAttributes,
+} from "./types";
 import { getRectFromVectorAndSize, Rect, Size } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 import {
@@ -17,6 +22,7 @@ import {
 } from "../Toolbox/String";
 import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
 import tc from "tinycolor2";
+import { Buffer, ColorType, PengTerm } from "../PengTerm";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -1033,5 +1039,82 @@ export class Screen {
     return () => {
       this.canvas.removeEventListener("mousedown", fn);
     };
+  }
+
+  /*=============================== TERM HANDLING ====================================*/
+
+  updateFromTerm(term: PengTerm) {
+    this.cursor.setPosition(term.cursor.getPosition());
+
+    let screenChanged = false;
+
+    const screenBuffer = term.screen;
+    const screenBufferSize = screenBuffer.getSize();
+
+    for (
+      let y = 0;
+      y < this.heightInCharacters && y < screenBufferSize.h;
+      y += 1
+    ) {
+      for (
+        let x = 0;
+        x < this.widthInCharacters && x < screenBufferSize.w;
+        x += 1
+      ) {
+        const cell = screenBuffer.getCellAt({ x, y });
+
+        if (!cell.dirty) continue;
+
+        const currentCharacter =
+          this.screenBuffer[this._getScreenBufferIndex(x, y)];
+        const newCharacter = cloneScreenBufferCharacter(currentCharacter);
+
+        const cellFgColor = cell.attributes.fgColor;
+        const cellBgColor = cell.attributes.bgColor;
+
+        let fgColor = "black";
+        switch (cellFgColor.type) {
+          case ColorType.Classic:
+            fgColor = x256Colors[cellFgColor.index];
+            break;
+          case ColorType.Indexed:
+            fgColor = x256Colors[cellFgColor.index];
+            break;
+          case ColorType.Direct:
+            fgColor = tc(cellFgColor).toHexString();
+            break;
+        }
+
+        let bgColor = "black";
+        switch (cellBgColor.type) {
+          case ColorType.Classic:
+            bgColor = x256Colors[cellBgColor.index];
+            break;
+          case ColorType.Indexed:
+            bgColor = x256Colors[cellBgColor.index];
+            break;
+          case ColorType.Direct:
+            bgColor = tc(cellBgColor).toHexString();
+            break;
+        }
+
+        newCharacter.character = cell.rune;
+
+        newCharacter.attributes.fgColor = fgColor;
+        newCharacter.attributes.bgColor = bgColor;
+
+        if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
+          this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
+          this.redrawCharacter(x, y);
+          screenChanged = true;
+        }
+
+        cell.dirty = false;
+      }
+    }
+
+    if (screenChanged) {
+      this.redrawUnstable();
+    }
   }
 }

@@ -28,10 +28,7 @@ import { PengsweeperApp } from "./Pengsweeper";
 import "../Color/ansi";
 import { Colors } from "./Colors";
 import { x256Color, x256Colors } from "../Color/ansi";
-
-import { PengTerm } from "../PengTerm/PengTerm";
-
-new PengTerm();
+import { PengTerm } from "../PengTerm";
 
 const PATH_SEPARATOR = "/";
 
@@ -52,7 +49,7 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
-  constructor(screen: Screen, keyboard: Keyboard) {
+  constructor(screen: Screen, keyboard: Keyboard, term: PengTerm) {
     const std = new Std(screen, keyboard);
     this.pc = {
       currentDrive: "C",
@@ -60,6 +57,7 @@ class PengOS {
       prompt: "%D%P",
       fileSystem: new FileSystem(),
       std,
+      term,
     };
     this.takenPrograms = [];
 
@@ -677,18 +675,21 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
+  const term = new PengTerm();
+  term.write("Hello, world!");
 
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;
     lastTime = performance.now();
+    screen.updateFromTerm(term);
     screen.draw(dt);
     keyboard.update(dt);
     requestAnimationFrame(cb);
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(screen, keyboard);
+  const pengOS = new PengOS(screen, keyboard, term);
   await pengOS.startup();
   pengOS.mainLoop();
 })();
