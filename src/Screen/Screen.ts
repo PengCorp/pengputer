@@ -1063,7 +1063,7 @@ export class Screen {
 
     let screenChanged = false;
 
-    const page = screen.getPage(0);
+    const page = screen.getPage(screen.topLine);
     this.cursor.setPositionNoWrap(page.cursor.getPosition());
 
     for (let y = 0; y < this.heightInCharacters && y < page.height; y += 1) {

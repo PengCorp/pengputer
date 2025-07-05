@@ -1,5 +1,6 @@
-const nonPrintableCharacters = ["\0", "\n", "\r", "\b", "\x1b"];
-
 export const getIsPrintable = (char: string) => {
-  return !nonPrintableCharacters.includes(char);
+  if (char < "\x20" || char === "\x7f") {
+    return false;
+  }
+  return true;
 };

@@ -1,3 +1,4 @@
+import { getIsPrintable } from "../Screen/getIsPrintable";
 import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
@@ -144,12 +145,16 @@ export class Screen {
     return {
       width: this.pageSize.w,
       height: this.pageSize.h,
-      lines: this.buffer.slice(-(this.pageSize.h - 1) + offset - 1, offset),
+      lines: this.buffer.slice(-this.pageSize.h + offset, offset),
       cursor: cursor,
     };
   }
 
   private writeCharacter(character: string) {
+    if (!getIsPrintable(character)) {
+      return;
+    }
+
     if (this.isWrapPending) {
       this.cursor.x = 0;
       this.cursor.y += 1;
@@ -175,6 +180,8 @@ export class Screen {
       this.cursor.x -= 1;
       this.isWrapPending = true;
     }
+
+    this.topLine = 0;
   }
 
   public write(chars: string[]) {
