@@ -39,7 +39,7 @@ export class RingBuffer<T> {
     this.length = Math.min(this.length + 1, this.size);
   }
 
-  public slice(start: number, end: number) {
+  public slice(start: number, end: number): (T | null)[] {
     const result = [];
     let idx = this.idx;
     idx = this.moveIdx(idx, start);

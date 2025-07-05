@@ -1071,7 +1071,7 @@ export class Screen {
         const cell = page.lines[y]?.cells[x];
         if (!cell) continue;
 
-        if (!term.screenDirty && !cell.dirty) continue;
+        if (!term.screen.isDirty && !cell.isDirty) continue;
 
         const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
@@ -1117,11 +1117,11 @@ export class Screen {
           screenChanged = true;
         }
 
-        cell.dirty = false;
+        cell.isDirty = false;
       }
     }
 
-    term.screenDirty = false;
+    term.screen.isDirty = false;
 
     if (screenChanged) {
       this.redrawUnstable();

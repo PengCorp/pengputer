@@ -17,7 +17,7 @@ export interface CellAttributes {
 class Cell {
   public attributes: CellAttributes;
   public rune: string;
-  public dirty: boolean;
+  public isDirty: boolean;
 
   constructor() {
     this.attributes = {
@@ -25,17 +25,17 @@ class Cell {
       bgColor: { type: ColorType.Indexed, index: 0 },
     };
     this.rune = "\x00";
-    this.dirty = true;
+    this.isDirty = true;
   }
 
   public clone(): Cell {
     const c = new Cell();
     c.attributes = {
-      fgColor: { ...c.attributes.fgColor },
-      bgColor: { ...c.attributes.bgColor },
+      fgColor: c.attributes.fgColor,
+      bgColor: c.attributes.bgColor,
     };
     c.rune = this.rune;
-    c.dirty = true;
+    c.isDirty = true;
     return c;
   }
 }
@@ -103,6 +103,7 @@ export class Screen {
   public cursor: Cursor;
   public topLine: number;
   private pageSize: Size;
+  public isDirty: boolean = false;
 
   constructor({
     pageSize,
@@ -173,7 +174,7 @@ export class Screen {
       throw new Error("Unable to get cell.");
     }
     cell.rune = character;
-    cell.dirty = true;
+    cell.isDirty = true;
 
     this.cursor.x += 1;
     if (this.cursor.x === page.width) {
@@ -215,7 +216,6 @@ export class PengTerm {
   private alternateScreen: Screen;
 
   public screen: Screen;
-  public screenDirty: boolean;
 
   constructor() {
     this.mainScreen = new Screen({
@@ -229,7 +229,7 @@ export class PengTerm {
     });
 
     this.screen = this.mainScreen;
-    this.screenDirty = true;
+    this.screen.isDirty = true;
   }
 
   public write(string: string) {
@@ -244,13 +244,13 @@ export class PengTerm {
       case "main":
         if (this.screen !== this.mainScreen) {
           this.screen = this.mainScreen;
-          this.screenDirty = true;
+          this.screen.isDirty = true;
         }
         break;
       case "alternate":
         if (this.screen !== this.alternateScreen) {
           this.screen = this.alternateScreen;
-          this.screenDirty = true;
+          this.screen.isDirty = true;
         }
         break;
     }
