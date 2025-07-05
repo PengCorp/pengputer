@@ -676,7 +676,9 @@ class PengOS {
 
   const keyboard = new Keyboard();
   const term = new PengTerm();
-  term.write("Hello, world!");
+  for (let i = 0; i < 28; i += 1) {
+    term.write(`=== Line ${i} ===\n`);
+  }
 
   let lastTime = performance.now();
   const cb = () => {
@@ -689,7 +691,7 @@ class PengOS {
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(screen, keyboard, term);
-  await pengOS.startup();
-  pengOS.mainLoop();
+  // const pengOS = new PengOS(screen, keyboard, term);
+  // await pengOS.startup();
+  // pengOS.mainLoop();
 })();

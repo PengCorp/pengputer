@@ -23,6 +23,10 @@ export class Cursor {
     this.position = resolvedPosition;
   }
 
+  public setPositionNoWrap(pos: Vector) {
+    this.position = pos;
+  }
+
   public moveBy(delta: Vector) {
     const newPosition = vectorAdd(this.position, delta);
     this.position = this.wrapPosition(newPosition);

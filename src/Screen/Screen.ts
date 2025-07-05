@@ -5,7 +5,12 @@ import {
   ScreenBufferCharacter,
   ScreenCharacterAttributes,
 } from "./types";
-import { getRectFromVectorAndSize, Rect, Size } from "../types";
+import {
+  getIsVectorInRect,
+  getRectFromVectorAndSize,
+  Rect,
+  Size,
+} from "../types";
 import { getIsPrintable } from "./getIsPrintable";
 import {
   Vector,
@@ -22,7 +27,7 @@ import {
 } from "../Toolbox/String";
 import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
 import tc from "tinycolor2";
-import { Buffer, ColorType, PengTerm } from "../PengTerm";
+import { ColorType, PengTerm } from "../PengTerm";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -311,14 +316,24 @@ export class Screen {
     // draw cursor
     if (this.curDisplay && this.curBlinkState) {
       const cursorPosition = this.cursor.getPosition();
-      const curW = this.characterWidth * this.bufferScale;
-      const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
-      const curX = cursorPosition.x * this.characterWidth * this.bufferScale;
-      const curY =
-        (cursorPosition.y * this.characterHeight + this.curStart) *
-        this.bufferScale;
-      this.bufferCtx.globalCompositeOperation = "xor";
-      this.bufferCtx.fillRect(curX, curY, curW, curH);
+      if (
+        getIsVectorInRect(
+          cursorPosition,
+          getRectFromVectorAndSize(zeroVector, {
+            w: this.widthInPixels,
+            h: this.heightInPixels,
+          })
+        )
+      ) {
+        const curW = this.characterWidth * this.bufferScale;
+        const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
+        const curX = cursorPosition.x * this.characterWidth * this.bufferScale;
+        const curY =
+          (cursorPosition.y * this.characterHeight + this.curStart) *
+          this.bufferScale;
+        this.bufferCtx.globalCompositeOperation = "xor";
+        this.bufferCtx.fillRect(curX, curY, curW, curH);
+      }
     }
 
     // apply attribute layer
@@ -1044,26 +1059,19 @@ export class Screen {
   /*=============================== TERM HANDLING ====================================*/
 
   updateFromTerm(term: PengTerm) {
-    this.cursor.setPosition(term.cursor.getPosition());
+    const screen = term.screen;
 
     let screenChanged = false;
 
-    const screenBuffer = term.screen;
-    const screenBufferSize = screenBuffer.getSize();
+    const page = screen.getPage(0);
+    this.cursor.setPositionNoWrap(page.cursor.getPosition());
 
-    for (
-      let y = 0;
-      y < this.heightInCharacters && y < screenBufferSize.h;
-      y += 1
-    ) {
-      for (
-        let x = 0;
-        x < this.widthInCharacters && x < screenBufferSize.w;
-        x += 1
-      ) {
-        const cell = screenBuffer.getCellAt({ x, y });
+    for (let y = 0; y < this.heightInCharacters && y < page.height; y += 1) {
+      for (let x = 0; x < this.widthInCharacters && x < page.width; x += 1) {
+        const cell = page.lines[y]?.cells[x];
+        if (!cell) continue;
 
-        if (!cell.dirty) continue;
+        if (!term.screenDirty && !cell.dirty) continue;
 
         const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
@@ -1112,6 +1120,8 @@ export class Screen {
         cell.dirty = false;
       }
     }
+
+    term.screenDirty = false;
 
     if (screenChanged) {
       this.redrawUnstable();

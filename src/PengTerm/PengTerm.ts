@@ -1,33 +1,12 @@
+import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { Size } from "../types";
+import { Color, ColorType } from "./Color";
 
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
 const BUFFER_HEIGHT = 25;
-
-export enum ColorType {
-  Classic = 0,
-  Indexed = 1,
-  Direct = 2,
-}
-
-export interface ClassicColor {
-  type: ColorType.Classic;
-  index: number;
-}
-export interface IndexedColor {
-  type: ColorType.Indexed;
-  index: number;
-}
-export interface DirectColor {
-  type: ColorType.Direct;
-  r: number;
-  g: number;
-  b: number;
-}
-
-export type Color = ClassicColor | IndexedColor | DirectColor;
 
 export interface CellAttributes {
   fgColor: Color;
@@ -41,7 +20,7 @@ class Cell {
 
   constructor() {
     this.attributes = {
-      fgColor: { type: ColorType.Indexed, index: 7 },
+      fgColor: { type: ColorType.Indexed, index: 0 },
       bgColor: { type: ColorType.Indexed, index: 0 },
     };
     this.rune = "\x00";
@@ -61,52 +40,15 @@ class Cell {
 }
 
 export class Line {
-  public cells: Cell[] = [];
+  public cells: Cell[];
   public isWrapped: boolean = false;
 
-  constructor() {}
-}
-
-export class Buffer {
-  private lines: Line[];
-  private width: number;
-  private height: number;
-
-  constructor({
-    bufferWidth,
-    bufferHeight = 0,
-  }: {
-    bufferWidth: number;
-    bufferHeight?: number;
-  }) {
-    this.lines = [];
-    this.width = bufferWidth;
-    this.height = bufferHeight;
-
-    if (bufferHeight > 0) {
-      for (let i = 0; i < bufferHeight; i += 1) {
-        const line = new Line();
-        line.cells = new Array(bufferWidth).fill(null).map(() => new Cell());
-        line.isWrapped = false;
-        this.lines.push(line);
-      }
-    }
-  }
-
-  /** Scrolls all lines up and adds new line to the bottom of the buffer. */
-  public scrollLineIn(line: Line) {
-    this.lines.push(line);
-    if (this.lines.length > SCROLLBACK_LENGTH) {
-      this.lines = this.lines.slice(this.lines.length - SCROLLBACK_LENGTH);
-    }
-  }
-
-  public getSize(): Size {
-    return { w: this.width, h: this.height };
-  }
-
-  public getCellAt(pos: Vector) {
-    return this.lines[pos.y].cells[pos.x];
+  constructor(width: number, attr: CellAttributes) {
+    this.cells = new Array(width).fill(null).map(() => {
+      const cell = new Cell();
+      cell.attributes = { ...attr };
+      return cell;
+    });
   }
 }
 
@@ -120,50 +62,190 @@ export class Cursor {
   }
 
   public getPosition(): Vector {
-    return { x: this.x, y: this.y };
+    return {
+      x: this.x,
+      y: this.y,
+    };
+  }
+
+  public clone(): Cursor {
+    const c = new Cursor();
+    c.x = this.x;
+    c.y = this.y;
+    return c;
+  }
+
+  public getIsInPage(pageSize: Size): boolean {
+    if (
+      this.x < 0 ||
+      this.y < 0 ||
+      this.x >= pageSize.w ||
+      this.y >= pageSize.h
+    ) {
+      return false;
+    }
+    return true;
   }
 }
 
-export class PengTerm {
-  private scrollback: Buffer;
-  public screen: Buffer;
-  public cursor: Cursor;
-  private isWrapPending: boolean;
+interface Page {
+  width: number;
+  height: number;
+  lines: (Line | null)[];
+  cursor: Cursor;
+}
 
-  constructor() {
-    this.scrollback = new Buffer({ bufferWidth: BUFFER_WIDTH });
-    this.screen = new Buffer({
-      bufferWidth: BUFFER_WIDTH,
-      bufferHeight: BUFFER_HEIGHT,
-    });
-    this.cursor = new Cursor();
+export class Screen {
+  private buffer: RingBuffer<Line>;
+  private currentAttributes: CellAttributes;
+  private isWrapPending: boolean;
+  public cursor: Cursor;
+  public topLine: number;
+  private pageSize: Size;
+
+  constructor({
+    pageSize,
+    scrollbackLength = 0,
+    switchScreen,
+  }: {
+    pageSize: Size;
+    scrollbackLength?: number;
+    switchScreen: (key: ScreenKey) => void;
+  }) {
+    this.buffer = new RingBuffer<Line>(pageSize.h + scrollbackLength);
+    this.currentAttributes = {
+      fgColor: { type: ColorType.Indexed, index: 7 },
+      bgColor: { type: ColorType.Indexed, index: 0 },
+    };
+    for (let i = 0; i < pageSize.h; i += 1) {
+      this.buffer.push(new Line(pageSize.w, this.currentAttributes));
+    }
+    this.pageSize = pageSize;
+
     this.isWrapPending = false;
+    this.cursor = new Cursor();
+    this.topLine = 0;
   }
 
-  public writeCharacter(character: string) {
+  public getPageSize(): Size {
+    return this.pageSize;
+  }
+
+  public getPage(offset: number): Page {
+    if (offset > 0) {
+      offset = 0;
+    }
+    let savedLines = Math.max(this.buffer.getLength() - this.pageSize.h);
+    if (offset < -savedLines) {
+      offset = -savedLines;
+    }
+    const cursor = this.cursor.clone();
+    cursor.y -= offset;
+    return {
+      width: this.pageSize.w,
+      height: this.pageSize.h,
+      lines: this.buffer.slice(-(this.pageSize.h - 1) + offset - 1, offset),
+      cursor: cursor,
+    };
+  }
+
+  private writeCharacter(character: string) {
     if (this.isWrapPending) {
       this.cursor.x = 0;
       this.cursor.y += 1;
       this.isWrapPending = false;
+
+      if (this.cursor.y === this.pageSize.h) {
+        this.cursor.y -= 1;
+        this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+      }
     }
 
-    const cell = this.screen.getCellAt(this.cursor.getPosition());
+    const page = this.getPage(0);
+
+    const cell = page.lines[this.cursor.y]?.cells[this.cursor.x];
+    if (!cell) {
+      throw new Error("Unable to get cell.");
+    }
     cell.rune = character;
     cell.dirty = true;
 
     this.cursor.x += 1;
-    if (this.cursor.x === this.screen.getSize().w) {
+    if (this.cursor.x === page.width) {
       this.cursor.x -= 1;
       this.isWrapPending = true;
     }
   }
 
-  public write(string: string) {
-    const chars = splitStringIntoCharacters(string);
+  public write(chars: string[]) {
+    while (chars.length > 0) {
+      if (chars[0] === "\n") {
+        chars.shift();
+        this.cursor.x = 0;
+        this.cursor.y += 1;
+        this.isWrapPending = false;
 
-    for (let i = 0; i < string.length; ) {
-      this.writeCharacter(chars[i]);
-      i += 1;
+        if (this.cursor.y === this.pageSize.h) {
+          this.cursor.y -= 1;
+          this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+        }
+      } else if (chars[0] === "\x1B") {
+        const char = chars.shift()!;
+        // parse escape
+        // chars = applyEscape(chars)
+      } else {
+        const char = chars.shift()!;
+        this.writeCharacter(char);
+      }
+    }
+  }
+}
+
+type ScreenKey = "main" | "alternate";
+
+export class PengTerm {
+  private mainScreen: Screen;
+  private alternateScreen: Screen;
+
+  public screen: Screen;
+  public screenDirty: boolean;
+
+  constructor() {
+    this.mainScreen = new Screen({
+      pageSize: { w: BUFFER_WIDTH, h: BUFFER_HEIGHT },
+      scrollbackLength: SCROLLBACK_LENGTH,
+      switchScreen: (key: ScreenKey) => this.switchScreen(key),
+    });
+    this.alternateScreen = new Screen({
+      pageSize: { w: BUFFER_WIDTH, h: BUFFER_HEIGHT },
+      switchScreen: (key: ScreenKey) => this.switchScreen(key),
+    });
+
+    this.screen = this.mainScreen;
+    this.screenDirty = true;
+  }
+
+  public write(string: string) {
+    let chars = splitStringIntoCharacters(string);
+    while (chars.length > 0) {
+      this.screen.write(chars);
+    }
+  }
+
+  public switchScreen(which: ScreenKey) {
+    switch (which) {
+      case "main":
+        if (this.screen !== this.mainScreen) {
+          this.screen = this.mainScreen;
+          this.screenDirty = true;
+        }
+        break;
+      case "alternate":
+        if (this.screen !== this.alternateScreen) {
+          this.screen = this.alternateScreen;
+          this.screenDirty = true;
+        }
+        break;
     }
   }
 }
