@@ -7,7 +7,11 @@ import {
   vectorSubtract,
   zeroVector,
 } from "../Toolbox/Vector";
-import { getIsVectorInRect, getRectFromVectorAndSize, Size } from "../types";
+import {
+  getIsVectorInZeroAlignedRect,
+  getRectFromVectorAndSize,
+  Size,
+} from "../types";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 import { State, StateManager } from "../Toolbox/StateManager";
@@ -110,13 +114,10 @@ class Pengsweeper extends State {
     const clickListener: ClickListener = ({ position }) => {
       const boardPosition = vectorSubtract(position, this.getFieldOrigin());
       if (
-        getIsVectorInRect(
-          boardPosition,
-          getRectFromVectorAndSize(zeroVector, {
-            w: this.fieldSize.w * CELL_SIZE.w,
-            h: this.fieldSize.h * CELL_SIZE.h,
-          })
-        )
+        getIsVectorInZeroAlignedRect(boardPosition, {
+          w: this.fieldSize.w * CELL_SIZE.w,
+          h: this.fieldSize.h * CELL_SIZE.h,
+        })
       ) {
         this.cursor = {
           x: Math.floor(boardPosition.x / CELL_SIZE.w),
@@ -344,13 +345,7 @@ class Pengsweeper extends State {
   }
 
   private getCell(pos: Vector) {
-    if (
-      !getIsVectorInRect(
-        pos,
-        getRectFromVectorAndSize(zeroVector, this.fieldSize)
-      )
-    )
-      return null;
+    if (!getIsVectorInZeroAlignedRect(pos, this.fieldSize)) return null;
 
     return this.field[pos.y * this.fieldSize.w + pos.x];
   }

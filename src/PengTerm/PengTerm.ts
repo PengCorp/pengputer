@@ -2,7 +2,7 @@ import { getIsPrintable } from "../Screen/getIsPrintable";
 import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
-import { Size } from "../types";
+import { getIsVectorInZeroAlignedRect, Size } from "../types";
 import { Color, ColorType } from "./Color";
 
 const SCROLLBACK_LENGTH = 1024;
@@ -17,6 +17,7 @@ export interface CellAttributes {
 class Cell {
   public attributes: CellAttributes;
   public rune: string;
+
   public isDirty: boolean;
 
   constructor() {
@@ -25,17 +26,21 @@ class Cell {
       bgColor: { type: ColorType.Indexed, index: 0 },
     };
     this.rune = "\x00";
+
     this.isDirty = true;
   }
 
   public clone(): Cell {
     const c = new Cell();
+
     c.attributes = {
       fgColor: c.attributes.fgColor,
       bgColor: c.attributes.bgColor,
     };
     c.rune = this.rune;
+
     c.isDirty = true;
+
     return c;
   }
 }
@@ -77,12 +82,7 @@ export class Cursor {
   }
 
   public getIsInPage(pageSize: Size): boolean {
-    if (
-      this.x < 0 ||
-      this.y < 0 ||
-      this.x >= pageSize.w ||
-      this.y >= pageSize.h
-    ) {
+    if (getIsVectorInZeroAlignedRect({ x: this.x, y: this.y }, pageSize)) {
       return false;
     }
     return true;
@@ -90,9 +90,8 @@ export class Cursor {
 }
 
 interface Page {
-  width: number;
-  height: number;
-  lines: (Line | null)[];
+  size: Size;
+  lines: Line[];
   cursor: Cursor;
 }
 
@@ -115,16 +114,18 @@ export class Screen {
     switchScreen: (key: ScreenKey) => void;
   }) {
     this.buffer = new RingBuffer<Line>(pageSize.h + scrollbackLength);
+    this.pageSize = pageSize;
+    this.isWrapPending = false;
+
     this.currentAttributes = {
       fgColor: { type: ColorType.Indexed, index: 7 },
       bgColor: { type: ColorType.Indexed, index: 0 },
     };
+
     for (let i = 0; i < pageSize.h; i += 1) {
       this.buffer.push(new Line(pageSize.w, this.currentAttributes));
     }
-    this.pageSize = pageSize;
 
-    this.isWrapPending = false;
     this.cursor = new Cursor();
     this.topLine = 0;
   }
@@ -141,12 +142,20 @@ export class Screen {
     if (offset < -savedLines) {
       offset = -savedLines;
     }
+
     const cursor = this.cursor.clone();
     cursor.y -= offset;
+
+    const lines = this.buffer.slice(-this.pageSize.h + offset, offset);
+    for (const l of lines) {
+      if (!l) {
+        throw new Error("Empty line encountered when building Page.");
+      }
+    }
+
     return {
-      width: this.pageSize.w,
-      height: this.pageSize.h,
-      lines: this.buffer.slice(-this.pageSize.h + offset, offset),
+      size: this.pageSize,
+      lines: lines as Line[],
       cursor: cursor,
     };
   }
@@ -173,11 +182,12 @@ export class Screen {
     if (!cell) {
       throw new Error("Unable to get cell.");
     }
+    cell.attributes = this.currentAttributes;
     cell.rune = character;
     cell.isDirty = true;
 
     this.cursor.x += 1;
-    if (this.cursor.x === page.width) {
+    if (this.cursor.x === page.size.w) {
       this.cursor.x -= 1;
       this.isWrapPending = true;
     }

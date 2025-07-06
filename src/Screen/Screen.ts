@@ -6,18 +6,13 @@ import {
   ScreenCharacterAttributes,
 } from "./types";
 import {
-  getIsVectorInRect,
+  getIsVectorInZeroAlignedRect,
   getRectFromVectorAndSize,
   Rect,
   Size,
 } from "../types";
 import { getIsPrintable } from "./getIsPrintable";
-import {
-  Vector,
-  vectorClamp,
-  vectorDivideComponents,
-  zeroVector,
-} from "../Toolbox/Vector";
+import { Vector, vectorDivideComponents, zeroVector } from "../Toolbox/Vector";
 import { Cursor } from "./Cursor";
 import {
   getEscapeSequence,
@@ -317,13 +312,10 @@ export class Screen {
     if (this.curDisplay && this.curBlinkState) {
       const cursorPosition = this.cursor.getPosition();
       if (
-        getIsVectorInRect(
-          cursorPosition,
-          getRectFromVectorAndSize(zeroVector, {
-            w: this.widthInPixels,
-            h: this.heightInPixels,
-          })
-        )
+        getIsVectorInZeroAlignedRect(cursorPosition, {
+          w: this.widthInPixels,
+          h: this.heightInPixels,
+        })
       ) {
         const curW = this.characterWidth * this.bufferScale;
         const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
@@ -1066,8 +1058,8 @@ export class Screen {
     const page = screen.getPage(screen.topLine);
     this.cursor.setPositionNoWrap(page.cursor.getPosition());
 
-    for (let y = 0; y < this.heightInCharacters && y < page.height; y += 1) {
-      for (let x = 0; x < this.widthInCharacters && x < page.width; x += 1) {
+    for (let y = 0; y < this.heightInCharacters && y < page.size.h; y += 1) {
+      for (let x = 0; x < this.widthInCharacters && x < page.size.w; x += 1) {
         const cell = page.lines[y]?.cells[x];
         if (!cell) continue;
 
