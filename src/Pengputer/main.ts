@@ -680,6 +680,8 @@ class PengOS {
     term.write(`=== Line ${i} ===\n`);
   }
 
+  term.write(`\x07`);
+
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;

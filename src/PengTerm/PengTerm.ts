@@ -4,6 +4,7 @@ import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
 import { Color, ColorType } from "./Color";
+import { ControlCharacter } from "./ControlCharacters";
 
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
@@ -103,6 +104,7 @@ export class Screen {
   public topLine: number;
   private pageSize: Size;
   public isDirty: boolean = false;
+  public bellRequested: boolean = false;
 
   constructor({
     pageSize,
@@ -160,7 +162,7 @@ export class Screen {
     };
   }
 
-  private writeCharacter(character: string) {
+  public printCharacter(character: string) {
     if (!getIsPrintable(character)) {
       return;
     }
@@ -195,37 +197,49 @@ export class Screen {
     this.topLine = 0;
   }
 
-  public write(chars: string[]) {
-    while (chars.length > 0) {
-      if (chars[0] === "\n") {
-        chars.shift();
-        this.cursor.x = 0;
-        this.cursor.y += 1;
-        this.isWrapPending = false;
+  public bell() {
+    this.bellRequested = true;
+  }
 
-        if (this.cursor.y === this.pageSize.h) {
-          this.cursor.y -= 1;
-          this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
-        }
-      } else if (chars[0] === "\x1B") {
-        const char = chars.shift()!;
-        // parse escape
-        // chars = applyEscape(chars)
-      } else {
-        const char = chars.shift()!;
-        this.writeCharacter(char);
-      }
+  public backspace() {
+    this.cursor.x -= 1;
+    if (this.cursor.x < 0) {
+      this.cursor.x = 0;
     }
+  }
+
+  public lineFeed() {
+    this.cursor.y += 1;
+    this.isWrapPending = false;
+
+    if (this.cursor.y === this.pageSize.h) {
+      this.cursor.y -= 1;
+      this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+    }
+  }
+
+  public carriageReturn() {
+    this.cursor.x = 0;
   }
 }
 
 type ScreenKey = "main" | "alternate";
+
+enum ParseState {
+  Printing,
+  ParsingEscape,
+  ParsingCsi,
+}
 
 export class PengTerm {
   private mainScreen: Screen;
   private alternateScreen: Screen;
 
   public screen: Screen;
+
+  private state: ParseState;
+
+  private lnm: "set" | "reset" = "set";
 
   constructor() {
     this.mainScreen = new Screen({
@@ -240,12 +254,54 @@ export class PengTerm {
 
     this.screen = this.mainScreen;
     this.screen.isDirty = true;
+
+    this.state = ParseState.Printing;
   }
 
   public write(string: string) {
-    let chars = splitStringIntoCharacters(string);
+    const chars = splitStringIntoCharacters(string);
     while (chars.length > 0) {
-      this.screen.write(chars);
+      const char = chars.shift()!;
+      this.writeCharacter(char);
+    }
+  }
+
+  private writeCharacter(char: string) {
+    switch (this.state) {
+      case ParseState.Printing:
+        switch (char) {
+          case ControlCharacter.NUL:
+            break;
+          case ControlCharacter.BEL:
+            this.screen.bell();
+            break;
+          case ControlCharacter.BS:
+            this.screen.backspace();
+            break;
+          case ControlCharacter.ESC:
+            this.state = ParseState.ParsingEscape;
+            break;
+          case ControlCharacter.CSI:
+            this.state = ParseState.ParsingCsi;
+            break;
+          case ControlCharacter.LF:
+          case ControlCharacter.VT:
+          case ControlCharacter.FF:
+            switch (this.lnm) {
+              case "reset":
+                this.screen.lineFeed();
+                break;
+              case "set":
+                this.screen.carriageReturn();
+                this.screen.lineFeed();
+                break;
+            }
+            break;
+          default:
+            this.screen.printCharacter(char);
+            break;
+        }
+        break;
     }
   }
 

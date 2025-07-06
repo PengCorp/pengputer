@@ -1058,6 +1058,15 @@ export class Screen {
     const page = screen.getPage(screen.topLine);
     this.cursor.setPositionNoWrap(page.cursor.getPosition());
 
+    if (screen.bellRequested) {
+      const beepEl = document.getElementById("bell") as HTMLAudioElement | null;
+      if (beepEl) {
+        beepEl.currentTime = 0;
+        beepEl.play();
+      }
+      screen.bellRequested = false;
+    }
+
     for (let y = 0; y < this.heightInCharacters && y < page.size.h; y += 1) {
       for (let x = 0; x < this.widthInCharacters && x < page.size.w; x += 1) {
         const cell = page.lines[y]?.cells[x];

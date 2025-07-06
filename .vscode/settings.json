@@ -23,6 +23,7 @@
         "Pengsweeper",
         "PUSHDOWN",
         "SCROLLBACK",
+        "SGCI",
         "Tetris"
     ],
 }
