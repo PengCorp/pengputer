@@ -10,7 +10,6 @@ body {
   padding: 0px;
   margin: 0px;
 }
-
 body {
   padding: 25px;
   background: url("/Pengputer/images/curtain_pattern.png");
@@ -137,12 +136,14 @@ header a {
   box-sizing: border-box;
 }
 
-/* .keyboard span:hover
-{
-    background: #aaa;
-    border: 4px solid #666;
-    padding-top: 10px;
-} */
+/*
+  .keyboard span:hover
+    {
+        background: #aaa;
+        border: 4px solid #666;
+        padding-top: 10px;
+    }
+    */
 
 .keyboard .space {
   flex-grow: 1;

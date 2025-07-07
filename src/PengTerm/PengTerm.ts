@@ -1,10 +1,16 @@
 import { getIsPrintable } from "../Screen/getIsPrintable";
+import { char, charArray } from "../types";
 import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
 import { Color, ColorType } from "./Color";
 import { ControlCharacter } from "./ControlCharacters";
+import { codeToCharacterUS } from "./Keyboard/CharMap";
+import { KeyCode } from "./Keyboard/KeyCode";
+import { Keyboard } from "./Keyboard/types";
+import { WindowKeyboard } from "./Keyboard/WindowKeyboard";
+import { Sequence, SequenceParser } from "./SequenceParser";
 
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
@@ -103,7 +109,7 @@ export class Screen {
   public cursor: Cursor;
   public topLine: number;
   private pageSize: Size;
-  public isDirty: boolean = false;
+  public isDirty: boolean;
   public bellRequested: boolean = false;
 
   constructor({
@@ -118,6 +124,7 @@ export class Screen {
     this.buffer = new RingBuffer<Line>(pageSize.h + scrollbackLength);
     this.pageSize = pageSize;
     this.isWrapPending = false;
+    this.isDirty = true;
 
     this.currentAttributes = {
       fgColor: { type: ColorType.Indexed, index: 7 },
@@ -175,6 +182,7 @@ export class Screen {
       if (this.cursor.y === this.pageSize.h) {
         this.cursor.y -= 1;
         this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+        this.isDirty = true;
       }
     }
 
@@ -215,6 +223,7 @@ export class Screen {
     if (this.cursor.y === this.pageSize.h) {
       this.cursor.y -= 1;
       this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+      this.isDirty = true;
     }
   }
 
@@ -225,21 +234,29 @@ export class Screen {
 
 type ScreenKey = "main" | "alternate";
 
-enum ParseState {
-  Printing,
-  ParsingEscape,
-  ParsingCsi,
-}
-
 export class PengTerm {
   private mainScreen: Screen;
   private alternateScreen: Screen;
 
   public screen: Screen;
 
-  private state: ParseState;
+  private receiveBuffer: charArray = [];
+  public sendBuffer: charArray = [];
+  private sequenceParser = new SequenceParser();
 
+  private keyboard: Keyboard;
+
+  private isShift: boolean = false;
+  private shiftKeysDown: number = 0;
+  private isCaps: boolean = false;
+  private isControl: boolean = false;
+  private controlKeysDown: number = 0;
+
+  /** New Line Mode: set - getting LF does CR&LF, enter sends CR&LF, reset - getting LF does LF, enter sends CR */
   private lnm: "set" | "reset" = "set";
+
+  /** Send/Receive Mode: set - disable local echo, reset - enable local echo */
+  private srm: "set" | "reset" = "reset";
 
   constructor() {
     this.mainScreen = new Screen({
@@ -255,52 +272,37 @@ export class PengTerm {
     this.screen = this.mainScreen;
     this.screen.isDirty = true;
 
-    this.state = ParseState.Printing;
-  }
-
-  public write(string: string) {
-    const chars = splitStringIntoCharacters(string);
-    while (chars.length > 0) {
-      const char = chars.shift()!;
-      this.writeCharacter(char);
-    }
+    this.keyboard = new WindowKeyboard();
   }
 
   private writeCharacter(char: string) {
-    switch (this.state) {
-      case ParseState.Printing:
-        switch (char) {
-          case ControlCharacter.NUL:
+    switch (char) {
+      case ControlCharacter.NUL:
+        break;
+      case ControlCharacter.BEL:
+        this.screen.bell();
+        break;
+      case ControlCharacter.BS:
+        this.screen.backspace();
+        break;
+      case ControlCharacter.LF:
+      case ControlCharacter.VT:
+      case ControlCharacter.FF:
+        switch (this.lnm) {
+          case "reset":
+            this.screen.lineFeed();
             break;
-          case ControlCharacter.BEL:
-            this.screen.bell();
-            break;
-          case ControlCharacter.BS:
-            this.screen.backspace();
-            break;
-          case ControlCharacter.ESC:
-            this.state = ParseState.ParsingEscape;
-            break;
-          case ControlCharacter.CSI:
-            this.state = ParseState.ParsingCsi;
-            break;
-          case ControlCharacter.LF:
-          case ControlCharacter.VT:
-          case ControlCharacter.FF:
-            switch (this.lnm) {
-              case "reset":
-                this.screen.lineFeed();
-                break;
-              case "set":
-                this.screen.carriageReturn();
-                this.screen.lineFeed();
-                break;
-            }
-            break;
-          default:
-            this.screen.printCharacter(char);
+          case "set":
+            this.screen.carriageReturn();
+            this.screen.lineFeed();
             break;
         }
+        break;
+      case ControlCharacter.CR:
+        this.screen.carriageReturn();
+        break;
+      default:
+        this.screen.printCharacter(char);
         break;
     }
   }
@@ -319,6 +321,114 @@ export class PengTerm {
           this.screen.isDirty = true;
         }
         break;
+    }
+  }
+
+  private getCharacterFromCode(code: KeyCode): string | null {
+    const map = codeToCharacterUS[code];
+
+    if (map) {
+      if (this.isControl) {
+        return map.control ?? null;
+      } else if (this.isCaps && this.isShift) {
+        return map.capsShift ?? map.regular;
+      } else if (this.isCaps) {
+        return map.caps ?? map.regular;
+      } else if (this.isShift) {
+        return map.shift ?? map.regular;
+      } else {
+        return map.regular;
+      }
+    }
+
+    return null;
+  }
+
+  private handleEscapeSequence(sequence: Sequence) {
+    console.log(`handling: ${JSON.stringify(sequence)}`);
+  }
+
+  private drainReceive() {
+    while (this.receiveBuffer.length > 0) {
+      const ch = this.receiveBuffer[0];
+
+      if (
+        this.sequenceParser.inProgress ||
+        ch === ControlCharacter.ESC ||
+        ch === ControlCharacter.CSI
+      ) {
+        let sequence = this.sequenceParser.parse(this.receiveBuffer);
+        if (!sequence) {
+          if (this.sequenceParser.isCancelled) {
+            continue;
+          }
+          break;
+        }
+        this.handleEscapeSequence(sequence);
+        continue;
+      }
+
+      this.writeCharacter(this.receiveBuffer.shift()!);
+    }
+  }
+
+  private sendCharacter(ch: char) {
+    this.sendBuffer.push(ch);
+    if (this.srm === "reset") {
+      this.writeCharacter(ch);
+    }
+  }
+
+  public update(dt: number) {
+    this.drainReceive();
+
+    let ev = this.keyboard.take();
+    while (ev) {
+      if (ev.code === "ShiftLeft" || ev.code === "ShiftRight") {
+        if (ev.pressed) {
+          this.shiftKeysDown += 1;
+          this.isShift = this.shiftKeysDown > 0;
+        } else {
+          this.shiftKeysDown = Math.max(this.shiftKeysDown - 1, 0);
+          this.isShift = this.shiftKeysDown > 0;
+        }
+      } else if (ev.code === "ControlLeft" || ev.code === "ControlRight") {
+        if (ev.pressed) {
+          this.controlKeysDown += 1;
+          this.isControl = this.controlKeysDown > 0;
+        } else {
+          this.controlKeysDown = Math.max(this.controlKeysDown - 1, 0);
+          this.isControl = this.controlKeysDown > 0;
+        }
+      } else if (ev.code === "CapsLock") {
+        this.isCaps = ev.pressed;
+      } else if (ev.code === "Enter" || ev.code === "NumpadEnter") {
+        if (ev.pressed) {
+          switch (this.lnm) {
+            case "set":
+              this.sendCharacter(ControlCharacter.CR);
+              this.sendCharacter(ControlCharacter.LF);
+              break;
+            case "reset":
+              this.sendCharacter(ControlCharacter.CR);
+              break;
+          }
+        }
+      } else if (ev.pressed) {
+        let char = this.getCharacterFromCode(ev.code);
+        if (char !== null) {
+          this.sendCharacter(char);
+        }
+      }
+
+      ev = this.keyboard.take();
+    }
+  }
+
+  public receive(string: string) {
+    const chars = splitStringIntoCharacters(string);
+    for (const ch of chars) {
+      this.receiveBuffer.push(ch);
     }
   }
 }

@@ -1,5 +1,6 @@
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
+import { charArray } from "../types";
 import { dataURLToImageBitmap } from "../util";
 
 interface Atlas {
@@ -17,7 +18,7 @@ export class Font {
 
   private atlases: Record<string, Atlas>;
 
-  private unstableCharacters: string[];
+  private unstableCharacters: charArray;
 
   constructor(
     characterWidth: number,

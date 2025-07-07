@@ -14,7 +14,14 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.tabSize": 2
     },
+    "[scss]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
+    },
     "cSpell.words": [
+        "Autorepeat",
+        "Backquote",
         "dedup",
         "PBIOS",
         "PENGCORP",

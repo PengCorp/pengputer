@@ -17,11 +17,11 @@ export class Keyboard {
   private typeListeners: Array<TypeListener>;
   private allKeysUpListeners: Array<VoidListener>;
 
-  private autoRepeatDelay: number;
-  private autoRepeatDelayCounter: number;
-  private autoRepeatInterval: number;
-  private autoRepeatIntervalCounter: number;
-  private autoRepeatEvent: KeyboardEvent | null;
+  private autorepeatDelay: number;
+  private autorepeatDelayCounter: number;
+  private autorepeatInterval: number;
+  private autorepeatIntervalCounter: number;
+  private autorepeatEvent: KeyboardEvent | null;
 
   constructor() {
     this.pressed = [];
@@ -34,11 +34,11 @@ export class Keyboard {
     this.typeListeners = [];
     this.allKeysUpListeners = [];
 
-    this.autoRepeatDelay = 250;
-    this.autoRepeatDelayCounter = this.autoRepeatDelay;
-    this.autoRepeatInterval = 50;
-    this.autoRepeatIntervalCounter = this.autoRepeatInterval;
-    this.autoRepeatEvent = null;
+    this.autorepeatDelay = 250;
+    this.autorepeatDelayCounter = this.autorepeatDelay;
+    this.autorepeatInterval = 50;
+    this.autorepeatIntervalCounter = this.autorepeatInterval;
+    this.autorepeatEvent = null;
   }
 
   private _onKeyDown(e: KeyboardEvent) {
@@ -56,7 +56,7 @@ export class Keyboard {
     e.stopPropagation();
 
     this.pressed = this.pressed.filter((kc) => kc !== e.code);
-    if (this.autoRepeatEvent?.code === e.code) {
+    if (this.autorepeatEvent?.code === e.code) {
       this._resetAutorepeat();
     }
     if (this.pressed.length === 0) {
@@ -88,9 +88,9 @@ export class Keyboard {
   }
 
   private _resetAutorepeat() {
-    this.autoRepeatEvent = null;
-    this.autoRepeatDelayCounter = this.autoRepeatDelay;
-    this.autoRepeatIntervalCounter = 0;
+    this.autorepeatEvent = null;
+    this.autorepeatDelayCounter = this.autorepeatDelay;
+    this.autorepeatIntervalCounter = 0;
   }
 
   public printState() {
@@ -168,21 +168,21 @@ export class Keyboard {
 
   private _onKeyTyped(ev: KeyboardEvent) {
     const char = this._getCharFromLayout(ev) ?? null;
-    if (ev.code !== this.autoRepeatEvent?.code) {
+    if (ev.code !== this.autorepeatEvent?.code) {
       this._resetAutorepeat();
-      this.autoRepeatEvent = ev;
+      this.autorepeatEvent = ev;
     }
     this.typeListeners.forEach((callback) => callback(char, ev.code, ev));
   }
 
   public update(dt: any) {
-    if (this.autoRepeatEvent) {
-      this.autoRepeatDelayCounter -= dt;
-      if (this.autoRepeatDelayCounter <= 0) {
-        this.autoRepeatIntervalCounter -= dt;
-        while (this.autoRepeatIntervalCounter <= 0) {
-          this.autoRepeatIntervalCounter += this.autoRepeatInterval;
-          this._onKeyTyped(this.autoRepeatEvent);
+    if (this.autorepeatEvent) {
+      this.autorepeatDelayCounter -= dt;
+      if (this.autorepeatDelayCounter <= 0) {
+        this.autorepeatIntervalCounter -= dt;
+        while (this.autorepeatIntervalCounter <= 0) {
+          this.autorepeatIntervalCounter += this.autorepeatInterval;
+          this._onKeyTyped(this.autorepeatEvent);
         }
       }
     }

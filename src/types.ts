@@ -24,3 +24,6 @@ export const getIsVectorInRect = (vec: Vector, rect: Rect) => {
 export const getIsVectorInZeroAlignedRect = (vec: Vector, size: Size) => {
   return vec.x >= 0 && vec.y >= 0 && vec.x < size.w && vec.y < size.h;
 };
+
+export type char = string;
+export type charArray = string[];

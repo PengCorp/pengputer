@@ -1,4 +1,5 @@
 import GraphemeSplitter from "grapheme-splitter";
+import { charArray } from "../types";
 
 export const padWithRightBias = (
   string: string,
@@ -20,8 +21,18 @@ export const padWithRightBias = (
 
 const splitter = new GraphemeSplitter();
 
-export const splitStringIntoCharacters = (string: string): string[] => {
-  return splitter.splitGraphemes(string);
+export const splitStringIntoCharacters = (string: string): charArray => {
+  const graphemes = splitter.splitGraphemes(string);
+  const chars: charArray = [];
+  for (const grapheme of graphemes) {
+    if (grapheme === "\r\n") {
+      chars.push("\r");
+      chars.push("\n");
+    } else {
+      chars.push(grapheme);
+    }
+  }
+  return chars;
 };
 
 const escapeRegex = /^\x1b(\[(\d*;?)+.|.)/;

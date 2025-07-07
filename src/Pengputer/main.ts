@@ -676,16 +676,15 @@ class PengOS {
 
   const keyboard = new Keyboard();
   const term = new PengTerm();
-  for (let i = 0; i < 28; i += 1) {
-    term.write(`=== Line ${i} ===\n`);
-  }
 
-  term.write(`\x07`);
+  term.receive(`st\x1bW\x1b\x1ba\x1b`);
+  term.receive(`gnd\x9b133;223Csi`);
 
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;
     lastTime = performance.now();
+    term.update(dt);
     screen.updateFromTerm(term);
     screen.draw(dt);
     keyboard.update(dt);
