@@ -123,6 +123,14 @@ export class Cursor {
     }
     return true;
   }
+
+  /** If cursor is outside of the page it is returned to the first available position. */
+  public snapToPage(pageSize: Size): void {
+    if (this.x < 0) this.x = 0;
+    if (this.x >= pageSize.w) this.x = pageSize.w - 1;
+    if (this.y < 0) this.y = 0;
+    if (this.y >= pageSize.h) this.y = pageSize.h - 1;
+  }
 }
 
 interface Page {
@@ -264,6 +272,23 @@ export class Screen {
   public setCurrentAttributes(attr: CellAttributes): void {
     this.currentAttributes = attr;
   }
+
+  public scrollUpBy(numRows: number): void {
+    for (let i = 0; i < numRows; i += 1) {
+      this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
+    }
+    this.isDirty = true;
+  }
+
+  public scrollDownBy(numRows: number): void {
+    for (let i = 0; i < numRows; i += 1) {
+      this.buffer.insertAtWithDiscard(
+        -(this.pageSize.h - 1),
+        new Line(this.pageSize.w, this.currentAttributes)
+      );
+    }
+    this.isDirty = true;
+  }
 }
 
 type ScreenKey = "main" | "alternate";
@@ -379,10 +404,93 @@ export class PengTerm {
   }
 
   private handleEscapeSequence(sequence: Sequence) {
-    // console.log(`handling: ${JSON.stringify(sequence)}`);
+    // console['log'](`handling: ${JSON.stringify(sequence)}`);
     if (sequence.csiCharacter) {
       const csiParameters = sequence.csiNumericParameters;
       switch (sequence.csiCharacter) {
+        case "A": // cursor up
+          {
+            let howMany = csiParameters?.[0];
+            if (howMany === 0 || howMany === undefined) {
+              howMany = 1;
+            }
+            this.screen.cursor.y -= howMany;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "B": // cursor down
+          {
+            let howMany = csiParameters?.[0];
+            if (howMany === 0 || howMany === undefined) {
+              howMany = 1;
+            }
+            this.screen.cursor.y += howMany;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "C": // cursor forward
+          {
+            let howMany = csiParameters?.[0];
+            if (howMany === 0 || howMany === undefined) {
+              howMany = 1;
+            }
+            this.screen.cursor.x += howMany;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "D": // cursor backward
+          {
+            let howMany = csiParameters?.[0];
+            if (howMany === 0 || howMany === undefined) {
+              howMany = 1;
+            }
+            this.screen.cursor.x -= howMany;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "G": // character absolute (row)
+          {
+            let x = csiParameters?.[0];
+            if (x === 0 || x === undefined) {
+              x = 1;
+            }
+            this.screen.cursor.x = x - 1;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "H": // cursor position
+          {
+            let y = csiParameters?.[0];
+            let x = csiParameters?.[1];
+            if (x === 0 || x === undefined) {
+              x = 1;
+            }
+            if (y === 0 || y === undefined) {
+              y = 1;
+            }
+            this.screen.cursor.x = x - 1;
+            this.screen.cursor.y = y - 1;
+            this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "S": // scroll up, content moves up
+          {
+            let lines = csiParameters?.[0];
+            if (lines === 0 || lines === undefined) {
+              lines = 1;
+            }
+            this.screen.scrollUpBy(lines);
+          }
+          break;
+        case "T": // scroll down, content moves down
+          {
+            let lines = csiParameters?.[0];
+            if (lines === 0 || lines === undefined) {
+              lines = 1;
+            }
+            this.screen.scrollDownBy(lines);
+          }
+          break;
         case "m":
           while (csiParameters && csiParameters.length > 0) {
             const num = csiParameters?.shift()!;

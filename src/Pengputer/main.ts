@@ -50,7 +50,7 @@ class PengOS {
   private takenPrograms: Array<TakenProgram>;
 
   constructor(screen: Screen, keyboard: Keyboard, term: PengTerm) {
-    const std = new Std(screen, keyboard);
+    const std = new Std(screen, keyboard, term);
     this.pc = {
       currentDrive: "C",
       currentPath: [],
@@ -705,7 +705,14 @@ class PengOS {
   term.receive(
     "\x1b[38;10;16mClassic \x1b[1morange\x1b[0m (28-color extended classic palette)\n"
   );
+  term.receive("\x1b[10C\x1b[2BTen right, two down\n");
+  term.receive("\x1b[2mOVERWRITTEN\x1b[0m\x1b[4GAbsolute in row\n");
 
+  term.receive("\x1b[3T");
+
+  term.receive("\x1b[2;40HAbsolute positioning\n");
+
+  term.receive("\x1b[1S");
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;

@@ -1,7 +1,8 @@
 import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
-import { Screen } from "../Screen";
+import { PengTerm } from "../PengTerm";
+import { Screen as PengputerScreen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
 import { ScreenCharacterAttributes } from "../Screen/types";
 import { Vector, zeroVector } from "../Toolbox/Vector";
@@ -9,13 +10,16 @@ import { getRectFromVectorAndSize, Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
 
 export class Std {
-  private screen: Screen;
+  private screen: PengputerScreen;
 
   private keyboard: Keyboard;
 
-  constructor(screen: Screen, keyboard: Keyboard) {
+  private term: PengTerm;
+
+  constructor(screen: PengputerScreen, keyboard: Keyboard, term: PengTerm) {
     this.screen = screen;
     this.keyboard = keyboard;
+    this.term = term;
   }
 
   // Screen
@@ -37,7 +41,7 @@ export class Std {
   }
 
   getConsoleCharacterSize() {
-    return this.screen.getCharacterSize();
+    return this.term.screen.getPageSize();
   }
 
   setIsConsoleCursorVisible(isVisible: boolean) {
@@ -61,11 +65,12 @@ export class Std {
   }
 
   getConsoleCursorPosition(): Vector {
-    return this.screen.getCursorPosition();
+    return this.term.screen.cursor.getPosition();
   }
 
   setConsoleCursorPosition(newPosition: Vector) {
-    return this.screen.setCursorPosition(newPosition);
+    this.term.screen.cursor.x = newPosition.x;
+    this.term.screen.cursor.y = newPosition.y;
   }
 
   moveConsoleCursorBy(delta: Vector) {
@@ -81,7 +86,7 @@ export class Std {
   }
 
   writeConsole(string: string) {
-    return this.screen.displayString(string);
+    return this.term.receive(string);
   }
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
@@ -91,20 +96,16 @@ export class Std {
     }
 
     if (numberOfLines > 0) {
-      this.screen.scrollUpRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        numberOfLines
-      );
+      this.term.screen.scrollUpBy(numberOfLines);
     } else {
-      this.screen.scrollDownRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        -numberOfLines
-      );
+      this.term.screen.scrollDownBy(numberOfLines);
     }
   }
 
   /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
   scrollConsoleRect(rect: Rect, numberOfLines: number) {
+    throw new Error("Not implemented");
+
     if (numberOfLines === 0) {
       return;
     }
