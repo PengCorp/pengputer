@@ -20,7 +20,13 @@ import {
   matchCsiEscape,
   splitStringIntoCharacters,
 } from "../Toolbox/String";
-import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
+import {
+  getBoldClassicIndex,
+  getBoldColor,
+  x256ClassicColors,
+  x256Color,
+  x256Colors,
+} from "../Color/ansi";
 import tc from "tinycolor2";
 import { ColorType, PengTerm } from "../PengTerm";
 
@@ -1078,13 +1084,16 @@ export class Screen {
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
         const newCharacter = cloneScreenBufferCharacter(currentCharacter);
 
-        const cellFgColor = cell.attributes.fgColor;
-        const cellBgColor = cell.attributes.bgColor;
+        const cellAttr = cell.getAttributes();
+        const cellFgColor = cellAttr.fgColor;
+        const cellBgColor = cellAttr.bgColor;
 
         let fgColor = "black";
         switch (cellFgColor.type) {
           case ColorType.Classic:
-            fgColor = x256Colors[cellFgColor.index];
+            fgColor = cellAttr.bold
+              ? x256ClassicColors[getBoldClassicIndex(cellFgColor.index)]
+              : x256ClassicColors[cellFgColor.index];
             break;
           case ColorType.Indexed:
             fgColor = x256Colors[cellFgColor.index];
@@ -1097,7 +1106,7 @@ export class Screen {
         let bgColor = "black";
         switch (cellBgColor.type) {
           case ColorType.Classic:
-            bgColor = x256Colors[cellBgColor.index];
+            bgColor = x256ClassicColors[cellBgColor.index];
             break;
           case ColorType.Indexed:
             bgColor = x256Colors[cellBgColor.index];
@@ -1111,6 +1120,10 @@ export class Screen {
 
         newCharacter.attributes.fgColor = fgColor;
         newCharacter.attributes.bgColor = bgColor;
+        newCharacter.attributes.blink = cellAttr.blink;
+        newCharacter.attributes.reverseVideo = cellAttr.reverseVideo;
+        newCharacter.attributes.underline = cellAttr.underline;
+        newCharacter.attributes.halfBright = cellAttr.halfBright;
 
         if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
           this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;

@@ -4,7 +4,7 @@ import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
-import { Color, ColorType } from "./Color";
+import { Color, ColorType, isColorValue } from "./Color";
 import { ControlCharacter } from "./ControlCharacters";
 import { codeToCharacterUS } from "./Keyboard/CharMap";
 import { KeyCode } from "./Keyboard/KeyCode";
@@ -19,31 +19,60 @@ const BUFFER_HEIGHT = 25;
 export interface CellAttributes {
   fgColor: Color;
   bgColor: Color;
+  blink: boolean;
+  bold: boolean;
+  reverseVideo: boolean;
+  underline: boolean;
+  halfBright: boolean;
 }
 
+const cloneCellAttributes = (attr: CellAttributes): CellAttributes => {
+  return {
+    fgColor: attr.fgColor,
+    bgColor: attr.bgColor,
+    blink: attr.blink,
+    bold: attr.bold,
+    reverseVideo: attr.reverseVideo,
+    underline: attr.underline,
+    halfBright: attr.halfBright,
+  };
+};
+
+const DEFAULT_ATTRIBUTES: CellAttributes = {
+  fgColor: { type: ColorType.Classic, index: 7 },
+  bgColor: { type: ColorType.Classic, index: 0 },
+  blink: false,
+  bold: false,
+  reverseVideo: false,
+  underline: false,
+  halfBright: false,
+};
+
 class Cell {
-  public attributes: CellAttributes;
+  private attributes: CellAttributes;
   public rune: string;
 
   public isDirty: boolean;
 
   constructor() {
-    this.attributes = {
-      fgColor: { type: ColorType.Indexed, index: 0 },
-      bgColor: { type: ColorType.Indexed, index: 0 },
-    };
+    this.attributes = cloneCellAttributes(DEFAULT_ATTRIBUTES);
     this.rune = "\x00";
 
     this.isDirty = true;
   }
 
+  public getAttributes() {
+    return cloneCellAttributes(this.attributes);
+  }
+
+  public setAttributes(attr: CellAttributes) {
+    this.attributes = attr;
+  }
+
   public clone(): Cell {
     const c = new Cell();
 
-    c.attributes = {
-      fgColor: c.attributes.fgColor,
-      bgColor: c.attributes.bgColor,
-    };
+    c.attributes = cloneCellAttributes(this.attributes);
     c.rune = this.rune;
 
     c.isDirty = true;
@@ -59,7 +88,7 @@ export class Line {
   constructor(width: number, attr: CellAttributes) {
     this.cells = new Array(width).fill(null).map(() => {
       const cell = new Cell();
-      cell.attributes = { ...attr };
+      cell.setAttributes(cloneCellAttributes(attr));
       return cell;
     });
   }
@@ -126,10 +155,7 @@ export class Screen {
     this.isWrapPending = false;
     this.isDirty = true;
 
-    this.currentAttributes = {
-      fgColor: { type: ColorType.Indexed, index: 7 },
-      bgColor: { type: ColorType.Indexed, index: 0 },
-    };
+    this.currentAttributes = cloneCellAttributes(DEFAULT_ATTRIBUTES);
 
     for (let i = 0; i < pageSize.h; i += 1) {
       this.buffer.push(new Line(pageSize.w, this.currentAttributes));
@@ -192,7 +218,7 @@ export class Screen {
     if (!cell) {
       throw new Error("Unable to get cell.");
     }
-    cell.attributes = this.currentAttributes;
+    cell.setAttributes(this.currentAttributes);
     cell.rune = character;
     cell.isDirty = true;
 
@@ -229,6 +255,14 @@ export class Screen {
 
   public carriageReturn() {
     this.cursor.x = 0;
+  }
+
+  public getCurrentAttributes(): CellAttributes {
+    return cloneCellAttributes(this.currentAttributes);
+  }
+
+  public setCurrentAttributes(attr: CellAttributes): void {
+    this.currentAttributes = attr;
   }
 }
 
@@ -345,7 +379,226 @@ export class PengTerm {
   }
 
   private handleEscapeSequence(sequence: Sequence) {
-    console.log(`handling: ${JSON.stringify(sequence)}`);
+    // console.log(`handling: ${JSON.stringify(sequence)}`);
+    if (sequence.csiCharacter) {
+      const csiParameters = sequence.csiNumericParameters;
+      switch (sequence.csiCharacter) {
+        case "m":
+          while (csiParameters && csiParameters.length > 0) {
+            const num = csiParameters?.shift()!;
+            if (num >= 30 && num <= 37) {
+              const attr = this.screen.getCurrentAttributes();
+              attr.fgColor = {
+                type: ColorType.Classic,
+                index: num - 30,
+              };
+              this.screen.setCurrentAttributes(attr);
+            } else if (num >= 40 && num <= 47) {
+              const attr = this.screen.getCurrentAttributes();
+              attr.bgColor = {
+                type: ColorType.Classic,
+                index: num - 40,
+              };
+              this.screen.setCurrentAttributes(attr);
+            } else if (num >= 90 && num <= 97) {
+              const attr = this.screen.getCurrentAttributes();
+              attr.fgColor = {
+                type: ColorType.Classic,
+                index: 8 + num - 90,
+              };
+              this.screen.setCurrentAttributes(attr);
+            } else if (num >= 100 && num <= 107) {
+              const attr = this.screen.getCurrentAttributes();
+              attr.bgColor = {
+                type: ColorType.Classic,
+                index: 8 + num - 100,
+              };
+              this.screen.setCurrentAttributes(attr);
+            } else {
+              switch (num) {
+                case 0:
+                  {
+                    this.screen.setCurrentAttributes(DEFAULT_ATTRIBUTES);
+                  }
+                  break;
+                case 1:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.bold = true;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 2:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.halfBright = true;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 5:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.blink = true;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 7:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.reverseVideo = true;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 21:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.underline = true;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 22:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.bold = false;
+                    attr.halfBright = false;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 24:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.underline = false;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 25:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.blink = false;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 27:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.reverseVideo = false;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 38:
+                  {
+                    let b = csiParameters.shift();
+                    if (b === 2) {
+                      let r = csiParameters.shift();
+                      let g = csiParameters.shift();
+                      let b = csiParameters.shift();
+                      if (
+                        r &&
+                        g &&
+                        b &&
+                        isColorValue(r) &&
+                        isColorValue(g) &&
+                        isColorValue(b)
+                      ) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.fgColor = {
+                          type: ColorType.Direct,
+                          r,
+                          g,
+                          b,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    } else if (b === 5) {
+                      let c = csiParameters.shift();
+                      if (c !== undefined && c > 0 && c < 256) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.fgColor = {
+                          type: ColorType.Indexed,
+                          index: c,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    } else if (b === 10) {
+                      let c = csiParameters.shift();
+                      if (c !== undefined && c > 0 && c < 32) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.fgColor = {
+                          type: ColorType.Classic,
+                          index: c,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    }
+                  }
+                  break;
+                case 39:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.fgColor = DEFAULT_ATTRIBUTES.fgColor;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+                case 48:
+                  {
+                    let b = csiParameters.shift();
+                    if (b === 2) {
+                      let r = csiParameters.shift();
+                      let g = csiParameters.shift();
+                      let b = csiParameters.shift();
+                      if (
+                        r &&
+                        g &&
+                        b &&
+                        isColorValue(r) &&
+                        isColorValue(g) &&
+                        isColorValue(b)
+                      ) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.bgColor = {
+                          type: ColorType.Direct,
+                          r,
+                          g,
+                          b,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    } else if (b === 5) {
+                      let c = csiParameters.shift();
+                      if (c !== undefined && c > 0 && c < 256) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.bgColor = {
+                          type: ColorType.Indexed,
+                          index: c,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    } else if (b === 10) {
+                      let c = csiParameters.shift();
+                      if (c !== undefined && c > 0 && c < 32) {
+                        const attr = this.screen.getCurrentAttributes();
+                        attr.bgColor = {
+                          type: ColorType.Classic,
+                          index: c,
+                        };
+                        this.screen.setCurrentAttributes(attr);
+                      }
+                    }
+                  }
+                  break;
+                case 49:
+                  {
+                    const attr = this.screen.getCurrentAttributes();
+                    attr.bgColor = DEFAULT_ATTRIBUTES.bgColor;
+                    this.screen.setCurrentAttributes(attr);
+                  }
+                  break;
+              }
+            }
+          }
+          break;
+      }
+    }
   }
 
   private drainReceive() {

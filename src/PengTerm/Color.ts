@@ -22,3 +22,7 @@ export interface DirectColor {
 }
 
 export type Color = ClassicColor | IndexedColor | DirectColor;
+
+export const isColorValue = (a: number | undefined) => {
+  return a !== undefined && a >= 0 && a < 256;
+};
