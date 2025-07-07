@@ -123,7 +123,6 @@ export enum x256Color {
 }
 
 export const getBoldColor = (color: string) => {
-  console.log(color);
   const index = x256Colors.findIndex((c) => c === color);
 
   if (!index) {
