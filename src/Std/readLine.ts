@@ -2,10 +2,13 @@ import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
+import { Vector } from "../Toolbox/Vector";
+import { TextBuffer } from "../TextBuffer/TextBuffer";
 
 export const readLine = (
   screen: Screen,
   keyboard: Keyboard,
+  buffer: TextBuffer,
   {
     autoCompleteStrings = [],
     previousEntries = [],
@@ -18,6 +21,15 @@ export const readLine = (
   let isUsingPreviousEntry = false;
   let previousEntryIndex = 0;
   let savedResult = "";
+
+  const moveCursor = (delta: Vector) => {
+    const pageSize = buffer.getPageSize();
+    const curPos = buffer.cursor.getPosition();
+    curPos.x += delta.x;
+    curPos.y += delta.y;
+    buffer.cursor.setPosition(curPos);
+    buffer.cursor.wrapToBeInsidePage(pageSize);
+  };
 
   const promise = new Promise<string | null>((resolve) => {
     let result = "";
@@ -48,11 +60,11 @@ export const readLine = (
             const autoCompleteString = matchingAutoCompleteStrings[0];
             let prefix = autoCompleteString.slice(0, token.length);
             if (prefix === token) {
-              screen.setCursorPositionDelta({
+              moveCursor({
                 x: -token.length,
                 y: 0,
               });
-              screen.displayString(autoCompleteString);
+              buffer.printString(autoCompleteString);
               result =
                 result.slice(0, result.length - token.length) +
                 autoCompleteString;
@@ -60,16 +72,16 @@ export const readLine = (
             }
           }
         } else if (key === "Home") {
-          screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
+          moveCursor({ x: -curIndex, y: 0 });
           curIndex = 0;
         } else if (key === "End") {
-          screen.setCursorPositionDelta({
+          moveCursor({
             x: result.length - curIndex,
             y: 0,
           });
           curIndex = result.length;
         } else if (char === "\n") {
-          screen.displayString(char);
+          buffer.printString(char);
           resolve(result);
           return;
         } else if (char === "\b") {
@@ -79,9 +91,9 @@ export const readLine = (
             const stringEnd = result.slice(curIndex);
             result = stringStart + stringEnd;
             curIndex = curIndex - 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 });
-            screen.displayString(stringEnd + " ");
-            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
+            moveCursor({ x: -1, y: 0 });
+            buffer.printString(stringEnd + " ");
+            moveCursor({ x: -(stringEnd.length + 1), y: 0 });
           }
         } else if (key === "Delete") {
           if (curIndex < result.length) {
@@ -89,18 +101,18 @@ export const readLine = (
             const stringStart = result.slice(0, curIndex);
             const stringEnd = result.slice(curIndex + 1);
             result = stringStart + stringEnd;
-            screen.displayString(stringEnd + " ");
-            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
+            buffer.printString(stringEnd + " ");
+            moveCursor({ x: -(stringEnd.length + 1), y: 0 });
           }
         } else if (key === "ArrowLeft") {
           if (curIndex > 0) {
             curIndex -= 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 });
+            moveCursor({ x: -1, y: 0 });
           }
         } else if (key === "ArrowRight") {
           if (curIndex < result.length) {
             curIndex += 1;
-            screen.setCursorPositionDelta({ x: 1, y: 0 });
+            moveCursor({ x: 1, y: 0 });
           }
         } else if (key === "ArrowUp") {
           if (previousEntries.length > 0) {
@@ -115,10 +127,10 @@ export const readLine = (
               replaceWith = previousEntries[previousEntryIndex];
             }
             if (replaceWith) {
-              screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
-              screen.displayString(" ".repeat(result.length));
-              screen.setCursorPositionDelta({ x: -result.length, y: 0 });
-              screen.displayString(replaceWith);
+              moveCursor({ x: -curIndex, y: 0 });
+              buffer.printString(" ".repeat(result.length));
+              moveCursor({ x: -result.length, y: 0 });
+              buffer.printString(replaceWith);
               result = replaceWith;
               curIndex = replaceWith.length;
             }
@@ -135,18 +147,18 @@ export const readLine = (
             } else {
               replaceWith = savedResult;
             }
-            screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
-            screen.displayString(" ".repeat(result.length));
-            screen.setCursorPositionDelta({ x: -result.length, y: 0 });
-            screen.displayString(replaceWith);
+            moveCursor({ x: -curIndex, y: 0 });
+            buffer.printString(" ".repeat(result.length));
+            moveCursor({ x: -result.length, y: 0 });
+            buffer.printString(replaceWith);
             result = replaceWith;
             curIndex = replaceWith.length;
           }
         } else if (char) {
           isUsingPreviousEntry = false;
           const rest = char + result.slice(curIndex);
-          screen.displayString(rest);
-          screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 });
+          buffer.printString(rest);
+          moveCursor({ x: -rest.length + 1, y: 0 });
           result = result.slice(0, curIndex) + rest;
           curIndex += 1;
         }

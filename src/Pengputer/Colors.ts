@@ -1,4 +1,5 @@
-import { x256Colors } from "../Color/ansi";
+import { x256Color, x256Colors } from "../Color/ansi";
+import { ColorType } from "../Color/Color";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -14,27 +15,177 @@ export class Colors implements Executable {
     const { std } = this.pc;
     std.resetConsole();
     std.clearConsole();
-    std.writeConsole(
-      "\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[34mBlue\x1b[0m\n"
-    );
-    std.writeConsole(
-      "\x1b[30;91mIRed\x1b[0m \x1b[92mIGreen\x1b[0m \x1b[94mIBlue\x1b[0m\n"
-    );
-    std.writeConsole(
-      "\x1b[30;41mRed\x1b[0m \x1b[30;42mGreen\x1b[0m \x1b[30;44mBlue\x1b[0m\n"
-    );
-    std.writeConsole(
-      "\x1b[30;101mIRed\x1b[0m \x1b[30;102mIGreen\x1b[0m \x1b[30;104mIBlue\x1b[0m\n"
-    );
-    std.writeConsole("\x1b[38;5;90;48;5;212m256 colors\x1b[0m\n");
-    std.writeConsole(
-      "\x1b[38;2;230;255;210;48;2;45;75;45m24-bit color\x1b[0m\n"
-    );
-    std.writeConsole("\x1b[5mBlink\x1b[25m and no blink\x1b[0m\n");
-    std.writeConsole("\x1b[1mBold\x1b[22m and no bold\x1b[0m\n");
-    std.writeConsole("\x1b[7mReverse\x1b[27m and no reverse\x1b[0m\n");
-    std.writeConsole("\x1b[21mUnderline\x1b[24m and no underline\x1b[0m\n");
-    std.writeConsole("\x1b[2mHalf-bright\x1b[22m and regular\x1b[0m\n");
+
+    // fg regular
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 1 },
+    });
+    std.writeConsole("Red");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 2 },
+    });
+    std.writeConsole("Green");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 4 },
+    });
+    std.writeConsole("Blue");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    // fg intense
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 9 },
+    });
+    std.writeConsole("IRed");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 10 },
+    });
+    std.writeConsole("IGreen");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 12 },
+    });
+    std.writeConsole("IBlue");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    // bg regular
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 1 },
+    });
+    std.writeConsole("Red");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 2 },
+    });
+    std.writeConsole("Green");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 4 },
+    });
+    std.writeConsole("Blue");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    // bg intense
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 9 },
+    });
+    std.writeConsole("IRed");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 10 },
+    });
+    std.writeConsole("IGreen");
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 0 },
+      bgColor: { type: ColorType.Classic, index: 12 },
+    });
+    std.writeConsole("IBlue");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    //
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Indexed, index: 90 },
+      bgColor: { type: ColorType.Indexed, index: 212 },
+    });
+    std.writeConsole("256 colors");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Direct, r: 230, g: 255, b: 210 },
+      bgColor: { type: ColorType.Direct, r: 45, g: 75, b: 45 },
+    });
+    std.writeConsole("24-bit color");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    std.updateConsoleAttributes({ blink: true });
+    std.writeConsole("Blink");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no blink\n");
+
+    std.updateConsoleAttributes({ bold: true });
+    std.writeConsole("Bold");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no bold\n");
+
+    std.updateConsoleAttributes({ reverseVideo: true });
+    std.writeConsole("Reverse");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no reverse\n");
+
+    std.updateConsoleAttributes({ underline: true });
+    std.writeConsole("Underline");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no underline\n");
+
+    std.updateConsoleAttributes({ halfBright: true });
+    std.writeConsole("Half-bright");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and regular\n");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: 3 },
+    });
+    std.writeConsole("Classic");
+    std.updateConsoleAttributes({ bold: true });
+    std.writeConsole(" Yellow");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and ");
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Indexed, index: 3 },
+    });
+    std.writeConsole("Indexed");
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Indexed, index: 11 },
+    });
+    std.writeConsole(" Yellow");
+    std.resetConsoleAttributes();
+    std.writeConsole("\n");
+
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: x256Color.Orange },
+    });
+    std.writeConsole("Classic");
+    std.updateConsoleAttributes({
+      fgColor: { type: ColorType.Classic, index: x256Color.LightOrange },
+    });
+    std.writeConsole(" Orange");
+    std.resetConsoleAttributes();
+    std.writeConsole(" (28-color extended classic palette)\n");
 
     std.writeConsole("Press ENTER to continue...");
     await std.readConsoleLine();
@@ -48,7 +199,7 @@ export class Colors implements Executable {
 
     for (let i = 0; i < 0x08; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
@@ -57,43 +208,25 @@ export class Colors implements Executable {
 
     for (let i = 0x08; i < 0x10; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x100; i < 0x108; i += 1) {
+    for (let i = 0x10; i < 0x18; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x108; i < 0x110; i += 1) {
+    for (let i = 0x18; i < 0x20; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x110; i < 0x118; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x118; i < 0x120; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
@@ -109,7 +242,10 @@ export class Colors implements Executable {
       for (let y = 0; y < 6; y += 1) {
         for (let x = 0; x < 6; x += 1) {
           const attr = std.getConsoleAttributes();
-          attr.bgColor = x256Colors[16 + z * 6 * 6 + y * 6 + x];
+          attr.bgColor = {
+            type: ColorType.Indexed,
+            index: 16 + z * 6 * 6 + y * 6 + x,
+          };
           std.setConsoleAttributes(attr);
           std.writeConsole(CHAR);
         }
@@ -124,7 +260,7 @@ export class Colors implements Executable {
     std.writeConsole("Gray scale\n");
     for (let g = 0; g < 24; g += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[232 + g];
+      attr.bgColor = { type: ColorType.Indexed, index: 232 + g };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }

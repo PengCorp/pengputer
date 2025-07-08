@@ -15,13 +15,18 @@
         "editor.tabSize": 2
     },
     "cSpell.words": [
+        "Autorepeat",
+        "Backquote",
         "dedup",
         "PBIOS",
         "PENGCORP",
         "penger",
         "pengers",
+        "Pengputer",
         "Pengsweeper",
         "PUSHDOWN",
+        "SCROLLBACK",
+        "SGCI",
         "Tetris"
     ],
 }

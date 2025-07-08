@@ -4,7 +4,8 @@ import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
 import { ScreenCharacterAttributes } from "../Screen/types";
-import { Vector, zeroVector } from "../Toolbox/Vector";
+import { CellAttributes, TextBuffer } from "../TextBuffer/TextBuffer";
+import { Vector, vectorAdd, zeroVector } from "../Toolbox/Vector";
 import { getRectFromVectorAndSize, Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
 
@@ -13,7 +14,10 @@ export class Std {
 
   private keyboard: Keyboard;
 
-  constructor(screen: Screen, keyboard: Keyboard) {
+  private textBuffer: TextBuffer;
+
+  constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+    this.textBuffer = textBuffer;
     this.screen = screen;
     this.keyboard = keyboard;
   }
@@ -21,11 +25,13 @@ export class Std {
   // Screen
 
   clearConsole() {
-    return this.screen.clear();
+    this.textBuffer.eraseScreen();
+    this.textBuffer.cursor.setPosition({ x: 0, y: 0 });
   }
 
   resetConsole() {
-    return this.screen.reset();
+    this.textBuffer.resetCurrentAttributes();
+    this.screen.reset();
   }
 
   getConsoleSize() {
@@ -49,7 +55,7 @@ export class Std {
   }
 
   setIsConsoleScrollable(isScrollable: boolean) {
-    this.screen.setIsScrollable(isScrollable);
+    // this.screen.setIsScrollable(isScrollable);
   }
 
   getConsoleCursorSize() {
@@ -61,59 +67,68 @@ export class Std {
   }
 
   getConsoleCursorPosition(): Vector {
-    return this.screen.getCursorPosition();
+    return this.textBuffer.cursor.getPosition();
   }
 
   setConsoleCursorPosition(newPosition: Vector) {
-    return this.screen.setCursorPosition(newPosition);
+    return this.textBuffer.cursor.setPosition(newPosition);
   }
 
   moveConsoleCursorBy(delta: Vector) {
-    return this.screen.setCursorPositionDelta(delta);
+    const pos = this.textBuffer.cursor.getPosition();
+    const newPos = vectorAdd(pos, delta);
+    this.textBuffer.cursor.setPosition(delta);
+    this.textBuffer.cursor.wrapToBeInsidePage(this.textBuffer.getPageSize());
   }
 
-  getConsoleAttributes(): ScreenCharacterAttributes {
-    return this.screen.getCurrentAttributes();
+  getConsoleAttributes(): CellAttributes {
+    return this.textBuffer.getCurrentAttributes();
   }
 
-  setConsoleAttributes(attributes: ScreenCharacterAttributes) {
-    return this.screen.setCurrentAttributes(attributes);
+  setConsoleAttributes(attributes: CellAttributes) {
+    return this.textBuffer.setCurrentAttributes(attributes);
+  }
+
+  updateConsoleAttributes(update: Partial<CellAttributes>) {
+    return this.textBuffer.updateCurrentAttributes(update);
+  }
+
+  resetConsoleAttributes() {
+    return this.textBuffer.resetCurrentAttributes();
   }
 
   writeConsole(string: string) {
-    return this.screen.displayString(string);
+    return this.textBuffer.printString(string);
   }
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
   scrollConsole(numberOfLines: number) {
-    if (numberOfLines === 0) {
-      return;
-    }
-
-    if (numberOfLines > 0) {
-      this.screen.scrollUpRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        numberOfLines
-      );
-    } else {
-      this.screen.scrollDownRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        -numberOfLines
-      );
-    }
+    // if (numberOfLines === 0) {
+    //   return;
+    // }
+    // if (numberOfLines > 0) {
+    //   this.screen.scrollUpRect(
+    //     getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
+    //     numberOfLines
+    //   );
+    // } else {
+    //   this.screen.scrollDownRect(
+    //     getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
+    //     -numberOfLines
+    //   );
+    // }
   }
 
   /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
   scrollConsoleRect(rect: Rect, numberOfLines: number) {
-    if (numberOfLines === 0) {
-      return;
-    }
-
-    if (numberOfLines > 0) {
-      this.screen.scrollUpRect(rect, numberOfLines);
-    } else {
-      this.screen.scrollDownRect(rect, -numberOfLines);
-    }
+    // if (numberOfLines === 0) {
+    //   return;
+    // }
+    // if (numberOfLines > 0) {
+    //   this.screen.scrollUpRect(rect, numberOfLines);
+    // } else {
+    //   this.screen.scrollDownRect(rect, -numberOfLines);
+    // }
   }
 
   drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {
@@ -123,11 +138,11 @@ export class Std {
   // Keyboard
 
   readConsoleLine(
-    ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
+    ...args: Parameters<typeof readLine> extends [any, any, any, ...infer R]
       ? R
       : never
   ) {
-    return readLine(this.screen, this.keyboard, ...args);
+    return readLine(this.screen, this.keyboard, this.textBuffer, ...args);
   }
 
   readConsoleKey() {

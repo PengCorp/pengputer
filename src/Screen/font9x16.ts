@@ -4,9 +4,10 @@ import cp437 from "./cp437_9x16.png";
 import cp437plus from "./cp437plus_9x16.png";
 import cp437legacy from "./cp437legacy_9x16_2x.png";
 import cp437patterns from "./cp437patterns_9x16.png";
+import { charArray } from "../types";
 
 // 32 characters wide, 8 characters high
-const cp437CharacterValueMap = [
+const cp437CharacterValueMap: charArray[] = [
   " ☺︎☻♥︎♦︎♣︎♠︎•◘○◙♂︎♀︎♪♫☼►◄↕︎‼︎¶§▬↨↑↓→←∟↔︎▲▼",
   " !\"#$%&'()*+,-./0123456789:;<=>?",
   "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
@@ -19,7 +20,7 @@ const cp437CharacterValueMap = [
 
 // Sourced from: https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_9x16
 // 74 characters wide, 11 characters high
-export const cp437plusCharacterValueMap = [
+export const cp437plusCharacterValueMap: charArray[] = [
   " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghi",
   "jklmnopqrstuvwxyz{|}~⌂ ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ",
   "ÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝ",
@@ -33,7 +34,7 @@ export const cp437plusCharacterValueMap = [
   "♣♥♦♪♫✓ﬁﬂ�",
 ].map((l) => splitStringIntoCharacters(l));
 
-export const cp437legacyCharacterValueMap = [
+export const cp437legacyCharacterValueMap: charArray[] = [
   "🬀🬁🬂🬃🬄🬅🬆🬇🬈🬉🬊🬋🬌🬍🬎🬏",
   "🬐🬑🬒🬓🬔🬕🬖🬗🬘🬙🬚🬛🬜🬝🬞🬟",
   "🬠🬡🬢🬣🬤🬥🬦🬧🬨🬩🬪🬫🬬🬭🬮🬯",
@@ -52,8 +53,8 @@ export const cp437legacyCharacterValueMap = [
   "🯰🯱🯲🯳🯴🯵🯶🯷🯸🯹",
 ].map((l) => splitStringIntoCharacters(l));
 
-export const cp437patternsCharacterValueMap = ["░", "▒", "▓"].map((l) =>
-  splitStringIntoCharacters(l)
+export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
+  (l) => splitStringIntoCharacters(l)
 );
 
 export const font9x16 = new Font(9, 16, "░▒▓");

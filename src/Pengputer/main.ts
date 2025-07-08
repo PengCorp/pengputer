@@ -1,7 +1,8 @@
 import { loadFont9x16 } from "../Screen/font9x16";
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { loadImageBitmapFromUrl, waitFor } from "../Functions";
+import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
+import { waitFor } from "../Toolbox/waitFor";
 import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PC } from "./PC";
 import { HelloWorld } from "./HelloWorld";
@@ -18,16 +19,18 @@ import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import macgerPng from "./files/documents/pengers/macger.png";
 import { ImageFile, TextFile, AudioFile, LinkFile } from "./fileTypes";
-import { argparse } from "../Functions/argparse";
+import { argparse } from "../Toolbox/argparse";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 import { Std } from "../Std";
-import { Ped } from "./Ped";
 import { PengsweeperApp } from "./Pengsweeper";
 
 import "../Color/ansi";
 import { Colors } from "./Colors";
 import { x256Color, x256Colors } from "../Color/ansi";
+import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { ColorType } from "../Color/Color";
+import _ from "lodash";
 
 const PATH_SEPARATOR = "/";
 
@@ -48,8 +51,8 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
-  constructor(screen: Screen, keyboard: Keyboard) {
-    const std = new Std(screen, keyboard);
+  constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+    const std = new Std(keyboard, textBuffer, screen);
     this.pc = {
       currentDrive: "C",
       currentPath: [],
@@ -120,12 +123,6 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "args.exe",
       createInstance: () => new PrintArgs(this.pc),
-    });
-
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "ped.exe",
-      createInstance: () => new Ped(this.pc),
     });
 
     softwareDir.addItem({
@@ -272,8 +269,8 @@ class PengOS {
     std.setIsConsoleCursorVisible(true);
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
-    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = { type: ColorType.Classic, index: 7 };
+    currentAttributes.bgColor = { type: ColorType.Classic, index: 0 };
     std.setConsoleAttributes(currentAttributes);
 
     let pathString = this.formatPath(currentPath);
@@ -545,27 +542,27 @@ class PengOS {
 
   private commandHelp() {
     const { std } = this.pc;
-    std.writeConsole("\x1b[1mhelp      \x1b[22mList available commands\n");
-    std.writeConsole("\x1b[1mhistory   \x1b[22mView previously run commands\n");
-    std.writeConsole(
-      "\x1b[1mlook      \x1b[22mDisplay contents of current directory\n"
-    );
-    std.writeConsole("\x1b[1mgo        \x1b[22mNavigate directories\n");
-    std.writeConsole("\x1b[1mup        \x1b[22mNavigate to parent directory\n");
-    std.writeConsole("\x1b[1mmakedir   \x1b[22mCreate a directory\n");
-    std.writeConsole("\x1b[1mrun       \x1b[22mExecute program\n");
-    std.writeConsole("\x1b[1mopen      \x1b[22mDisplay file\n");
-    std.writeConsole("\x1b[1mclear     \x1b[22mClear screen\n");
-    std.writeConsole(
-      "\x1b[1mprompt    \x1b[22mChange your command prompt text\n"
-    );
-    std.writeConsole(
-      "\x1b[1mtake      \x1b[22mAdd a program to the command list\n"
-    );
-    std.writeConsole(
-      "\x1b[1mdrop      \x1b[22mRemove a program from the command list\n"
-    );
-    std.writeConsole("\x1b[1mreboot    \x1b[22mRestart the system\n");
+
+    const printEntry = (cmd: string, text: string) => {
+      std.updateConsoleAttributes({ bold: true });
+      std.writeConsole(_.padEnd(cmd, 10) + " ");
+      std.resetConsoleAttributes();
+      std.writeConsole(text);
+    };
+
+    printEntry("help", "List available commands\n");
+    printEntry("history", "View previously run commands\n");
+    printEntry("look", "Display contents of current directory\n");
+    printEntry("go", "Navigate directories\n");
+    printEntry("up", "Navigate to parent directory\n");
+    printEntry("makedir", "Create a directory\n");
+    printEntry("run", "Execute program\n");
+    printEntry("open", "Display file\n");
+    printEntry("clear", "Clear screen\n");
+    printEntry("prompt", "Change your command prompt text\n");
+    printEntry("take", "Add a program to the command list\n");
+    printEntry("drop", "Remove a program from the command list\n");
+    printEntry("reboot", "Restart the system\n");
 
     if (this.takenPrograms.length > 0) {
       std.writeConsole("\nAvailable programs:\n");
@@ -577,6 +574,8 @@ class PengOS {
 
   async mainLoop() {
     const { std, fileSystem } = this.pc;
+
+    await new Colors(this.pc).run([]);
 
     let previousEntries: string[] = [];
 
@@ -674,17 +673,23 @@ class PengOS {
 
   const keyboard = new Keyboard();
 
+  const textBuffer = new TextBuffer({
+    pageSize: screen.getSizeInCharacters(),
+    scrollbackLength: 0,
+  });
+
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;
     lastTime = performance.now();
+    screen.updateFromBuffer(textBuffer);
     screen.draw(dt);
     keyboard.update(dt);
     requestAnimationFrame(cb);
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(screen, keyboard);
+  const pengOS = new PengOS(keyboard, textBuffer, screen);
   await pengOS.startup();
   pengOS.mainLoop();
 })();

@@ -1,22 +1,17 @@
-import { font9x16 } from "./font9x16";
-import { ScreenBufferCharacter, ScreenCharacterAttributes } from "./types";
-import { getRectFromVectorAndSize, Rect, Size } from "../types";
-import { getIsPrintable } from "./getIsPrintable";
-import {
-  Vector,
-  vectorClamp,
-  vectorDivideComponents,
-  zeroVector,
-} from "../Toolbox/Vector";
-import { Cursor } from "./Cursor";
-import {
-  getEscapeSequence,
-  matchControlEscape,
-  matchCsiEscape,
-  splitStringIntoCharacters,
-} from "../Toolbox/String";
-import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
 import tc from "tinycolor2";
+import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
+import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
+import { getIsVectorInZeroAlignedRect, Size } from "../types";
+import { Cursor } from "./Cursor";
+import { font9x16 } from "./font9x16";
+import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
+import {
+  cloneScreenBufferCharacter,
+  compareScreenBufferCharacter,
+  ScreenBufferCharacter,
+  ScreenCharacterAttributes,
+} from "./types";
+import { TextBuffer } from "../TextBuffer/TextBuffer";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -24,13 +19,6 @@ export type ClickListener = (clickEvent: {
 }) => void;
 
 const RENDER_SCALE = 2;
-
-const isColorValue = (a: number | undefined) => {
-  return a !== undefined && a >= 0 && a < 256;
-};
-
-const defaultBgColor = x256Colors[x256Color.Black];
-const defaultFgColor = x256Colors[x256Color.LightGray];
 
 export class Screen {
   private widthInCharacters: number;
@@ -67,8 +55,6 @@ export class Screen {
   private graphicsCtx!: CanvasRenderingContext2D;
   private graphicsScale: number = 1;
 
-  private currentAttributes: ScreenCharacterAttributes;
-
   private cursor: Cursor;
   private curDisplay: boolean;
   private curBlinkState: boolean;
@@ -78,8 +64,6 @@ export class Screen {
   private curStart: number;
   /** Pixel of cell to end cursor on. Inclusive. */
   private curEnd: number;
-
-  private isScrollable: boolean;
 
   private charBlinkState: boolean;
   private charBlinkDuration: number;
@@ -98,16 +82,6 @@ export class Screen {
     this.widthInPixels = this.widthInCharacters * this.characterWidth;
     this.heightInPixels = this.heightInCharacters * this.characterHeight;
 
-    this.currentAttributes = {
-      bgColor: x256Colors[x256Color.Black],
-      fgColor: x256Colors[x256Color.LightGray],
-      blink: false,
-      bold: false,
-      reverseVideo: false,
-      underline: false,
-      halfBright: false,
-    };
-
     this.cursor = new Cursor({
       getSize: () => this.getSizeInCharacters(),
     });
@@ -118,8 +92,6 @@ export class Screen {
     this.curStart = 14;
     this.curEnd = 15;
 
-    this.isScrollable = true;
-
     this.charBlinkState = true;
     this.charBlinkDuration = 600;
     this.charBlinkCounter = this.charBlinkDuration;
@@ -129,7 +101,13 @@ export class Screen {
       this.screenBuffer[i] = {
         character: " ",
         attributes: {
-          ...this.currentAttributes,
+          bgColor: x256Colors[x256Color.Black],
+          fgColor: x256Colors[x256Color.LightGray],
+          blink: false,
+          bold: false,
+          reverseVideo: false,
+          underline: false,
+          halfBright: false,
         },
       };
     }
@@ -163,7 +141,7 @@ export class Screen {
     this.attributeCanvas.height = this.heightInPixels * this.attributeScale;
     this.attributeCtx = this.attributeCanvas.getContext("2d")!;
     this.attributeCtx.imageSmoothingEnabled = false;
-    this.attributeCtx.fillStyle = this.currentAttributes.fgColor;
+    this.attributeCtx.fillStyle = "red";
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
 
     this.graphicsCanvas = document.createElement("canvas");
@@ -198,20 +176,8 @@ export class Screen {
     containerEl.replaceChildren(canvasBox);
   }
 
-  private resetAttributes() {
-    this.currentAttributes.bgColor = defaultBgColor;
-    this.currentAttributes.fgColor = defaultFgColor;
-    this.currentAttributes.blink = false;
-    this.currentAttributes.bold = false;
-    this.currentAttributes.reverseVideo = false;
-    this.currentAttributes.underline = false;
-    this.currentAttributes.halfBright = false;
-  }
-
   /** Resets screen attributes and parameters to sensible defaults. */
   public reset() {
-    this.resetAttributes();
-    this.setIsScrollable(true);
     this.showCursor();
     this.setCursorSize(14, 15);
   }
@@ -305,14 +271,21 @@ export class Screen {
     // draw cursor
     if (this.curDisplay && this.curBlinkState) {
       const cursorPosition = this.cursor.getPosition();
-      const curW = this.characterWidth * this.bufferScale;
-      const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
-      const curX = cursorPosition.x * this.characterWidth * this.bufferScale;
-      const curY =
-        (cursorPosition.y * this.characterHeight + this.curStart) *
-        this.bufferScale;
-      this.bufferCtx.globalCompositeOperation = "xor";
-      this.bufferCtx.fillRect(curX, curY, curW, curH);
+      if (
+        getIsVectorInZeroAlignedRect(cursorPosition, {
+          w: this.widthInPixels,
+          h: this.heightInPixels,
+        })
+      ) {
+        const curW = this.characterWidth * this.bufferScale;
+        const curH = (this.curEnd - this.curStart + 1) * this.bufferScale;
+        const curX = cursorPosition.x * this.characterWidth * this.bufferScale;
+        const curY =
+          (cursorPosition.y * this.characterHeight + this.curStart) *
+          this.bufferScale;
+        this.bufferCtx.globalCompositeOperation = "xor";
+        this.bufferCtx.fillRect(curX, curY, curW, curH);
+      }
     }
 
     // apply attribute layer
@@ -356,36 +329,6 @@ export class Screen {
       this.canvas.height
     );
     this.ctx.imageSmoothingEnabled = false;
-  }
-
-  /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
-  clear() {
-    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
-
-    bgCtx.globalCompositeOperation = "source-over";
-    bgCtx.fillStyle = this.currentAttributes.bgColor;
-    bgCtx.fillRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
-
-    attributeCtx.globalCompositeOperation = "source-over";
-    charCtx.clearRect(0, 0, this.charCanvas.width, this.charCanvas.height);
-
-    attributeCtx.globalCompositeOperation = "source-over";
-    attributeCtx.fillStyle = this.currentAttributes.fgColor;
-    attributeCtx.fillRect(
-      0,
-      0,
-      this.attributeCanvas.width,
-      this.attributeCanvas.height
-    );
-
-    graphicsCtx.clearRect(
-      0,
-      0,
-      this.graphicsCanvas.width,
-      this.graphicsCanvas.height
-    );
-
-    this.cursor.moveToStartOfScreen();
   }
 
   getSizeInCharacters(): Size {
@@ -542,443 +485,60 @@ export class Screen {
     this.curEnd = end;
   }
 
-  getCursorPosition(): Vector {
-    return this.cursor.getPosition();
-  }
-
-  setCursorPosition(pos: Vector) {
-    this.cursor.setPosition(pos);
-    if (!this.isScrollable) {
-      this.cursor.snapToScreen();
-    } else {
-      this.scrollInCursor();
-    }
-  }
-
-  setCursorPositionDelta(delta: Vector) {
-    this.cursor.moveBy(delta);
-    if (!this.isScrollable) {
-      this.cursor.snapToScreen();
-    } else {
-      this.scrollInCursor();
-    }
-  }
-
   getCharacterAt(pos: Vector) {
     const { x, y } = pos;
     return this.screenBuffer[this._getScreenBufferIndex(x, y)];
   }
 
-  getCurrentAttributes(): ScreenCharacterAttributes {
-    return {
-      fgColor: this.currentAttributes.fgColor,
-      bgColor: this.currentAttributes.bgColor,
-      blink: this.currentAttributes.blink,
-      bold: this.currentAttributes.bold,
-      reverseVideo: this.currentAttributes.reverseVideo,
-      underline: this.currentAttributes.underline,
-      halfBright: this.currentAttributes.halfBright,
-    };
-  }
+  /*=============================== TERM HANDLING ====================================*/
 
-  setCurrentAttributes(attributes: ScreenCharacterAttributes) {
-    this.currentAttributes = {
-      fgColor: attributes.fgColor,
-      bgColor: attributes.bgColor,
-      blink: attributes.blink,
-      bold: attributes.bold,
-      reverseVideo: attributes.reverseVideo,
-      underline: attributes.underline,
-      halfBright: attributes.halfBright,
-    };
-  }
+  updateFromBuffer(buffer: TextBuffer) {
+    let screenChanged = false;
 
-  private replaceCharacterAndAttributesAt(
-    character: string,
-    attributes: ScreenCharacterAttributes,
-    pos: Vector
-  ) {
-    const { x, y } = pos;
-    const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
-    bufferCharacter.character = character;
-    bufferCharacter.attributes = { ...attributes };
-    this.redrawCharacter(x, y);
-  }
+    const page = buffer.getPage(buffer.topLine);
+    this.cursor.setPositionNoWrap(page.cursor.getPosition());
 
-  /*================================ TTY EMULATION =============================*/
-
-  private handleControlCharacter(
-    match: NonNullable<ReturnType<typeof matchControlEscape>>
-  ) {
-    return;
-  }
-
-  private handleCSISequence(
-    match: NonNullable<ReturnType<typeof matchCsiEscape>>
-  ) {
-    let { attributes, character } = match;
-
-    if (character === "m") {
-      if (attributes.length === 0) {
-        attributes = [0];
+    if (buffer.bellRequested) {
+      const beepEl = document.getElementById("bell") as HTMLAudioElement | null;
+      if (beepEl) {
+        beepEl.currentTime = 0;
+        beepEl.play();
       }
-      while (attributes.length > 0) {
-        let a = attributes.shift()!;
-        if (a >= 30 && a < 38) {
-          this.currentAttributes.fgColor = x256Colors[0 + (a - 30)];
-        } else if (a >= 40 && a < 48) {
-          this.currentAttributes.bgColor = x256Colors[0 + (a - 40)];
-        } else if (a >= 90 && a < 98) {
-          this.currentAttributes.fgColor = x256Colors[8 + (a - 90)];
-        } else if (a >= 100 && a < 108) {
-          this.currentAttributes.bgColor = x256Colors[8 + (a - 100)];
-        } else {
-          switch (a) {
-            case 0:
-              this.resetAttributes();
-              break;
-            case 1:
-              this.currentAttributes.bold = true;
-              break;
-            case 2:
-              this.currentAttributes.halfBright = true;
-              break;
-            case 5:
-              this.currentAttributes.blink = true;
-              break;
-            case 7:
-              this.currentAttributes.reverseVideo = true;
-              break;
-            case 21:
-              this.currentAttributes.underline = true;
-              break;
-            case 22:
-              this.currentAttributes.bold = false;
-              this.currentAttributes.halfBright = false;
-              break;
-            case 24:
-              this.currentAttributes.underline = false;
-              break;
-            case 25:
-              this.currentAttributes.blink = false;
-              break;
-            case 27:
-              this.currentAttributes.reverseVideo = false;
-              break;
-            case 38:
-              {
-                let b = attributes.shift();
-                if (b === 2) {
-                  let r = attributes.shift();
-                  let g = attributes.shift();
-                  let b = attributes.shift();
-                  if (isColorValue(r) && isColorValue(g) && isColorValue(b)) {
-                    this.currentAttributes.fgColor = tc({
-                      r: r!,
-                      g: g!,
-                      b: b!,
-                    }).toHexString();
-                  }
-                } else if (b === 5) {
-                  let c = attributes.shift();
-                  if (c !== undefined && c > 0 && c < x256Colors.length) {
-                    this.currentAttributes.fgColor = x256Colors[c];
-                  }
-                }
-              }
-              break;
-            case 39:
-              this.currentAttributes.fgColor = x256Colors[x256Color.LightGray];
-              break;
-            case 48:
-              {
-                let b = attributes.shift();
-                if (b === 2) {
-                  let r = attributes.shift();
-                  let g = attributes.shift();
-                  let b = attributes.shift();
-                  if (isColorValue(r) && isColorValue(g) && isColorValue(b)) {
-                    this.currentAttributes.bgColor = tc({
-                      r: r!,
-                      g: g!,
-                      b: b!,
-                    }).toHexString();
-                  }
-                } else if (b === 5) {
-                  let c = attributes.shift();
-                  if (c !== undefined && c > 0 && c < x256Colors.length) {
-                    this.currentAttributes.bgColor = x256Colors[c];
-                  }
-                }
-              }
-              break;
-            case 49:
-              this.currentAttributes.bgColor = x256Colors[x256Color.Black];
-              break;
-          }
-        }
-      }
-    }
-  }
-
-  /** Handles escape code. Index should point to first character after escape character. Returns new index offset just after the escape sequence. */
-  private handleEscape(sequence: string): number {
-    const csiMatch = matchCsiEscape(`\x1b${sequence}`);
-    if (csiMatch) {
-      this.handleCSISequence(csiMatch);
-    } else {
-      const controlMatch = matchControlEscape(`\x1b${sequence}`);
-      if (controlMatch) {
-        this.handleControlCharacter(controlMatch);
-      }
-    }
-    return sequence.length;
-  }
-
-  /** Updates screen by writing a string with provided attributes. */
-  displayString(string: string) {
-    const chars = splitStringIntoCharacters(string);
-    let i = 0;
-    while (i < chars.length) {
-      const ch = chars[i];
-      if (ch === "\n") {
-        this.cursor.moveBy({ x: 0, y: 1 });
-        this.cursor.moveToStartOfLine();
-        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
-          this.cursor.moveToEndOfScreen();
-          this.cursor.moveToStartOfLine();
-        }
-      } else if (ch === "\b") {
-        this.cursor.moveBy({ x: -1, y: 0 });
-        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
-          this.cursor.moveToStartOfScreen();
-        }
-        this.replaceCharacterAndAttributesAt(
-          " ",
-          this.currentAttributes,
-          this.cursor.getPosition()
-        );
-      } else if (getIsPrintable(ch)) {
-        this.replaceCharacterAndAttributesAt(
-          ch,
-          this.currentAttributes,
-          this.cursor.getPosition()
-        );
-        this.cursor.moveBy({ x: 1, y: 0 });
-        if (!this.isScrollable && this.cursor.getIsOutOfBounds()) {
-          this.cursor.moveToEndOfScreen();
-        }
-      } else {
-        i += 1;
-        if (ch === "\x1b") {
-          const escapeSequence = getEscapeSequence(
-            `\x1b${chars.slice(i).join("")}`
-          );
-          if (escapeSequence) {
-            this.handleEscape(escapeSequence);
-            i = i + escapeSequence.length;
-          }
-        }
-        continue;
-      }
-
-      if (this.isScrollable) {
-        this.scrollInCursor();
-      }
-
-      i += 1;
-    }
-  }
-
-  /*================================ SCROLLING ================================*/
-
-  public setIsScrollable(isScrollable: boolean) {
-    this.isScrollable = isScrollable;
-  }
-
-  private scrollCanvases(
-    src: Rect,
-    dst: Rect,
-    clear: Rect,
-    attributes: ScreenCharacterAttributes
-  ) {
-    const scrollDraws = [
-      {
-        ctx: this.bgCtx,
-        canvas: this.bgCanvas,
-        scale: this.bgScale,
-      },
-      {
-        ctx: this.charCtx,
-        canvas: this.charCanvas,
-        scale: this.charScale,
-      },
-      {
-        ctx: this.attributeCtx,
-        canvas: this.attributeCanvas,
-        scale: this.attributeScale,
-      },
-      {
-        ctx: this.graphicsCtx,
-        canvas: this.graphicsCanvas,
-        scale: this.graphicsScale,
-      },
-    ];
-
-    for (const { ctx, canvas, scale } of scrollDraws) {
-      this.bufferCtx.globalCompositeOperation = "copy";
-      this.bufferCtx.drawImage(
-        canvas,
-        src.x * scale,
-        src.y * scale,
-        src.w * scale,
-        src.h * scale,
-        dst.x * this.bufferScale,
-        dst.y * this.bufferScale,
-        dst.w * this.bufferScale,
-        dst.h * this.bufferScale
-      );
-      ctx.clearRect(dst.x * scale, dst.y * scale, dst.w * scale, dst.h * scale);
-      ctx.drawImage(
-        this.bufferCanvas,
-        0,
-        0,
-        this.bufferCanvas.width,
-        this.bufferCanvas.height,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      buffer.bellRequested = false;
     }
 
-    this.bgCtx.fillStyle = attributes.bgColor;
-    this.bgCtx.fillRect(
-      clear.x * this.bgScale,
-      clear.y * this.bgScale,
-      clear.w * this.bgScale,
-      clear.h * this.bgScale
-    );
-    this.charCtx.clearRect(
-      clear.x * this.charScale,
-      clear.y * this.charScale,
-      clear.w * this.charScale,
-      clear.h * this.charScale
-    );
-    this.attributeCtx.fillStyle = attributes.fgColor;
-    this.attributeCtx.fillRect(
-      clear.x * this.attributeScale,
-      clear.y * this.attributeScale,
-      clear.w * this.attributeScale,
-      clear.h * this.attributeScale
-    );
+    for (let y = 0; y < this.heightInCharacters && y < page.size.h; y += 1) {
+      for (let x = 0; x < this.widthInCharacters && x < page.size.w; x += 1) {
+        const cell = page.lines[y]?.cells[x];
+        if (!cell) continue;
 
-    this.redrawUnstable();
-  }
+        if (!buffer.isDirty && !cell.isDirty) continue;
 
-  scrollUpRect(
-    rect: Rect,
-    linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.currentAttributes
-  ) {
-    // scroll screen buffer
-    for (let y = rect.y + linesToScroll; y < rect.y + rect.h; y += 1) {
-      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
-        this.screenBuffer[this._getScreenBufferIndex(x, y - linesToScroll)] =
+        const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
+        const newCharacter = cloneScreenBufferCharacter(currentCharacter);
+
+        const cellAttr = cell.getAttributes();
+
+        newCharacter.attributes =
+          getScreenCharacterAttributesFromTermCellAttributes(cellAttr);
+
+        newCharacter.character = cell.rune;
+
+        if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
+          this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
+          this.redrawCharacter(x, y);
+          screenChanged = true;
+        }
+
+        cell.isDirty = false;
       }
     }
 
-    // clear new lines
-    for (let y = rect.y + rect.h - linesToScroll; y < rect.y + rect.h; y += 1) {
-      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
-        this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
-          character: " ",
-          attributes: { ...attributes },
-        };
-      }
-    }
+    buffer.isDirty = false;
 
-    const copyRect = {
-      x: rect.x * this.characterWidth,
-      y: (rect.y + linesToScroll) * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: (rect.h - linesToScroll) * this.characterHeight,
-    };
-    const copyRectTo = {
-      x: rect.x * this.characterWidth,
-      y: rect.y * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: (rect.h - linesToScroll) * this.characterHeight,
-    };
-    const clearRect = {
-      x: rect.x * this.characterWidth,
-      y: (rect.y + rect.h - linesToScroll) * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: linesToScroll * this.characterHeight,
-    };
-
-    this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
-  }
-
-  scrollDownRect(
-    rect: Rect,
-    linesToScroll: number,
-    attributes: ScreenCharacterAttributes = this.currentAttributes
-  ) {
-    // scroll screen buffer
-    for (let y = rect.y + rect.h - 1; y >= rect.y + linesToScroll; y -= 1) {
-      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
-        this.screenBuffer[this._getScreenBufferIndex(x, y)] =
-          this.screenBuffer[this._getScreenBufferIndex(x, y - linesToScroll)];
-      }
-    }
-
-    // clear new lines
-    for (let y = rect.y; y < rect.y + linesToScroll; y += 1) {
-      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
-        this.screenBuffer[this._getScreenBufferIndex(x, y)] = {
-          character: " ",
-          attributes: { ...attributes },
-        };
-      }
-    }
-
-    const copyRect = {
-      x: rect.x * this.characterWidth,
-      y: rect.y * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: (rect.h - linesToScroll) * this.characterHeight,
-    };
-    const copyRectTo = {
-      x: rect.x * this.characterWidth,
-      y: (rect.y + linesToScroll) * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: (rect.h - linesToScroll) * this.characterHeight,
-    };
-    const clearRect = {
-      x: rect.x * this.characterWidth,
-      y: rect.y * this.characterHeight,
-      w: rect.w * this.characterWidth,
-      h: linesToScroll * this.characterHeight,
-    };
-
-    this.scrollCanvases(copyRect, copyRectTo, clearRect, attributes);
-  }
-
-  /** Scrolls screen so that cursor is inside the screen rect. */
-  private scrollInCursor() {
-    const finalPosition = this.cursor.getPosition();
-    const screenSize = this.getSizeInCharacters();
-    if (finalPosition.y >= screenSize.h) {
-      this.scrollUpRect(
-        getRectFromVectorAndSize(zeroVector, this.getSizeInCharacters()),
-        finalPosition.y - (screenSize.h - 1)
-      );
-      this.cursor.setPosition({
-        ...this.cursor.getPosition(),
-        y: screenSize.h - 1,
-      });
+    if (screenChanged) {
+      this.redrawUnstable();
     }
   }
 
