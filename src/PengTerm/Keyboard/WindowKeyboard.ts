@@ -1,3 +1,4 @@
+import { Signal } from "../../Toolbox/Signal";
 import { getIsModifierKey } from "./isModifierKey";
 import { KeyCode } from "./KeyCode";
 import { KeyboardEvent as TerminalKeyboardEvent } from "./types";
@@ -6,6 +7,7 @@ export class WindowKeyboard {
   private buffer: TerminalKeyboardEvent[];
   private pressed: KeyCode[];
   private werePressed: Set<KeyCode>;
+  public keysDownChangedSignal: Signal<void> = new Signal();
 
   constructor() {
     this.buffer = [];
@@ -28,6 +30,7 @@ export class WindowKeyboard {
       code: e.code as KeyCode,
       pressed: true,
     });
+    this.keysDownChangedSignal.emit();
   }
 
   private _onKeyUp(e: KeyboardEvent) {
@@ -39,6 +42,7 @@ export class WindowKeyboard {
       code: e.code as KeyCode,
       pressed: false,
     });
+    this.keysDownChangedSignal.emit();
   }
 
   public take() {
@@ -47,6 +51,26 @@ export class WindowKeyboard {
 
   public getIsKeyPressed(keyCode: KeyCode) {
     return this.pressed.includes(keyCode);
+  }
+
+  public getIsAnyKeyPressed() {
+    return this.pressed.length > 0;
+  }
+
+  /** Takes a set of keyCodes. Returns the keyCode that was most recently pressed. Returns `null` otherwise. */
+  public getLastPressedOf(keyCodes: string[]): string | null {
+    let lastPressed = null;
+    let lastPressedIndex = -1;
+
+    for (const keyCode of keyCodes) {
+      let index = this.pressed.findIndex((v) => v === keyCode);
+      if (index > lastPressedIndex) {
+        lastPressed = keyCode;
+        lastPressedIndex = index;
+      }
+    }
+
+    return lastPressed;
   }
 
   public getIsShift(): boolean {

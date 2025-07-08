@@ -5,7 +5,7 @@ import { CellAttributes } from "../PengTerm/PengTerm";
 import { Screen as PengputerScreen } from "../Screen";
 import { Vector } from "../Toolbox/Vector";
 import { Rect } from "../types";
-import { readKey, readLine, waitForKeysUp } from "./readLine";
+import { readLine, waitForKeysUp } from "./readLine";
 import { readTerm } from "./TermAdapter";
 
 export class Std {
@@ -68,8 +68,19 @@ export class Std {
     this.term.screen.cursor.setPosition(newPosition);
   }
 
+  /** Does not perform wrapping. */
   moveConsoleCursorBy(delta: Vector) {
-    // return this.screen.setCursorPositionDelta(delta);
+    if (delta.x < 0) {
+      this.term.write(`\x1b[${delta.x}D`);
+    } else if (delta.x > 0) {
+      this.term.write(`\x1b[${delta.x}C`);
+    }
+
+    if (delta.y < 0) {
+      this.term.write(`\x1b[${delta.y}A`);
+    } else if (delta.y > 0) {
+      this.term.write(`\x1b[${delta.y}B`);
+    }
   }
 
   getConsoleAttributes(): CellAttributes {
@@ -95,19 +106,6 @@ export class Std {
     } else {
       this.term.screen.scrollDownBy(numberOfLines);
     }
-  }
-
-  /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
-  scrollConsoleRect(rect: Rect, numberOfLines: number) {
-    // throw new Error("Not implemented");
-    // if (numberOfLines === 0) {
-    //   return;
-    // }
-    // if (numberOfLines > 0) {
-    //   this.screen.scrollUpRect(rect, numberOfLines);
-    // } else {
-    //   this.screen.scrollDownRect(rect, -numberOfLines);
-    // }
   }
 
   drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {
@@ -139,7 +137,7 @@ export class Std {
   }
 
   waitForKeyboardKeysUp() {
-    // return waitForKeysUp(this.keyboard);
+    return waitForKeysUp(this.term);
   }
 
   getIsKeyPressed(keyCode: KeyCode) {
@@ -147,15 +145,7 @@ export class Std {
   }
 
   getLastKeyPressedOf(keyCodes: string[]) {
-    // return this.keyboard.getLastPressedOf(keyCodes);
-  }
-
-  addKeyTypeListener(callback: any) {
-    // return this.keyboard.addTypeListener(callback);
-  }
-
-  addAllKeysUpListener(callback: any) {
-    // return this.keyboard.addAllKeysUpListener(callback);
+    return this.term.keyboard.getLastPressedOf(keyCodes);
   }
 
   getWasKeyPressed(keyCode: KeyCode) {

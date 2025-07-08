@@ -50,6 +50,21 @@ export const readTerm = (term: PengTerm): charArray | undefined => {
     return result;
   }
 
+  // CR/LF handling
+  if (nextChar === ControlCharacter.CR) {
+    nextChar = buf[readIndex++];
+    if (nextChar === undefined) {
+      flushN(term, 1);
+      return [ControlCharacter.CR];
+    }
+    if (nextChar === ControlCharacter.LF) {
+      flushN(term, 2);
+      return [ControlCharacter.LF];
+    }
+    flushN(term, 1);
+    return [ControlCharacter.CR];
+  }
+
   flushN(term, 1);
   return [nextChar];
 };

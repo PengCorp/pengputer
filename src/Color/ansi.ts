@@ -49,7 +49,9 @@ export const getBoldClassicIndex = (index: number) => {
   return index;
 };
 
-const x256Colors = new Array(256).fill(CGA_PALETTE_DICT[CgaColors.Black]);
+const x256Colors = new Array<string>(256).fill(
+  CGA_PALETTE_DICT[CgaColors.Black]
+);
 
 x256Colors[0x00] = "#000000";
 x256Colors[0x01] = "#800000";

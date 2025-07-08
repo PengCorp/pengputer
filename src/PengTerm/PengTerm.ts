@@ -803,8 +803,6 @@ export class PengTerm {
   }
 
   public update(dt: number) {
-    this.drainReceiveBuffer();
-
     let ev = this.keyboard.take();
     while (ev) {
       if (ev.code === "ShiftLeft" || ev.code === "ShiftRight") {
@@ -864,5 +862,6 @@ export class PengTerm {
     for (const ch of chars) {
       this.receiveBuffer.push(ch);
     }
+    this.drainReceiveBuffer();
   }
 }

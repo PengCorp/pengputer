@@ -441,7 +441,7 @@ class PengOS {
         std.writeConsole(`Playing ${fileEntry.name}...\n`);
         std.writeConsole(`Press any key to exit.`);
         fileEntry.data.play();
-        await std.readConsoleKey();
+        std.readConsoleCharacter();
         fileEntry.data.stop();
         std.writeConsole(`\n`);
       } else if (fileEntry.type === FileSystemObjectType.Image) {
@@ -579,7 +579,6 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
-    return;
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
