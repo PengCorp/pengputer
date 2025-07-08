@@ -58,8 +58,6 @@ export class Screen {
   private graphicsCtx!: CanvasRenderingContext2D;
   private graphicsScale: number = 1;
 
-  private currentAttributes: ScreenCharacterAttributes;
-
   private cursor: Cursor;
   private curDisplay: boolean;
   private curBlinkState: boolean;
@@ -87,16 +85,6 @@ export class Screen {
     this.widthInPixels = this.widthInCharacters * this.characterWidth;
     this.heightInPixels = this.heightInCharacters * this.characterHeight;
 
-    this.currentAttributes = {
-      bgColor: x256Colors[x256Color.Black],
-      fgColor: x256Colors[x256Color.LightGray],
-      blink: false,
-      bold: false,
-      reverseVideo: false,
-      underline: false,
-      halfBright: false,
-    };
-
     this.cursor = new Cursor({
       getSize: () => this.getSizeInCharacters(),
     });
@@ -116,7 +104,13 @@ export class Screen {
       this.screenBuffer[i] = {
         character: " ",
         attributes: {
-          ...this.currentAttributes,
+          bgColor: x256Colors[x256Color.Black],
+          fgColor: x256Colors[x256Color.LightGray],
+          blink: false,
+          bold: false,
+          reverseVideo: false,
+          underline: false,
+          halfBright: false,
         },
       };
     }
@@ -150,7 +144,7 @@ export class Screen {
     this.attributeCanvas.height = this.heightInPixels * this.attributeScale;
     this.attributeCtx = this.attributeCanvas.getContext("2d")!;
     this.attributeCtx.imageSmoothingEnabled = false;
-    this.attributeCtx.fillStyle = this.currentAttributes.fgColor;
+    this.attributeCtx.fillStyle = "red";
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
 
     this.graphicsCanvas = document.createElement("canvas");
@@ -185,19 +179,8 @@ export class Screen {
     containerEl.replaceChildren(canvasBox);
   }
 
-  private resetAttributes() {
-    this.currentAttributes.bgColor = defaultBgColor;
-    this.currentAttributes.fgColor = defaultFgColor;
-    this.currentAttributes.blink = false;
-    this.currentAttributes.bold = false;
-    this.currentAttributes.reverseVideo = false;
-    this.currentAttributes.underline = false;
-    this.currentAttributes.halfBright = false;
-  }
-
   /** Resets screen attributes and parameters to sensible defaults. */
   public reset() {
-    this.resetAttributes();
     this.showCursor();
     this.setCursorSize(14, 15);
   }

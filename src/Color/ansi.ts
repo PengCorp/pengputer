@@ -109,19 +109,19 @@ export enum x256Color {
   LightCyan = 0x0e,
   White = 0x0f,
 
-  Orange = 0x100,
-  Chartreuse = 0x101,
-  SpringGreen = 0x102,
-  Azure = 0x103,
-  Violet = 0x104,
-  Rose = 0x105,
+  Orange = 0x10,
+  Chartreuse = 0x11,
+  SpringGreen = 0x12,
+  Azure = 0x13,
+  Violet = 0x14,
+  Rose = 0x15,
 
-  LightOrange = 0x108,
-  LightChartreuse = 0x109,
-  LightSpringGreen = 0x10a,
-  LightAzure = 0x10b,
-  LightViolet = 0x10c,
-  LightRose = 0x10d,
+  LightOrange = 0x18,
+  LightChartreuse = 0x19,
+  LightSpringGreen = 0x1a,
+  LightAzure = 0x1b,
+  LightViolet = 0x1c,
+  LightRose = 0x1d,
 }
 
 export const getBoldColor = (color: string) => {

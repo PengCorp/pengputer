@@ -25,11 +25,13 @@ export class Std {
   // Screen
 
   clearConsole() {
-    // return this.screen.clear();
+    this.term.write("\x1b[2J\x1b[1;1H");
   }
 
   resetConsole() {
-    return this.screen.reset();
+    this.screen.reset();
+    this.term.write("\x1b[0m");
+    return;
   }
 
   getConsoleSize() {

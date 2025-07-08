@@ -1079,7 +1079,7 @@ class Tetris implements GameState {
   private drawLevel() {
     const { std } = this.pc;
 
-    const currentAttributes = std.getConsoleAttributes();
+    let currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.Black,
@@ -1091,6 +1091,8 @@ class Tetris implements GameState {
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 20 });
     std.writeConsole("== LEVEL ==");
+
+    currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.DarkGray,
@@ -1114,7 +1116,7 @@ class Tetris implements GameState {
   private drawLines() {
     const { std } = this.pc;
 
-    const currentAttributes = std.getConsoleAttributes();
+    let currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.Black,
@@ -1126,6 +1128,8 @@ class Tetris implements GameState {
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 14, y: 23 });
     std.writeConsole("== LINES ==");
+
+    currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.DarkGray,
@@ -1142,7 +1146,7 @@ class Tetris implements GameState {
   private drawScore() {
     const { std } = this.pc;
 
-    const currentAttributes = std.getConsoleAttributes();
+    let currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.Black,
@@ -1155,6 +1159,7 @@ class Tetris implements GameState {
     std.setConsoleCursorPosition({ x: 14, y: 17 });
     std.writeConsole("== SCORE ==");
 
+    currentAttributes = std.getConsoleAttributes();
     currentAttributes.bgColor = {
       type: ColorType.Classic,
       index: x256Color.DarkGray,
@@ -1385,7 +1390,7 @@ class MainMenu implements GameState {
             string = "\x1b[104;34m[]";
             break;
           case "o":
-            string = "\x1b[48;5;264;38;5;256m[]";
+            string = "\x1b[48;10;24;38;10;16m[]";
             break;
           case "y":
             string = "\x1b[103;33m[]";
@@ -1394,7 +1399,7 @@ class MainMenu implements GameState {
             string = "\x1b[102;32m[]";
             break;
           case "p":
-            string = "\x1b[48;5;268;38;5;260m[]";
+            string = "\x1b[48;10;28;38;10;20m[]";
             break;
           case "r":
             string = "\x1b[101;31m[]";

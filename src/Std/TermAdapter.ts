@@ -38,7 +38,7 @@ export const readTerm = (term: PengTerm): charArray | undefined => {
   if (nextChar === ControlCharacter.ESC) {
     result.push(nextChar);
     nextChar = buf[readIndex++];
-    if (nextChar === "?") {
+    if (nextChar === "?" || nextChar === "[") {
       result.push(nextChar);
       nextChar = buf[readIndex++];
     }

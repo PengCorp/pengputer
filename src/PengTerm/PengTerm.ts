@@ -516,7 +516,7 @@ export class PengTerm {
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
-        case "H": // cursor position
+        case "H": // cursor absolute (screen)
           {
             let y = csiParameters?.[0];
             let x = csiParameters?.[1];
@@ -531,6 +531,61 @@ export class PengTerm {
             curPos.y = y - 1;
             this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
+          }
+          break;
+        case "J": // erase in display
+          {
+            let what = csiParameters?.[0];
+            if (what === undefined) {
+              what = 0;
+            }
+            const curPos = this.screen.cursor.getPosition();
+            const page = this.screen.getPage(0);
+            const currentAttributes = this.screen.getCurrentAttributes();
+            switch (what) {
+              case 0:
+                for (let x = curPos.x; x < page.size.w; x += 1) {
+                  const cell = page.lines[curPos.y].cells[x];
+                  cell.rune = " ";
+                  cell.setAttributes(currentAttributes);
+                  cell.isDirty = true;
+                }
+                for (let y = curPos.y + 1; y < page.size.h; y += 1) {
+                  for (let x = 0; x < page.size.w; x += 1) {
+                    const cell = page.lines[y].cells[x];
+                    cell.rune = " ";
+                    cell.setAttributes(currentAttributes);
+                    cell.isDirty = true;
+                  }
+                }
+                break;
+              case 1:
+                for (let y = 0; y < curPos.y; y += 1) {
+                  for (let x = 0; x < page.size.w; x += 1) {
+                    const cell = page.lines[y].cells[x];
+                    cell.rune = " ";
+                    cell.setAttributes(currentAttributes);
+                    cell.isDirty = true;
+                  }
+                }
+                for (let x = 0; x <= curPos.x; x += 1) {
+                  const cell = page.lines[curPos.y].cells[x];
+                  cell.rune = " ";
+                  cell.setAttributes(currentAttributes);
+                  cell.isDirty = true;
+                }
+                break;
+              case 2:
+                for (let y = 0; y < page.size.h; y += 1) {
+                  for (let x = 0; x < page.size.w; x += 1) {
+                    const cell = page.lines[y].cells[x];
+                    cell.rune = " ";
+                    cell.setAttributes(currentAttributes);
+                    cell.isDirty = true;
+                  }
+                }
+                break;
+            }
           }
           break;
         case "S": // scroll up, content moves up

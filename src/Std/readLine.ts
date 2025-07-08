@@ -96,12 +96,12 @@ export const readLine = async (
           }
           break;
       }
+      continue;
     } else if (read.length === 1) {
       if (read[0] === "\n") {
         term.write(read[0]);
         return result;
-      }
-      if (read[0] === ControlCharacter.HT) {
+      } else if (read[0] === ControlCharacter.HT) {
         isUsingPreviousEntry = false;
         let tokens = result.split(" ");
         if (tokens.length === 0) return;
@@ -125,6 +125,39 @@ export const readLine = async (
               result.slice(0, result.length - token.length) +
               autoCompleteString;
             curIndex = result.length;
+          }
+        }
+        continue;
+      } else if (read[0] === ControlCharacter.BS) {
+        if (curIndex > 0) {
+          isUsingPreviousEntry = false;
+          const stringStart = result.slice(0, curIndex - 1);
+          const stringEnd = result.slice(curIndex);
+          result = stringStart + stringEnd;
+          curIndex = curIndex - 1;
+          moveCursor({ x: -1, y: 0 });
+          term.write(stringEnd + " ");
+          moveCursor({ x: -(stringEnd.length + 1), y: 0 });
+        }
+        continue;
+      } else if (read[0] === ControlCharacter.DEL) {
+        if (curIndex < result.length) {
+          isUsingPreviousEntry = false;
+          const stringStart = result.slice(0, curIndex);
+          const stringEnd = result.slice(curIndex + 1);
+          result = stringStart + stringEnd;
+          term.write(stringEnd + " ");
+          moveCursor({ x: -(stringEnd.length + 1), y: 0 });
+        }
+        continue;
+      } else if (read[0] === ControlCharacter.ESC) {
+        if (read[1] === "[") {
+          if (read[2] === "H") {
+            // home
+            continue;
+          } else if (read[2] === "F") {
+            // end
+            continue;
           }
         }
       }
