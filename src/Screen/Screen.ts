@@ -20,15 +20,10 @@ import {
   matchCsiEscape,
   splitStringIntoCharacters,
 } from "../Toolbox/String";
-import {
-  getBoldClassicIndex,
-  getBoldColor,
-  x256ClassicColors,
-  x256Color,
-  x256Colors,
-} from "../Color/ansi";
+import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
 import tc from "tinycolor2";
-import { ColorType, PengTerm } from "../PengTerm";
+import { PengTerm } from "../PengTerm";
+import { getScreenCharacterAttributesFromTermCellAttributes } from "./TermAdapter";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -1085,45 +1080,11 @@ export class Screen {
         const newCharacter = cloneScreenBufferCharacter(currentCharacter);
 
         const cellAttr = cell.getAttributes();
-        const cellFgColor = cellAttr.fgColor;
-        const cellBgColor = cellAttr.bgColor;
 
-        let fgColor = "black";
-        switch (cellFgColor.type) {
-          case ColorType.Classic:
-            fgColor = cellAttr.bold
-              ? x256ClassicColors[getBoldClassicIndex(cellFgColor.index)]
-              : x256ClassicColors[cellFgColor.index];
-            break;
-          case ColorType.Indexed:
-            fgColor = x256Colors[cellFgColor.index];
-            break;
-          case ColorType.Direct:
-            fgColor = tc(cellFgColor).toHexString();
-            break;
-        }
-
-        let bgColor = "black";
-        switch (cellBgColor.type) {
-          case ColorType.Classic:
-            bgColor = x256ClassicColors[cellBgColor.index];
-            break;
-          case ColorType.Indexed:
-            bgColor = x256Colors[cellBgColor.index];
-            break;
-          case ColorType.Direct:
-            bgColor = tc(cellBgColor).toHexString();
-            break;
-        }
+        newCharacter.attributes =
+          getScreenCharacterAttributesFromTermCellAttributes(cellAttr);
 
         newCharacter.character = cell.rune;
-
-        newCharacter.attributes.fgColor = fgColor;
-        newCharacter.attributes.bgColor = bgColor;
-        newCharacter.attributes.blink = cellAttr.blink;
-        newCharacter.attributes.reverseVideo = cellAttr.reverseVideo;
-        newCharacter.attributes.underline = cellAttr.underline;
-        newCharacter.attributes.halfBright = cellAttr.halfBright;
 
         if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
           this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;

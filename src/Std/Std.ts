@@ -86,7 +86,7 @@ export class Std {
   }
 
   writeConsole(string: string) {
-    return this.term.receive(string);
+    return this.term.write(string);
   }
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */

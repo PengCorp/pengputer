@@ -303,7 +303,7 @@ export class PengTerm {
   public sendBuffer: charArray = [];
   private sequenceParser = new SequenceParser();
 
-  private keyboard: Keyboard;
+  public keyboard: Keyboard;
 
   private isShift: boolean = false;
   private shiftKeysDown: number = 0;
@@ -709,7 +709,7 @@ export class PengTerm {
     }
   }
 
-  private drainReceive() {
+  private drainReceiveBuffer() {
     while (this.receiveBuffer.length > 0) {
       const ch = this.receiveBuffer[0];
 
@@ -741,7 +741,7 @@ export class PengTerm {
   }
 
   public update(dt: number) {
-    this.drainReceive();
+    this.drainReceiveBuffer();
 
     let ev = this.keyboard.take();
     while (ev) {
@@ -786,7 +786,7 @@ export class PengTerm {
     }
   }
 
-  public receive(string: string) {
+  public write(string: string) {
     const chars = splitStringIntoCharacters(string);
     for (const ch of chars) {
       this.receiveBuffer.push(ch);

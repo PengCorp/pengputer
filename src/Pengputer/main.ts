@@ -677,42 +677,38 @@ class PengOS {
   const keyboard = new Keyboard();
   const term = new PengTerm();
 
-  term.receive("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[34mBlue\x1b[0m\n");
-  term.receive(
+  term.write("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[34mBlue\x1b[0m\n");
+  term.write(
     "\x1b[30;91mIRed\x1b[0m \x1b[92mIGreen\x1b[0m \x1b[94mIBlue\x1b[0m\n"
   );
-  term.receive(
+  term.write(
     "\x1b[30;41mRed\x1b[0m \x1b[30;42mGreen\x1b[0m \x1b[30;44mBlue\x1b[0m\n"
   );
-  term.receive(
+  term.write(
     "\x1b[30;101mIRed\x1b[0m \x1b[30;102mIGreen\x1b[0m \x1b[30;104mIBlue\x1b[0m\n"
   );
-  term.receive("\x1b[38;5;90;48;5;212m256 indexed colors\x1b[0m\n");
-  term.receive(
-    "\x1b[38;2;230;255;210;48;2;45;75;45m24-bit true color\x1b[0m\n"
-  );
-  term.receive("\x1b[5mBlink\x1b[25m and no blink\x1b[0m\n");
-  term.receive("\x1b[1mBold\x1b[22m and no bold\x1b[0m\n");
-  term.receive(
-    "\x1b[38;5;70mNo \x1b[1mBold\x1b[22m on indexed colors\x1b[0m\n"
-  );
-  term.receive("\x1b[7mReverse\x1b[27m and no reverse\x1b[0m\n");
-  term.receive("\x1b[21mUnderline\x1b[24m and no underline\x1b[0m\n");
-  term.receive("\x1b[2mHalf-bright\x1b[22m and regular\x1b[0m\n");
-  term.receive(
+  term.write("\x1b[38;5;90;48;5;212m256 indexed colors\x1b[0m\n");
+  term.write("\x1b[38;2;230;255;210;48;2;45;75;45m24-bit true color\x1b[0m\n");
+  term.write("\x1b[5mBlink\x1b[25m and no blink\x1b[0m\n");
+  term.write("\x1b[1mBold\x1b[22m and no bold\x1b[0m\n");
+  term.write("\x1b[38;5;70mNo \x1b[1mBold\x1b[22m on indexed colors\x1b[0m\n");
+  term.write("\x1b[7mReverse\x1b[27m and no reverse\x1b[0m\n");
+  term.write("\x1b[21mUnderline\x1b[24m and no underline\x1b[0m\n");
+  term.write("\x1b[2mHalf-bright\x1b[22m and regular\x1b[0m\n");
+  term.write(
     "\x1b[33mClassic \x1b[1myellow\x1b[0m and \x1b[38;5;3mindexed \x1b[38;5;11myellow\x1b[0m\n"
   );
-  term.receive(
+  term.write(
     "\x1b[38;10;16mClassic \x1b[1morange\x1b[0m (28-color extended classic palette)\n"
   );
-  term.receive("\x1b[10C\x1b[2BTen right, two down\n");
-  term.receive("\x1b[2mOVERWRITTEN\x1b[0m\x1b[4GAbsolute in row\n");
+  term.write("\x1b[10C\x1b[2BTen right, two down\n");
+  term.write("\x1b[2mOVERWRITTEN\x1b[0m\x1b[4GAbsolute in row\n");
 
-  term.receive("\x1b[3T");
+  term.write("\x1b[3T");
 
-  term.receive("\x1b[2;40HAbsolute positioning\n");
+  term.write("\x1b[2;40HAbsolute positioning\n");
 
-  term.receive("\x1b[1S");
+  term.write("\x1b[1S");
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;
