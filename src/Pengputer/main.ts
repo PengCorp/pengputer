@@ -1,7 +1,8 @@
 import { padStart } from "lodash";
-import { loadImageBitmapFromUrl, waitFor } from "../Functions";
 import { Screen } from "../Screen";
 import { loadFont9x16 } from "../Screen/font9x16";
+import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
+import { waitFor } from "../Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import { FileSystem, FileSystemObjectType } from "./FileSystem";
@@ -11,15 +12,14 @@ import { PC } from "./PC";
 import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
-import { argparse } from "../Functions/argparse";
 import { Std } from "../Std";
+import { argparse } from "../Toolbox/argparse";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import macgerPng from "./files/documents/pengers/macger.png";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
-import { Ped } from "./Ped";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
@@ -120,12 +120,6 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "args.exe",
       createInstance: () => new PrintArgs(this.pc),
-    });
-
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "ped.exe",
-      createInstance: () => new Ped(this.pc),
     });
 
     softwareDir.addItem({

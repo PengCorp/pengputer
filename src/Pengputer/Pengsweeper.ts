@@ -17,6 +17,8 @@ import { PC } from "./PC";
 import { State, StateManager } from "../Toolbox/StateManager";
 import { Signal } from "../Toolbox/Signal";
 import { x256Color, x256Colors } from "../Color/ansi";
+import { ColorType } from "../PengTerm";
+import { Color } from "../PengTerm/Color";
 
 enum GameStateKey {
   MainMenu,
@@ -41,15 +43,15 @@ interface FieldCell {
 
 const CELL_SIZE: Size = { w: 3, h: 1 };
 
-const NUMBER_COLORS: Record<string, string> = {
-  "1": x256Colors[x256Color.Azure],
-  "2": x256Colors[x256Color.Green],
-  "3": x256Colors[x256Color.LightRed],
-  "4": x256Colors[x256Color.LightViolet],
-  "5": x256Colors[x256Color.LightOrange],
-  "6": x256Colors[x256Color.Cyan],
-  "7": x256Colors[x256Color.LightBlue],
-  "8": x256Colors[x256Color.White],
+const NUMBER_COLORS: Record<string, Color> = {
+  "1": { type: ColorType.Classic, index: x256Color.Azure },
+  "2": { type: ColorType.Classic, index: x256Color.Green },
+  "3": { type: ColorType.Classic, index: x256Color.LightRed },
+  "4": { type: ColorType.Classic, index: x256Color.LightViolet },
+  "5": { type: ColorType.Classic, index: x256Color.LightOrange },
+  "6": { type: ColorType.Classic, index: x256Color.Cyan },
+  "7": { type: ColorType.Classic, index: x256Color.LightBlue },
+  "8": { type: ColorType.Classic, index: x256Color.White },
 };
 
 type PengsweeperSignalData =
@@ -463,44 +465,83 @@ class Pengsweeper extends State {
         const previousAttributes = std.getConsoleAttributes();
 
         const attributes = std.getConsoleAttributes();
-        attributes.bgColor = x256Colors[x256Color.Black];
+        attributes.bgColor = {
+          type: ColorType.Classic,
+          index: x256Color.Black,
+        };
 
         let cellString = "X";
 
         if (!cell.isOpened) {
           if (cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
             cellString = "?";
           } else {
-            attributes.fgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
             cellString = ".";
           }
         } else {
           if (cell.isMine && cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
             cellString = "@";
           } else if (cell.isMine && !cell.isFlagged) {
             if (cell.isExploded) {
-              attributes.bgColor = x256Colors[x256Color.Red];
-              attributes.fgColor = x256Colors[x256Color.White];
+              attributes.bgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Red,
+              };
+              attributes.fgColor = {
+                type: ColorType.Classic,
+                index: x256Color.White,
+              };
               cellString = "@";
             } else {
-              attributes.bgColor = x256Colors[x256Color.Red];
-              attributes.fgColor = x256Colors[x256Color.Black];
+              attributes.bgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Red,
+              };
+              attributes.fgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Black,
+              };
               cellString = "@";
             }
           } else if (!cell.isMine && cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
 
             cellString = "_";
           } else if (cell.adjacentMines > 0) {
             attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
             cellString = String(cell.adjacentMines);
           } else {
-            attributes.fgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
             cellString = " ";
           }
         }

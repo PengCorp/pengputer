@@ -1,4 +1,5 @@
 import { x256Colors } from "../Color/ansi";
+import { ColorType } from "../PengTerm";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -55,7 +56,7 @@ export class Colors implements Executable {
 
     for (let i = 0; i < 0x08; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
@@ -64,43 +65,25 @@ export class Colors implements Executable {
 
     for (let i = 0x08; i < 0x10; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x100; i < 0x108; i += 1) {
+    for (let i = 0x10; i < 0x18; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x108; i < 0x110; i += 1) {
+    for (let i = 0x18; i < 0x20; i += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x110; i < 0x118; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x118; i < 0x120; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[i];
+      attr.bgColor = { type: ColorType.Classic, index: i };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
@@ -116,7 +99,10 @@ export class Colors implements Executable {
       for (let y = 0; y < 6; y += 1) {
         for (let x = 0; x < 6; x += 1) {
           const attr = std.getConsoleAttributes();
-          attr.bgColor = x256Colors[16 + z * 6 * 6 + y * 6 + x];
+          attr.bgColor = {
+            type: ColorType.Indexed,
+            index: 16 + z * 6 * 6 + y * 6 + x,
+          };
           std.setConsoleAttributes(attr);
           std.writeConsole(CHAR);
         }
@@ -131,7 +117,7 @@ export class Colors implements Executable {
     std.writeConsole("Gray scale\n");
     for (let g = 0; g < 24; g += 1) {
       const attr = std.getConsoleAttributes();
-      attr.bgColor = x256Colors[232 + g];
+      attr.bgColor = { type: ColorType.Indexed, index: 232 + g };
       std.setConsoleAttributes(attr);
       std.writeConsole(CHAR);
     }
