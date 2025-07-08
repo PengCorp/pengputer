@@ -1,34 +1,32 @@
-import { loadFont9x16 } from "../Screen/font9x16";
-import { Screen } from "../Screen";
-import { Keyboard } from "../Keyboard";
-import { loadImageBitmapFromUrl, waitFor } from "../Functions";
-import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
-import { PC } from "./PC";
-import { HelloWorld } from "./HelloWorld";
-import { EightBall } from "./EightBall";
-import { DateApp } from "./DateApp";
 import { padStart } from "lodash";
+import { loadImageBitmapFromUrl, waitFor } from "../Functions";
+import { Screen } from "../Screen";
+import { loadFont9x16 } from "../Screen/font9x16";
+import { DateApp } from "./DateApp";
+import { EightBall } from "./EightBall";
+import { FileSystem, FileSystemObjectType } from "./FileSystem";
+import { HelloWorld } from "./HelloWorld";
+import { PC } from "./PC";
 
-import energyStar from "./res/energyStar.png";
 import biosPenger from "./res/biosPenger.png";
+import energyStar from "./res/energyStar.png";
 
+import { argparse } from "../Functions/argparse";
+import { Std } from "../Std";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
-import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import macgerPng from "./files/documents/pengers/macger.png";
-import { ImageFile, TextFile, AudioFile, LinkFile } from "./fileTypes";
-import { argparse } from "../Functions/argparse";
-import { PrintArgs } from "./PrintArgs";
-import { TetrisApp } from "./Tetris";
-import { Std } from "../Std";
+import nerdgerPng from "./files/documents/pengers/nerdger.png";
+import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
 import { Ped } from "./Ped";
 import { PengsweeperApp } from "./Pengsweeper";
+import { PrintArgs } from "./PrintArgs";
+import { TetrisApp } from "./Tetris";
 
 import "../Color/ansi";
+import { ColorType, PengTerm } from "../PengTerm";
 import { Colors } from "./Colors";
-import { x256Color, x256Colors } from "../Color/ansi";
-import { PengTerm } from "../PengTerm";
 
 const PATH_SEPARATOR = "/";
 
@@ -49,8 +47,8 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
-  constructor(screen: Screen, keyboard: Keyboard, term: PengTerm) {
-    const std = new Std(screen, keyboard, term);
+  constructor(screen: Screen, term: PengTerm) {
+    const std = new Std(screen, term);
     this.pc = {
       currentDrive: "C",
       currentPath: [],
@@ -274,8 +272,8 @@ class PengOS {
     std.setIsConsoleCursorVisible(true);
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.fgColor = x256Colors[x256Color.LightGray];
-    currentAttributes.bgColor = x256Colors[x256Color.Black];
+    currentAttributes.fgColor = { type: ColorType.Classic, index: 7 };
+    currentAttributes.bgColor = { type: ColorType.Classic, index: 0 };
     std.setConsoleAttributes(currentAttributes);
 
     let pathString = this.formatPath(currentPath);
@@ -581,6 +579,7 @@ class PengOS {
     const { std, fileSystem } = this.pc;
 
     let previousEntries: string[] = [];
+    return;
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
@@ -674,41 +673,8 @@ class PengOS {
   const screen = new Screen();
   await screen.init(document.getElementById("screen-container")!);
 
-  const keyboard = new Keyboard();
   const term = new PengTerm();
 
-  term.write("\x1b[31mRed\x1b[0m \x1b[32mGreen\x1b[0m \x1b[34mBlue\x1b[0m\n");
-  term.write(
-    "\x1b[30;91mIRed\x1b[0m \x1b[92mIGreen\x1b[0m \x1b[94mIBlue\x1b[0m\n"
-  );
-  term.write(
-    "\x1b[30;41mRed\x1b[0m \x1b[30;42mGreen\x1b[0m \x1b[30;44mBlue\x1b[0m\n"
-  );
-  term.write(
-    "\x1b[30;101mIRed\x1b[0m \x1b[30;102mIGreen\x1b[0m \x1b[30;104mIBlue\x1b[0m\n"
-  );
-  term.write("\x1b[38;5;90;48;5;212m256 indexed colors\x1b[0m\n");
-  term.write("\x1b[38;2;230;255;210;48;2;45;75;45m24-bit true color\x1b[0m\n");
-  term.write("\x1b[5mBlink\x1b[25m and no blink\x1b[0m\n");
-  term.write("\x1b[1mBold\x1b[22m and no bold\x1b[0m\n");
-  term.write("\x1b[38;5;70mNo \x1b[1mBold\x1b[22m on indexed colors\x1b[0m\n");
-  term.write("\x1b[7mReverse\x1b[27m and no reverse\x1b[0m\n");
-  term.write("\x1b[21mUnderline\x1b[24m and no underline\x1b[0m\n");
-  term.write("\x1b[2mHalf-bright\x1b[22m and regular\x1b[0m\n");
-  term.write(
-    "\x1b[33mClassic \x1b[1myellow\x1b[0m and \x1b[38;5;3mindexed \x1b[38;5;11myellow\x1b[0m\n"
-  );
-  term.write(
-    "\x1b[38;10;16mClassic \x1b[1morange\x1b[0m (28-color extended classic palette)\n"
-  );
-  term.write("\x1b[10C\x1b[2BTen right, two down\n");
-  term.write("\x1b[2mOVERWRITTEN\x1b[0m\x1b[4GAbsolute in row\n");
-
-  term.write("\x1b[3T");
-
-  term.write("\x1b[2;40HAbsolute positioning\n");
-
-  term.write("\x1b[1S");
   let lastTime = performance.now();
   const cb = () => {
     const dt = performance.now() - lastTime;
@@ -716,12 +682,11 @@ class PengOS {
     term.update(dt);
     screen.updateFromTerm(term);
     screen.draw(dt);
-    keyboard.update(dt);
     requestAnimationFrame(cb);
   };
   requestAnimationFrame(cb);
 
-  // const pengOS = new PengOS(screen, keyboard, term);
-  // await pengOS.startup();
-  // pengOS.mainLoop();
+  const pengOS = new PengOS(screen, term);
+  await pengOS.startup();
+  pengOS.mainLoop();
 })();

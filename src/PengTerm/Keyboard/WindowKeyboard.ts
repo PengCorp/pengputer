@@ -1,13 +1,17 @@
+import { getIsModifierKey } from "./isModifierKey";
 import { KeyCode } from "./KeyCode";
-import { KeyboardEvent as TerminalKeyboardEvent, Keyboard } from "./types";
+import { KeyboardEvent as TerminalKeyboardEvent } from "./types";
 
-export class WindowKeyboard implements Keyboard {
+export class WindowKeyboard {
   private buffer: TerminalKeyboardEvent[];
-  private pressed: string[];
+  private pressed: KeyCode[];
+  private werePressed: Set<KeyCode>;
 
   constructor() {
     this.buffer = [];
     this.pressed = [];
+    this.werePressed = new Set();
+
     window.addEventListener("keydown", this._onKeyDown.bind(this));
     window.addEventListener("keyup", this._onKeyUp.bind(this));
   }
@@ -18,7 +22,8 @@ export class WindowKeyboard implements Keyboard {
 
     if (e.repeat) return;
 
-    this.pressed.push(e.code);
+    this.pressed.push(e.code as KeyCode);
+    this.werePressed.add(e.code as KeyCode);
     this.buffer.push({
       code: e.code as KeyCode,
       pressed: true,
@@ -48,5 +53,30 @@ export class WindowKeyboard implements Keyboard {
     return (
       this.getIsKeyPressed("ShiftLeft") || this.getIsKeyPressed("ShiftRight")
     );
+  }
+
+  // ================== KEY WAS PRESSED =================================
+
+  /** Get whether any key was pressed since last wasPressed reset. */
+  public getWasKeyPressed(keyCode: KeyCode): boolean {
+    return this.werePressed.has(keyCode);
+  }
+
+  /** Returns true if any non-modifier key was pressed. */
+  public getWasAnyKeyPressed() {
+    let anyKeyPressed = false;
+    for (const key of this.werePressed) {
+      if (!getIsModifierKey(key)) {
+        anyKeyPressed = true;
+        break;
+      }
+    }
+
+    return anyKeyPressed;
+  }
+
+  /** Reset wasPressed state. */
+  public resetWereKeysPressed() {
+    this.werePressed.clear();
   }
 }

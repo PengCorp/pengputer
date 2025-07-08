@@ -126,7 +126,6 @@ class Pengsweeper extends State {
         this.needsRedraw = true;
       }
     };
-    this.unsubscribeFromClicks = std.addMouseScreenClickListener(clickListener);
   }
 
   override onLeave() {

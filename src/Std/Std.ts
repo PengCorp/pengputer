@@ -1,31 +1,27 @@
-import { Keyboard } from "../Keyboard";
-import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
-import { KeyCode } from "../Keyboard/types";
 import { PengTerm } from "../PengTerm";
+import { ControlCharacter } from "../PengTerm/ControlCharacters";
+import { KeyCode } from "../PengTerm/Keyboard/KeyCode";
+import { CellAttributes } from "../PengTerm/PengTerm";
 import { Screen as PengputerScreen } from "../Screen";
-import { ClickListener } from "../Screen/Screen";
-import { ScreenCharacterAttributes } from "../Screen/types";
-import { Vector, zeroVector } from "../Toolbox/Vector";
-import { getRectFromVectorAndSize, Rect } from "../types";
+import { Vector } from "../Toolbox/Vector";
+import { Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
+import { readTerm } from "./TermAdapter";
 
 export class Std {
   private screen: PengputerScreen;
 
-  private keyboard: Keyboard;
-
   private term: PengTerm;
 
-  constructor(screen: PengputerScreen, keyboard: Keyboard, term: PengTerm) {
+  constructor(screen: PengputerScreen, term: PengTerm) {
     this.screen = screen;
-    this.keyboard = keyboard;
     this.term = term;
   }
 
   // Screen
 
   clearConsole() {
-    return this.screen.clear();
+    // return this.screen.clear();
   }
 
   resetConsole() {
@@ -53,7 +49,7 @@ export class Std {
   }
 
   setIsConsoleScrollable(isScrollable: boolean) {
-    this.screen.setIsScrollable(isScrollable);
+    // this.screen.setIsScrollable(isScrollable);
   }
 
   getConsoleCursorSize() {
@@ -69,20 +65,19 @@ export class Std {
   }
 
   setConsoleCursorPosition(newPosition: Vector) {
-    this.term.screen.cursor.x = newPosition.x;
-    this.term.screen.cursor.y = newPosition.y;
+    this.term.screen.cursor.setPosition(newPosition);
   }
 
   moveConsoleCursorBy(delta: Vector) {
-    return this.screen.setCursorPositionDelta(delta);
+    // return this.screen.setCursorPositionDelta(delta);
   }
 
-  getConsoleAttributes(): ScreenCharacterAttributes {
-    return this.screen.getCurrentAttributes();
+  getConsoleAttributes(): CellAttributes {
+    return this.term.screen.getCurrentAttributes();
   }
 
-  setConsoleAttributes(attributes: ScreenCharacterAttributes) {
-    return this.screen.setCurrentAttributes(attributes);
+  setConsoleAttributes(attributes: CellAttributes) {
+    return this.term.screen.setCurrentAttributes(attributes);
   }
 
   writeConsole(string: string) {
@@ -104,72 +99,74 @@ export class Std {
 
   /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
   scrollConsoleRect(rect: Rect, numberOfLines: number) {
-    throw new Error("Not implemented");
-
-    if (numberOfLines === 0) {
-      return;
-    }
-
-    if (numberOfLines > 0) {
-      this.screen.scrollUpRect(rect, numberOfLines);
-    } else {
-      this.screen.scrollDownRect(rect, -numberOfLines);
-    }
+    // throw new Error("Not implemented");
+    // if (numberOfLines === 0) {
+    //   return;
+    // }
+    // if (numberOfLines > 0) {
+    //   this.screen.scrollUpRect(rect, numberOfLines);
+    // } else {
+    //   this.screen.scrollDownRect(rect, -numberOfLines);
+    // }
   }
 
   drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {
-    this.screen.drawImageAt(image, dx, dy);
+    // this.screen.drawImageAt(image, dx, dy);
   }
 
   // Keyboard
 
   readConsoleLine(
-    ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
-      ? R
-      : never
+    ...args: Parameters<typeof readLine> extends [any, ...infer R] ? R : never
   ) {
-    return readLine(this.screen, this.keyboard, ...args);
+    return readLine(this.term, ...args);
   }
 
-  readConsoleKey() {
-    return readKey(this.keyboard);
+  async readConsoleCharacter() {
+    let result = undefined;
+    while (result === undefined) {
+      result = readTerm(this.term);
+      if (!result) {
+        await this.term.sendBufferUpdateSignal.getPromise();
+        continue;
+      }
+      if (result.length > 1) {
+        result = undefined;
+        continue;
+      }
+      return result;
+    }
   }
 
   waitForKeyboardKeysUp() {
-    return waitForKeysUp(this.keyboard);
+    // return waitForKeysUp(this.keyboard);
   }
 
-  getIsKeyPressed(keyCode: string) {
-    return this.keyboard.getIsKeyPressed(keyCode);
+  getIsKeyPressed(keyCode: KeyCode) {
+    return this.term.keyboard.getIsKeyPressed(keyCode);
   }
 
   getLastKeyPressedOf(keyCodes: string[]) {
-    return this.keyboard.getLastPressedOf(keyCodes);
+    // return this.keyboard.getLastPressedOf(keyCodes);
   }
 
-  addKeyTypeListener(callback: TypeListener) {
-    return this.keyboard.addTypeListener(callback);
+  addKeyTypeListener(callback: any) {
+    // return this.keyboard.addTypeListener(callback);
   }
 
-  addAllKeysUpListener(callback: VoidListener) {
-    return this.keyboard.addAllKeysUpListener(callback);
+  addAllKeysUpListener(callback: any) {
+    // return this.keyboard.addAllKeysUpListener(callback);
   }
 
   getWasKeyPressed(keyCode: KeyCode) {
-    return this.keyboard.getWasKeyPressed(keyCode);
+    return this.term.keyboard.getWasKeyPressed(keyCode);
   }
 
   getWasAnyKeyPressed() {
-    return this.keyboard.getWasAnyKeyPressed();
+    return this.term.keyboard.getWasAnyKeyPressed();
   }
 
   resetKeyPressedHistory() {
-    return this.keyboard.resetWereKeysPressed();
-  }
-
-  // Mouse
-
-  addMouseScreenClickListener(listener: ClickListener) {
-    return this.screen.addMouseClickListener(listener);
+    return this.term.keyboard.resetWereKeysPressed();
   }
 }

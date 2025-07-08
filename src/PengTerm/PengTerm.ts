@@ -8,9 +8,10 @@ import { Color, ColorType, isColorValue } from "./Color";
 import { ControlCharacter } from "./ControlCharacters";
 import { codeToCharacterUS } from "./Keyboard/CharMap";
 import { KeyCode } from "./Keyboard/KeyCode";
-import { Keyboard } from "./Keyboard/types";
 import { WindowKeyboard } from "./Keyboard/WindowKeyboard";
 import { Sequence, SequenceParser } from "./SequenceParser";
+import { Signal } from "../Toolbox/Signal";
+import { arrowKeyMap } from "./Keyboard/ArrowMap";
 
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
@@ -95,12 +96,14 @@ export class Line {
 }
 
 export class Cursor {
-  public x: number;
-  public y: number;
+  private x: number;
+  private y: number;
+  private isWrapPending: boolean;
 
   constructor() {
     this.x = 0;
     this.y = 0;
+    this.isWrapPending = false;
   }
 
   public getPosition(): Vector {
@@ -108,6 +111,20 @@ export class Cursor {
       x: this.x,
       y: this.y,
     };
+  }
+
+  public setPosition(pos: Vector, opt: { isWrapPending?: boolean } = {}) {
+    this.x = pos.x;
+    this.y = pos.y;
+    this.isWrapPending = opt.isWrapPending ?? false;
+  }
+
+  public getIsWrapPending() {
+    return this.isWrapPending;
+  }
+
+  public setIsWrapPending(isWrapPending: boolean) {
+    return (this.isWrapPending = isWrapPending);
   }
 
   public clone(): Cursor {
@@ -126,10 +143,23 @@ export class Cursor {
 
   /** If cursor is outside of the page it is returned to the first available position. */
   public snapToPage(pageSize: Size): void {
+    this.isWrapPending = false;
     if (this.x < 0) this.x = 0;
     if (this.x >= pageSize.w) this.x = pageSize.w - 1;
     if (this.y < 0) this.y = 0;
     if (this.y >= pageSize.h) this.y = pageSize.h - 1;
+  }
+
+  public wrapToBeInsidePage(pageSize: Size): void {
+    this.isWrapPending = false;
+    while (this.x < 0) {
+      this.y -= 1;
+      this.x += pageSize.w;
+    }
+    while (this.x >= pageSize.w) {
+      this.y += 1;
+      this.x -= pageSize.w;
+    }
   }
 }
 
@@ -142,7 +172,6 @@ interface Page {
 export class Screen {
   private buffer: RingBuffer<Line>;
   private currentAttributes: CellAttributes;
-  private isWrapPending: boolean;
   public cursor: Cursor;
   public topLine: number;
   private pageSize: Size;
@@ -160,7 +189,6 @@ export class Screen {
   }) {
     this.buffer = new RingBuffer<Line>(pageSize.h + scrollbackLength);
     this.pageSize = pageSize;
-    this.isWrapPending = false;
     this.isDirty = true;
 
     this.currentAttributes = cloneCellAttributes(DEFAULT_ATTRIBUTES);
@@ -187,7 +215,9 @@ export class Screen {
     }
 
     const cursor = this.cursor.clone();
-    cursor.y -= offset;
+    const cursorPosition = cursor.getPosition();
+    cursorPosition.y -= offset;
+    cursor.setPosition(cursorPosition);
 
     const lines = this.buffer.slice(-this.pageSize.h + offset, offset);
     for (const l of lines) {
@@ -208,21 +238,24 @@ export class Screen {
       return;
     }
 
-    if (this.isWrapPending) {
-      this.cursor.x = 0;
-      this.cursor.y += 1;
-      this.isWrapPending = false;
+    if (this.cursor.getIsWrapPending()) {
+      const cursorPosition = this.cursor.getPosition();
+      cursorPosition.x = 0;
+      cursorPosition.y += 1;
 
-      if (this.cursor.y === this.pageSize.h) {
-        this.cursor.y -= 1;
+      if (cursorPosition.y === this.pageSize.h) {
+        cursorPosition.y -= 1;
         this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
         this.isDirty = true;
       }
+
+      this.cursor.setPosition(cursorPosition);
     }
 
     const page = this.getPage(0);
 
-    const cell = page.lines[this.cursor.y]?.cells[this.cursor.x];
+    const cursorPosition = this.cursor.getPosition();
+    const cell = page.lines[cursorPosition.y]?.cells[cursorPosition.x];
     if (!cell) {
       throw new Error("Unable to get cell.");
     }
@@ -230,10 +263,12 @@ export class Screen {
     cell.rune = character;
     cell.isDirty = true;
 
-    this.cursor.x += 1;
-    if (this.cursor.x === page.size.w) {
-      this.cursor.x -= 1;
-      this.isWrapPending = true;
+    cursorPosition.x += 1;
+    if (cursorPosition.x === page.size.w) {
+      cursorPosition.x -= 1;
+      this.cursor.setPosition(cursorPosition, { isWrapPending: true });
+    } else {
+      this.cursor.setPosition(cursorPosition);
     }
 
     this.topLine = 0;
@@ -244,25 +279,29 @@ export class Screen {
   }
 
   public backspace() {
-    this.cursor.x -= 1;
-    if (this.cursor.x < 0) {
-      this.cursor.x = 0;
+    const curPos = this.cursor.getPosition();
+    curPos.x -= 1;
+    if (curPos.x < 0) {
+      curPos.x = 0;
     }
+    this.cursor.setPosition(curPos);
   }
 
   public lineFeed() {
-    this.cursor.y += 1;
-    this.isWrapPending = false;
-
-    if (this.cursor.y === this.pageSize.h) {
-      this.cursor.y -= 1;
+    const curPos = this.cursor.getPosition();
+    curPos.y += 1;
+    if (curPos.y === this.pageSize.h) {
+      curPos.y -= 1;
       this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
       this.isDirty = true;
     }
+    this.cursor.setPosition(curPos);
   }
 
   public carriageReturn() {
-    this.cursor.x = 0;
+    const curPos = this.cursor.getPosition();
+    curPos.x = 0;
+    this.cursor.setPosition(curPos);
   }
 
   public getCurrentAttributes(): CellAttributes {
@@ -300,10 +339,12 @@ export class PengTerm {
   public screen: Screen;
 
   private receiveBuffer: charArray = [];
-  public sendBuffer: charArray = [];
   private sequenceParser = new SequenceParser();
 
-  public keyboard: Keyboard;
+  public sendBuffer: charArray = [];
+  public sendBufferUpdateSignal: Signal = new Signal<void>();
+
+  public keyboard: WindowKeyboard;
 
   private isShift: boolean = false;
   private shiftKeysDown: number = 0;
@@ -315,7 +356,14 @@ export class PengTerm {
   private lnm: "set" | "reset" = "set";
 
   /** Send/Receive Mode: set - disable local echo, reset - enable local echo */
-  private srm: "set" | "reset" = "reset";
+  private srm: "set" | "reset" = "set";
+
+  /**
+   * Cursor Key Mode: controls what characters are sent from terminal when pressing arrow keys.
+   *
+   * Set - application keys with SS3, reset - ANSI escape codes for cursor control.
+   */
+  private ckm: "set" | "reset" = "set";
 
   constructor() {
     this.mainScreen = new Screen({
@@ -414,7 +462,10 @@ export class PengTerm {
             if (howMany === 0 || howMany === undefined) {
               howMany = 1;
             }
-            this.screen.cursor.y -= howMany;
+
+            const curPos = this.screen.cursor.getPosition();
+            curPos.y -= howMany;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -424,7 +475,9 @@ export class PengTerm {
             if (howMany === 0 || howMany === undefined) {
               howMany = 1;
             }
-            this.screen.cursor.y += howMany;
+            const curPos = this.screen.cursor.getPosition();
+            curPos.y += howMany;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -434,7 +487,9 @@ export class PengTerm {
             if (howMany === 0 || howMany === undefined) {
               howMany = 1;
             }
-            this.screen.cursor.x += howMany;
+            const curPos = this.screen.cursor.getPosition();
+            curPos.x += howMany;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -444,7 +499,9 @@ export class PengTerm {
             if (howMany === 0 || howMany === undefined) {
               howMany = 1;
             }
-            this.screen.cursor.x -= howMany;
+            const curPos = this.screen.cursor.getPosition();
+            curPos.x -= howMany;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -454,7 +511,9 @@ export class PengTerm {
             if (x === 0 || x === undefined) {
               x = 1;
             }
-            this.screen.cursor.x = x - 1;
+            const curPos = this.screen.cursor.getPosition();
+            curPos.x = x - 1;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -468,8 +527,10 @@ export class PengTerm {
             if (y === 0 || y === undefined) {
               y = 1;
             }
-            this.screen.cursor.x = x - 1;
-            this.screen.cursor.y = y - 1;
+            const curPos = this.screen.cursor.getPosition();
+            curPos.x = x - 1;
+            curPos.y = y - 1;
+            this.screen.cursor.setPosition(curPos);
             this.screen.cursor.snapToPage(this.screen.getPageSize());
           }
           break;
@@ -738,6 +799,7 @@ export class PengTerm {
     if (this.srm === "reset") {
       this.writeCharacter(ch);
     }
+    this.sendBufferUpdateSignal.emit();
   }
 
   public update(dt: number) {
@@ -773,6 +835,17 @@ export class PengTerm {
             case "reset":
               this.sendCharacter(ControlCharacter.CR);
               break;
+          }
+        }
+      } else if (
+        ev.code === "ArrowUp" ||
+        ev.code === "ArrowDown" ||
+        ev.code === "ArrowRight" ||
+        ev.code === "ArrowLeft"
+      ) {
+        if (ev.pressed) {
+          for (const ch of arrowKeyMap[this.ckm][ev.code]!) {
+            this.sendCharacter(ch);
           }
         }
       } else if (ev.pressed) {

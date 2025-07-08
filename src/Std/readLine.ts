@@ -1,11 +1,11 @@
 import { Screen } from "../Screen";
-import { Keyboard } from "../Keyboard";
-import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
-import { getIsModifierKey } from "../Keyboard/isModifierKey";
+import { PengTerm } from "../PengTerm";
+import { Vector } from "../Toolbox/Vector";
+import { readTerm } from "./TermAdapter";
+import { ControlCharacter } from "../PengTerm/ControlCharacters";
 
-export const readLine = (
-  screen: Screen,
-  keyboard: Keyboard,
+export const readLine = async (
+  term: PengTerm,
   {
     autoCompleteStrings = [],
     previousEntries = [],
@@ -13,151 +13,57 @@ export const readLine = (
     autoCompleteStrings?: string[];
     previousEntries?: string[];
   } = {}
-): Promise<string | null> => {
-  let unsubType: (() => void) | null = null;
+) => {
+  window.buf = term.sendBuffer;
   let isUsingPreviousEntry = false;
   let previousEntryIndex = 0;
   let savedResult = "";
 
-  const promise = new Promise<string | null>((resolve) => {
-    let result = "";
-    let curIndex = 0;
+  const moveCursor = (delta: Vector) => {
+    const pageSize = term.screen.getPageSize();
+    const curPos = term.screen.cursor.getPosition();
+    curPos.x += delta.x;
+    curPos.y += delta.y;
+    term.screen.cursor.setPosition(curPos);
+    term.screen.cursor.wrapToBeInsidePage(pageSize);
+  };
 
-    const onType: TypeListener = (char, key, ev) => {
-      if (ev.getModifierState("Control")) {
-        if (key === "KeyC") {
-          resolve(null);
-        }
-      } else {
-        if (
-          key === "Tab" &&
-          autoCompleteStrings.length > 0 &&
-          curIndex === result.length
-        ) {
-          isUsingPreviousEntry = false;
-          let tokens = result.split(" ");
-          if (tokens.length === 0) return;
-          let token = tokens[tokens.length - 1];
-          if (token.length === 0) return;
+  let lineRead = false;
+  let result = "";
+  let curIndex = 0;
+  while (!lineRead) {
+    const read = readTerm(term);
+    while (read === undefined) {
+      await term.sendBufferUpdateSignal.getPromise();
+    }
+    console.log(read);
 
-          const matchingAutoCompleteStrings = autoCompleteStrings.filter((s) =>
-            s.startsWith(token)
-          );
-
-          if (matchingAutoCompleteStrings.length === 1) {
-            const autoCompleteString = matchingAutoCompleteStrings[0];
-            let prefix = autoCompleteString.slice(0, token.length);
-            if (prefix === token) {
-              screen.setCursorPositionDelta({
-                x: -token.length,
-                y: 0,
-              });
-              screen.displayString(autoCompleteString);
-              result =
-                result.slice(0, result.length - token.length) +
-                autoCompleteString;
-              curIndex = result.length;
-            }
-          }
-        } else if (key === "Home") {
-          screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
-          curIndex = 0;
-        } else if (key === "End") {
-          screen.setCursorPositionDelta({
-            x: result.length - curIndex,
-            y: 0,
-          });
-          curIndex = result.length;
-        } else if (char === "\n") {
-          screen.displayString(char);
-          resolve(result);
-          return;
-        } else if (char === "\b") {
-          if (curIndex > 0) {
-            isUsingPreviousEntry = false;
-            const stringStart = result.slice(0, curIndex - 1);
-            const stringEnd = result.slice(curIndex);
-            result = stringStart + stringEnd;
-            curIndex = curIndex - 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 });
-            screen.displayString(stringEnd + " ");
-            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
-          }
-        } else if (key === "Delete") {
-          if (curIndex < result.length) {
-            isUsingPreviousEntry = false;
-            const stringStart = result.slice(0, curIndex);
-            const stringEnd = result.slice(curIndex + 1);
-            result = stringStart + stringEnd;
-            screen.displayString(stringEnd + " ");
-            screen.setCursorPositionDelta({ x: -(stringEnd.length + 1), y: 0 });
-          }
-        } else if (key === "ArrowLeft") {
+    debugger;
+    if (read[0] === ControlCharacter.SS3) {
+      switch (read[1]) {
+        case "D":
           if (curIndex > 0) {
             curIndex -= 1;
-            screen.setCursorPositionDelta({ x: -1, y: 0 });
+            moveCursor({ x: -1, y: 0 });
           }
-        } else if (key === "ArrowRight") {
+          break;
+        case "C":
           if (curIndex < result.length) {
             curIndex += 1;
-            screen.setCursorPositionDelta({ x: 1, y: 0 });
+            moveCursor({ x: 1, y: 0 });
           }
-        } else if (key === "ArrowUp") {
-          if (previousEntries.length > 0) {
-            let replaceWith = "";
-            if (!isUsingPreviousEntry) {
-              isUsingPreviousEntry = true;
-              savedResult = result;
-              previousEntryIndex = previousEntries.length - 1;
-              replaceWith = previousEntries[previousEntryIndex];
-            } else if (previousEntryIndex > 0) {
-              previousEntryIndex -= 1;
-              replaceWith = previousEntries[previousEntryIndex];
-            }
-            if (replaceWith) {
-              screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
-              screen.displayString(" ".repeat(result.length));
-              screen.setCursorPositionDelta({ x: -result.length, y: 0 });
-              screen.displayString(replaceWith);
-              result = replaceWith;
-              curIndex = replaceWith.length;
-            }
-          }
-        } else if (key === "ArrowDown") {
-          if (
-            isUsingPreviousEntry &&
-            previousEntryIndex < previousEntries.length
-          ) {
-            let replaceWith = "";
-            previousEntryIndex += 1;
-            if (previousEntryIndex < previousEntries.length) {
-              replaceWith = previousEntries[previousEntryIndex];
-            } else {
-              replaceWith = savedResult;
-            }
-            screen.setCursorPositionDelta({ x: -curIndex, y: 0 });
-            screen.displayString(" ".repeat(result.length));
-            screen.setCursorPositionDelta({ x: -result.length, y: 0 });
-            screen.displayString(replaceWith);
-            result = replaceWith;
-            curIndex = replaceWith.length;
-          }
-        } else if (char) {
-          isUsingPreviousEntry = false;
-          const rest = char + result.slice(curIndex);
-          screen.displayString(rest);
-          screen.setCursorPositionDelta({ x: -rest.length + 1, y: 0 });
-          result = result.slice(0, curIndex) + rest;
-          curIndex += 1;
-        }
+          break;
       }
-    };
-    unsubType = keyboard.addTypeListener(onType);
-  });
+    }
+    if (read.length === 1) {
+      if (read[0] === "\n") {
+        return result;
+      }
 
-  return promise.finally(() => {
-    unsubType?.();
-  });
+      result = `${result}${read[0]}`;
+      console.log(result);
+    }
+  }
 };
 
 export const readKey = (keyboard: Keyboard) => {
