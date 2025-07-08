@@ -1,4 +1,4 @@
-import { ControlCharacter } from "../ControlCharacters";
+import { ControlCharacter } from "../PengTerm/ControlCharacters";
 import { KeyCode } from "./KeyCode";
 
 /**

@@ -18,7 +18,7 @@ import { State, StateManager } from "../Toolbox/StateManager";
 import { Signal } from "../Toolbox/Signal";
 import { x256Color, x256Colors } from "../Color/ansi";
 import { ColorType } from "../PengTerm";
-import { Color } from "../PengTerm/Color";
+import { Color } from "../Color/Color";
 
 enum GameStateKey {
   MainMenu,

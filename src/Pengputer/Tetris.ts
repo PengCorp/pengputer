@@ -28,7 +28,7 @@ import { wrapMax } from "../Toolbox/Math";
 import { Signal } from "../Toolbox/Signal";
 import { x256Color, x256Colors } from "../Color/ansi";
 import { ColorType } from "../PengTerm";
-import { Color } from "../PengTerm/Color";
+import { Color } from "../Color/Color";
 
 const msPerFrame = 16.666666666;
 

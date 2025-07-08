@@ -1,19 +1,23 @@
 import { PengTerm } from "../PengTerm";
 import { ControlCharacter } from "../PengTerm/ControlCharacters";
-import { KeyCode } from "../PengTerm/Keyboard/KeyCode";
+import { KeyCode } from "../Keyboard/KeyCode";
 import { CellAttributes } from "../PengTerm/PengTerm";
 import { Screen as PengputerScreen } from "../Screen";
 import { Vector } from "../Toolbox/Vector";
 import { Rect } from "../types";
 import { readLine, waitForKeysUp } from "./readLine";
 import { readTerm } from "./TermAdapter";
+import { Keyboard } from "../Keyboard/Keyboard";
 
 export class Std {
+  private keyboard: Keyboard;
+
   private screen: PengputerScreen;
 
   private term: PengTerm;
 
-  constructor(screen: PengputerScreen, term: PengTerm) {
+  constructor(keyboard: Keyboard, screen: PengputerScreen, term: PengTerm) {
+    this.keyboard = keyboard;
     this.screen = screen;
     this.term = term;
   }
@@ -137,26 +141,26 @@ export class Std {
   }
 
   waitForKeyboardKeysUp() {
-    return waitForKeysUp(this.term);
+    return waitForKeysUp(this.keyboard);
   }
 
   getIsKeyPressed(keyCode: KeyCode) {
-    return this.term.keyboard.getIsKeyPressed(keyCode);
+    return this.keyboard.getIsKeyPressed(keyCode);
   }
 
   getLastKeyPressedOf(keyCodes: string[]) {
-    return this.term.keyboard.getLastPressedOf(keyCodes);
+    return this.keyboard.getLastPressedOf(keyCodes);
   }
 
   getWasKeyPressed(keyCode: KeyCode) {
-    return this.term.keyboard.getWasKeyPressed(keyCode);
+    return this.keyboard.getWasKeyPressed(keyCode);
   }
 
   getWasAnyKeyPressed() {
-    return this.term.keyboard.getWasAnyKeyPressed();
+    return this.keyboard.getWasAnyKeyPressed();
   }
 
   resetKeyPressedHistory() {
-    return this.term.keyboard.resetWereKeysPressed();
+    return this.keyboard.resetWereKeysPressed();
   }
 }

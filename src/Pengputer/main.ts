@@ -27,6 +27,7 @@ import { TetrisApp } from "./Tetris";
 import "../Color/ansi";
 import { ColorType, PengTerm } from "../PengTerm";
 import { Colors } from "./Colors";
+import { Keyboard } from "../Keyboard/Keyboard";
 
 const PATH_SEPARATOR = "/";
 
@@ -47,8 +48,8 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
-  constructor(screen: Screen, term: PengTerm) {
-    const std = new Std(screen, term);
+  constructor(keyboard: Keyboard, screen: Screen, term: PengTerm) {
+    const std = new Std(keyboard, screen, term);
     this.pc = {
       currentDrive: "C",
       currentPath: [],
@@ -666,7 +667,8 @@ class PengOS {
   const screen = new Screen();
   await screen.init(document.getElementById("screen-container")!);
 
-  const term = new PengTerm();
+  const keyboard = new Keyboard();
+  const term = new PengTerm(keyboard);
 
   let lastTime = performance.now();
   const cb = () => {
@@ -679,7 +681,7 @@ class PengOS {
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(screen, term);
+  const pengOS = new PengOS(keyboard, screen, term);
   await pengOS.startup();
   pengOS.mainLoop();
 })();

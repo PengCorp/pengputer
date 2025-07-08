@@ -4,6 +4,7 @@ import { Vector } from "../Toolbox/Vector";
 import { readTerm } from "./TermAdapter";
 import { ControlCharacter } from "../PengTerm/ControlCharacters";
 import { getIsPrintable } from "../Screen/getIsPrintable";
+import { Keyboard } from "../Keyboard/Keyboard";
 
 export const readLine = async (
   term: PengTerm,
@@ -149,8 +150,8 @@ export const readKey = async (term: PengTerm) => {
   }
 };
 
-export const waitForKeysUp = async (term: PengTerm) => {
-  while (term.keyboard.getIsAnyKeyPressed()) {
-    await term.keyboard.keysDownChangedSignal.getPromise();
+export const waitForKeysUp = async (keyboard: Keyboard) => {
+  while (keyboard.getIsAnyKeyPressed()) {
+    await keyboard.keysDownChangedSignal.getPromise();
   }
 };

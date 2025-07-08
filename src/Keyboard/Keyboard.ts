@@ -1,9 +1,9 @@
-import { Signal } from "../../Toolbox/Signal";
+import { Signal } from "../Toolbox/Signal";
 import { getIsModifierKey } from "./isModifierKey";
 import { KeyCode } from "./KeyCode";
 import { KeyboardEvent as TerminalKeyboardEvent } from "./types";
 
-export class WindowKeyboard {
+export class Keyboard {
   private buffer: TerminalKeyboardEvent[];
   private pressed: KeyCode[];
   private werePressed: Set<KeyCode>;

@@ -4,14 +4,14 @@ import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
-import { Color, ColorType, isColorValue } from "./Color";
+import { Color, ColorType, isColorValue } from "../Color/Color";
 import { ControlCharacter } from "./ControlCharacters";
-import { codeToCharacterUS } from "./Keyboard/CharMap";
-import { KeyCode } from "./Keyboard/KeyCode";
-import { WindowKeyboard } from "./Keyboard/WindowKeyboard";
+import { codeToCharacterUS } from "../Keyboard/CharMap";
+import { KeyCode } from "../Keyboard/KeyCode";
+import { Keyboard } from "../Keyboard/Keyboard";
 import { Sequence, SequenceParser } from "./SequenceParser";
 import { Signal } from "../Toolbox/Signal";
-import { arrowKeyMap } from "./Keyboard/ArrowMap";
+import { arrowKeyMap } from "../Keyboard/ArrowMap";
 
 const SCROLLBACK_LENGTH = 1024;
 const BUFFER_WIDTH = 80;
@@ -344,7 +344,7 @@ export class PengTerm {
   public sendBuffer: charArray = [];
   public sendBufferUpdateSignal: Signal = new Signal<void>();
 
-  public keyboard: WindowKeyboard;
+  private keyboard: Keyboard;
 
   private isShift: boolean = false;
   private shiftKeysDown: number = 0;
@@ -365,7 +365,7 @@ export class PengTerm {
    */
   private ckm: "set" | "reset" = "set";
 
-  constructor() {
+  constructor(keyboard: Keyboard) {
     this.mainScreen = new Screen({
       pageSize: { w: BUFFER_WIDTH, h: BUFFER_HEIGHT },
       scrollbackLength: SCROLLBACK_LENGTH,
@@ -378,8 +378,7 @@ export class PengTerm {
 
     this.screen = this.mainScreen;
     this.screen.isDirty = true;
-
-    this.keyboard = new WindowKeyboard();
+    this.keyboard = keyboard;
   }
 
   private writeCharacter(char: string) {

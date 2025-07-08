@@ -1,5 +1,5 @@
-import { char } from "../../types";
-import { ControlCharacter } from "../ControlCharacters";
+import { char } from "../types";
+import { ControlCharacter } from "../PengTerm/ControlCharacters";
 import { KeyCode } from "./KeyCode";
 
 export const arrowKeyMap: Record<

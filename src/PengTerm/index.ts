@@ -3,4 +3,4 @@
 // https://www.xfree86.org/4.8.0/ctlseqs.html
 
 export { PengTerm } from "./PengTerm";
-export { ColorType } from "./Color";
+export { ColorType } from "../Color/Color";

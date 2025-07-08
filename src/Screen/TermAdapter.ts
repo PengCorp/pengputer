@@ -3,7 +3,7 @@ import {
   x256ClassicColors,
   x256Colors,
 } from "../Color/ansi";
-import { ColorType } from "../PengTerm/Color";
+import { ColorType } from "../Color/Color";
 import { CellAttributes } from "../PengTerm/PengTerm";
 import { ScreenCharacterAttributes } from "./types";
 import tc from "tinycolor2";
