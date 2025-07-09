@@ -1,36 +1,36 @@
-import { loadFont9x16 } from "../Screen/font9x16";
-import { Screen } from "../Screen";
+import { padStart } from "lodash";
 import { Keyboard } from "../Keyboard";
+import { Screen } from "../Screen";
+import { loadFont9x16 } from "../Screen/font9x16";
 import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
 import { waitFor } from "../Toolbox/waitFor";
-import { Directory, FileSystem, FileSystemObjectType } from "./FileSystem";
-import { PC } from "./PC";
-import { HelloWorld } from "./HelloWorld";
-import { EightBall } from "./EightBall";
 import { DateApp } from "./DateApp";
-import { padStart } from "lodash";
+import { EightBall } from "./EightBall";
+import { FileSystem, FileSystemObjectType } from "./FileSystem";
+import { HelloWorld } from "./HelloWorld";
+import { PC } from "./PC";
 
-import energyStar from "./res/energyStar.png";
 import biosPenger from "./res/biosPenger.png";
+import energyStar from "./res/energyStar.png";
 
+import { Std } from "../Std";
+import { argparse } from "../Toolbox/argparse";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
-import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import macgerPng from "./files/documents/pengers/macger.png";
-import { ImageFile, TextFile, AudioFile, LinkFile } from "./fileTypes";
-import { argparse } from "../Toolbox/argparse";
+import nerdgerPng from "./files/documents/pengers/nerdger.png";
+import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
+import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
-import { Std } from "../Std";
-import { PengsweeperApp } from "./Pengsweeper";
 
-import "../Color/ansi";
-import { Colors } from "./Colors";
-import { x256Color, x256Colors } from "../Color/ansi";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
-import { ColorType } from "../Color/Color";
 import _ from "lodash";
+import "../Color/ansi";
+import { ColorType } from "../Color/Color";
+import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { Colors } from "./Colors";
+import { classicColors } from "../Color/ansi";
 
 const PATH_SEPARATOR = "/";
 
@@ -269,8 +269,8 @@ class PengOS {
     std.setIsConsoleCursorVisible(true);
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.fgColor = { type: ColorType.Classic, index: 7 };
-    currentAttributes.bgColor = { type: ColorType.Classic, index: 0 };
+    currentAttributes.fgColor = classicColors[7];
+    currentAttributes.bgColor = classicColors[0];
     std.setConsoleAttributes(currentAttributes);
 
     let pathString = this.formatPath(currentPath);

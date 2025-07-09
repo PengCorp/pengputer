@@ -1,3 +1,4 @@
+import { classicColors } from "../Color/ansi";
 import { Color, ColorType } from "../Color/Color";
 import { getIsPrintable } from "../Screen/getIsPrintable";
 import { RingBuffer } from "../Toolbox/RingBuffer";
@@ -32,8 +33,8 @@ const cloneCellAttributes = (attr: CellAttributes): CellAttributes => {
 };
 
 const DEFAULT_ATTRIBUTES: CellAttributes = {
-  fgColor: { type: ColorType.Classic, index: 7 },
-  bgColor: { type: ColorType.Classic, index: 0 },
+  fgColor: classicColors[7],
+  bgColor: classicColors[0],
   blink: false,
   bold: false,
   reverseVideo: false,

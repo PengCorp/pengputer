@@ -1,7 +1,7 @@
 import {
   getBoldClassicIndex,
-  x256ClassicColors,
-  x256Colors,
+  classicColorRgbValues,
+  indexedColorRgbValues,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
 import { CellAttributes } from "../TextBuffer/TextBuffer";
@@ -18,11 +18,11 @@ export const getScreenCharacterAttributesFromTermCellAttributes = (
   switch (cellFgColor.type) {
     case ColorType.Classic:
       fgColor = cellAttr.bold
-        ? x256ClassicColors[getBoldClassicIndex(cellFgColor.index)]
-        : x256ClassicColors[cellFgColor.index];
+        ? classicColorRgbValues[getBoldClassicIndex(cellFgColor.index)]
+        : classicColorRgbValues[cellFgColor.index];
       break;
     case ColorType.Indexed:
-      fgColor = x256Colors[cellFgColor.index];
+      fgColor = indexedColorRgbValues[cellFgColor.index];
       break;
     case ColorType.Direct:
       fgColor = tc(cellFgColor).toHexString();
@@ -32,10 +32,10 @@ export const getScreenCharacterAttributesFromTermCellAttributes = (
   let bgColor = "black";
   switch (cellBgColor.type) {
     case ColorType.Classic:
-      bgColor = x256ClassicColors[cellBgColor.index];
+      bgColor = classicColorRgbValues[cellBgColor.index];
       break;
     case ColorType.Indexed:
-      bgColor = x256Colors[cellBgColor.index];
+      bgColor = indexedColorRgbValues[cellBgColor.index];
       break;
     case ColorType.Direct:
       bgColor = tc(cellBgColor).toHexString();

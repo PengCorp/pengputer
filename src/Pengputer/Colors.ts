@@ -1,4 +1,9 @@
-import { x256Color, x256Colors } from "../Color/ansi";
+import {
+  classicColors,
+  getDirectColor,
+  indexedColors,
+  namedColors,
+} from "../Color/ansi";
 import { ColorType } from "../Color/Color";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
@@ -19,21 +24,21 @@ export class Colors implements Executable {
     // fg regular
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 1 },
+      fgColor: classicColors[1],
     });
     std.writeConsole("Red");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 2 },
+      fgColor: classicColors[2],
     });
     std.writeConsole("Green");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 4 },
+      fgColor: classicColors[4],
     });
     std.writeConsole("Blue");
     std.resetConsoleAttributes();
@@ -42,21 +47,21 @@ export class Colors implements Executable {
     // fg intense
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 9 },
+      fgColor: classicColors[9],
     });
     std.writeConsole("IRed");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 10 },
+      fgColor: classicColors[10],
     });
     std.writeConsole("IGreen");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 12 },
+      fgColor: classicColors[12],
     });
     std.writeConsole("IBlue");
     std.resetConsoleAttributes();
@@ -65,24 +70,24 @@ export class Colors implements Executable {
     // bg regular
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 1 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[1],
     });
     std.writeConsole("Red");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 2 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[2],
     });
     std.writeConsole("Green");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 4 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[4],
     });
     std.writeConsole("Blue");
     std.resetConsoleAttributes();
@@ -91,24 +96,24 @@ export class Colors implements Executable {
     // bg intense
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 9 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[9],
     });
     std.writeConsole("IRed");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 10 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[10],
     });
     std.writeConsole("IGreen");
     std.resetConsoleAttributes();
     std.writeConsole(" ");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 0 },
-      bgColor: { type: ColorType.Classic, index: 12 },
+      fgColor: classicColors[0],
+      bgColor: classicColors[12],
     });
     std.writeConsole("IBlue");
     std.resetConsoleAttributes();
@@ -117,16 +122,16 @@ export class Colors implements Executable {
     //
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Indexed, index: 90 },
-      bgColor: { type: ColorType.Indexed, index: 212 },
+      fgColor: indexedColors[90],
+      bgColor: indexedColors[212],
     });
     std.writeConsole("256 colors");
     std.resetConsoleAttributes();
     std.writeConsole("\n");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Direct, r: 230, g: 255, b: 210 },
-      bgColor: { type: ColorType.Direct, r: 45, g: 75, b: 45 },
+      fgColor: getDirectColor(230, 255, 210),
+      bgColor: getDirectColor(45, 75, 45),
     });
     std.writeConsole("24-bit color");
     std.resetConsoleAttributes();
@@ -158,7 +163,7 @@ export class Colors implements Executable {
     std.writeConsole(" and regular\n");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: 3 },
+      fgColor: classicColors[3],
     });
     std.writeConsole("Classic");
     std.updateConsoleAttributes({ bold: true });
@@ -166,22 +171,22 @@ export class Colors implements Executable {
     std.resetConsoleAttributes();
     std.writeConsole(" and ");
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Indexed, index: 3 },
+      fgColor: indexedColors[3],
     });
     std.writeConsole("Indexed");
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Indexed, index: 11 },
+      fgColor: indexedColors[11],
     });
     std.writeConsole(" Yellow");
     std.resetConsoleAttributes();
     std.writeConsole("\n");
 
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: x256Color.Orange },
+      fgColor: classicColors["orange"],
     });
     std.writeConsole("Classic");
     std.updateConsoleAttributes({
-      fgColor: { type: ColorType.Classic, index: x256Color.LightOrange },
+      fgColor: classicColors["lightOrange"],
     });
     std.writeConsole(" Orange");
     std.resetConsoleAttributes();
@@ -199,7 +204,7 @@ export class Colors implements Executable {
 
     for (let i = 0; i < 0x08; i += 1) {
       std.writeConsole(CHAR, {
-        bgColor: { type: ColorType.Classic, index: i },
+        bgColor: classicColors[i],
       });
     }
     std.resetConsole();
@@ -207,7 +212,7 @@ export class Colors implements Executable {
 
     for (let i = 0x08; i < 0x10; i += 1) {
       std.writeConsole(CHAR, {
-        bgColor: { type: ColorType.Classic, index: i },
+        bgColor: classicColors[i],
       });
     }
     std.resetConsole();
@@ -215,7 +220,7 @@ export class Colors implements Executable {
 
     for (let i = 0x10; i < 0x18; i += 1) {
       std.writeConsole(CHAR, {
-        bgColor: { type: ColorType.Classic, index: i },
+        bgColor: classicColors[i],
       });
     }
     std.resetConsole();
@@ -223,7 +228,7 @@ export class Colors implements Executable {
 
     for (let i = 0x18; i < 0x20; i += 1) {
       std.writeConsole(CHAR, {
-        bgColor: { type: ColorType.Classic, index: i },
+        bgColor: classicColors[i],
       });
     }
     std.resetConsole();
@@ -238,10 +243,7 @@ export class Colors implements Executable {
       for (let y = 0; y < 6; y += 1) {
         for (let x = 0; x < 6; x += 1) {
           std.writeConsole(CHAR, {
-            bgColor: {
-              type: ColorType.Indexed,
-              index: 16 + z * 6 * 6 + y * 6 + x,
-            },
+            bgColor: indexedColors[16 + z * 6 * 6 + y * 6 + x],
           });
         }
         std.resetConsole();
@@ -255,7 +257,7 @@ export class Colors implements Executable {
     std.writeConsole("Gray scale\n");
     for (let g = 0; g < 24; g += 1) {
       std.writeConsole(CHAR, {
-        bgColor: { type: ColorType.Indexed, index: 232 + g },
+        bgColor: indexedColors[232 + g],
       });
     }
     std.resetConsole();

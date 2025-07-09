@@ -8,14 +8,10 @@ Sources:
 */
 
 import _ from "lodash";
-import {
-  getIsVectorInRect,
-  getRectFromVectorAndSize,
-  Rect,
-  Size,
-} from "../types";
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import { classicColors, namedColors } from "../Color/ansi";
+import { Color, ColorType } from "../Color/Color";
+import { wrapMax } from "../Toolbox/Math";
+import { Signal } from "../Toolbox/Signal";
 import {
   Vector,
   vectorAdd,
@@ -24,10 +20,14 @@ import {
   vectorMultiplyComponents,
   zeroVector,
 } from "../Toolbox/Vector";
-import { wrapMax } from "../Toolbox/Math";
-import { Signal } from "../Toolbox/Signal";
-import { x256Color, x256Colors } from "../Color/ansi";
-import { Color, ColorType } from "../Color/Color";
+import {
+  getIsVectorInRect,
+  getRectFromVectorAndSize,
+  Rect,
+  Size,
+} from "../types";
+import { Executable } from "./FileSystem";
+import { PC } from "./PC";
 
 const msPerFrame = 16.666666666;
 
@@ -292,8 +292,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 0 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Cyan },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightCyan },
+      fgColor: classicColors["cyan"],
+      bgColor: classicColors["lightCyan"],
     },
   },
   [PieceKey.O]: {
@@ -303,8 +303,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 4, y: -1 + TOP_PADDING },
     nextOffset: { x: 1, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Yellow },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightYellow },
+      fgColor: classicColors["yellow"],
+      bgColor: classicColors["lightYellow"],
     },
   },
   [PieceKey.J]: {
@@ -314,8 +314,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Blue },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightBlue },
+      fgColor: classicColors["blue"],
+      bgColor: classicColors["lightBlue"],
     },
   },
   [PieceKey.L]: {
@@ -325,8 +325,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Orange },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightOrange },
+      fgColor: classicColors["orange"],
+      bgColor: classicColors["lightOrange"],
     },
   },
   [PieceKey.S]: {
@@ -336,8 +336,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Green },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightGreen },
+      fgColor: classicColors["green"],
+      bgColor: classicColors["lightGreen"],
     },
   },
   [PieceKey.T]: {
@@ -347,8 +347,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Violet },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightViolet },
+      fgColor: classicColors["violet"],
+      bgColor: classicColors["lightViolet"],
     },
   },
   [PieceKey.Z]: {
@@ -358,8 +358,8 @@ const pieceDescriptors: Record<PieceKey, PieceDescriptor> = {
     spawnPosition: { x: 3, y: -1 + TOP_PADDING },
     nextOffset: { x: 0, y: 1 },
     color: {
-      fgColor: { type: ColorType.Classic, index: x256Color.Red },
-      bgColor: { type: ColorType.Classic, index: x256Color.LightRed },
+      fgColor: classicColors["red"],
+      bgColor: classicColors["lightRed"],
     },
   },
 };
@@ -399,8 +399,8 @@ class Piece {
     this.descriptor = {
       ...this.descriptor,
       color: {
-        fgColor: { type: ColorType.Classic, index: x256Color.LightGray },
-        bgColor: { type: ColorType.Classic, index: x256Color.Black },
+        fgColor: classicColors["lightGray"],
+        bgColor: classicColors["black"],
       },
     };
   }
@@ -763,8 +763,8 @@ class Board {
     return {
       filled: false,
       color: {
-        bgColor: { type: ColorType.Classic, index: x256Color.Black },
-        fgColor: { type: ColorType.Classic, index: x256Color.DarkGray },
+        bgColor: classicColors["black"],
+        fgColor: classicColors["darkGray"],
       },
     };
   }
@@ -927,14 +927,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     for (
       let y = this.boardScreenRect.y + TOP_PADDING - 2;
@@ -946,8 +940,8 @@ class Tetris implements GameState {
         y,
       });
       std.writeConsole("  " + "  ".repeat(WIDTH) + "  ", {
-        bgColor: { type: ColorType.Classic, index: x256Color.Black },
-        fgColor: { type: ColorType.Classic, index: x256Color.DarkGray },
+        bgColor: classicColors["black"],
+        fgColor: classicColors["darkGray"],
       });
     }
     for (
@@ -960,20 +954,20 @@ class Tetris implements GameState {
         y,
       });
       std.updateConsoleAttributes({
-        bgColor: { type: ColorType.Classic, index: x256Color.Black },
-        fgColor: { type: ColorType.Classic, index: x256Color.DarkGray },
+        bgColor: classicColors["black"],
+        fgColor: classicColors["darkGray"],
       });
       std.writeConsole("<!", {
-        bgColor: { type: ColorType.Classic, index: x256Color.LightGray },
-        fgColor: { type: ColorType.Classic, index: x256Color.Black },
+        bgColor: classicColors["lightGray"],
+        fgColor: classicColors["black"],
       });
       std.writeConsole(" .".repeat(WIDTH), {
-        bgColor: { type: ColorType.Classic, index: x256Color.Black },
-        fgColor: { type: ColorType.Classic, index: x256Color.DarkGray },
+        bgColor: classicColors["black"],
+        fgColor: classicColors["darkGray"],
       });
       std.writeConsole("!>", {
-        bgColor: { type: ColorType.Classic, index: x256Color.LightGray },
-        fgColor: { type: ColorType.Classic, index: x256Color.Black },
+        bgColor: classicColors["lightGray"],
+        fgColor: classicColors["black"],
       });
     }
     std.setConsoleCursorPosition({
@@ -981,8 +975,8 @@ class Tetris implements GameState {
       y: this.boardScreenRect.y + HEIGHT * CELL_HEIGHT,
     });
     std.writeConsole("<!" + "=".repeat(WIDTH * CELL_WIDTH) + "!>", {
-      bgColor: { type: ColorType.Classic, index: x256Color.LightGray },
-      fgColor: { type: ColorType.Classic, index: x256Color.Black },
+      bgColor: classicColors["lightGray"],
+      fgColor: classicColors["black"],
     });
   }
 
@@ -1022,8 +1016,8 @@ class Tetris implements GameState {
             pos
           ),
           {
-            bgColor: { type: ColorType.Classic, index: x256Color.Black },
-            fgColor: { type: ColorType.Classic, index: x256Color.DarkGray },
+            bgColor: classicColors["black"],
+            fgColor: classicColors["darkGray"],
           },
           " ."
         );
@@ -1054,14 +1048,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition(this.nextOrigin);
     std.writeConsole("= NEXT =");
@@ -1076,14 +1064,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition(this.holdOrigin);
     std.writeConsole("= HOLD =");
@@ -1099,14 +1081,8 @@ class Tetris implements GameState {
 
     std.setConsoleCursorPosition({ x: 14, y: 20 });
     std.writeConsole("== LEVEL ==", {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.Black,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.LightGray,
-      },
+      bgColor: classicColors["black"],
+      fgColor: classicColors["lightGray"],
     });
     let levelString =
       this.currentLevel < levels.length - 1
@@ -1117,14 +1093,8 @@ class Tetris implements GameState {
     }
     std.setConsoleCursorPosition({ x: 14, y: 21 });
     std.writeConsole(` ${_.padStart(levelString, 9)} `, {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.DarkGray,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.White,
-      },
+      bgColor: classicColors["darkGray"],
+      fgColor: classicColors["white"],
     });
   }
 
@@ -1133,25 +1103,13 @@ class Tetris implements GameState {
 
     std.setConsoleCursorPosition({ x: 14, y: 23 });
     std.writeConsole("== LINES ==", {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.Black,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.LightGray,
-      },
+      bgColor: classicColors["black"],
+      fgColor: classicColors["lightGray"],
     });
     std.setConsoleCursorPosition({ x: 14, y: 24 });
     std.writeConsole(` ${_.padStart(String(this.linesCleared), 9)} `, {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.DarkGray,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.White,
-      },
+      bgColor: classicColors["darkGray"],
+      fgColor: classicColors["white"],
     });
   }
 
@@ -1160,26 +1118,14 @@ class Tetris implements GameState {
 
     std.setConsoleCursorPosition({ x: 14, y: 17 });
     std.writeConsole("== SCORE ==", {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.Black,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.LightGray,
-      },
+      bgColor: classicColors["black"],
+      fgColor: classicColors["lightGray"],
     });
 
     std.setConsoleCursorPosition({ x: 14, y: 18 });
     std.writeConsole(` ${_.padStart(String(this.score), 9)} `, {
-      bgColor: {
-        type: ColorType.Classic,
-        index: x256Color.DarkGray,
-      },
-      fgColor: {
-        type: ColorType.Classic,
-        index: x256Color.White,
-      },
+      bgColor: classicColors["darkGray"],
+      fgColor: classicColors["white"],
     });
   }
 
@@ -1261,14 +1207,8 @@ class Tetris implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     std.clearConsole();
     std.setConsoleCursorPosition({ x: 0, y: 0 });
@@ -1373,14 +1313,8 @@ class MainMenu implements GameState {
     const { std } = this.pc;
 
     let currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     std.clearConsole();
 
@@ -1391,7 +1325,7 @@ class MainMenu implements GameState {
         switch (char) {
           case " ":
             std.writeConsole("  ", {
-              fgColor: { type: ColorType.Classic, index: x256Color.Black },
+              fgColor: classicColors["black"],
             });
             break;
           case "c":
@@ -1442,14 +1376,8 @@ class MainMenu implements GameState {
     }
 
     currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
+    currentAttributes.bgColor = classicColors["black"];
+    currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 0, y: start + 3 });
     std.writeConsole(
@@ -1492,14 +1420,8 @@ class GameOver implements GameState {
     const { std } = this.pc;
 
     const currentAttributes = std.getConsoleAttributes();
-    currentAttributes.bgColor = {
-      type: ColorType.Classic,
-      index: x256Color.LightGray,
-    };
-    currentAttributes.fgColor = {
-      type: ColorType.Classic,
-      index: x256Color.Black,
-    };
+    currentAttributes.bgColor = classicColors["lightGray"];
+    currentAttributes.fgColor = classicColors["black"];
     std.setConsoleAttributes(currentAttributes);
     std.setConsoleCursorPosition({ x: 27, y: 13 });
     std.writeConsole("  ==   GAME  OVER   ==  ");

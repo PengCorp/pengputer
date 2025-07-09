@@ -1,5 +1,5 @@
 import tc from "tinycolor2";
-import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
+import { getBoldColorIndex, namedColors } from "../Color/ansi";
 import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
 import { Cursor } from "./Cursor";
@@ -98,8 +98,8 @@ export class Screen {
       this.screenBuffer[i] = {
         character: " ",
         attributes: {
-          bgColor: x256Colors[x256Color.Black],
-          fgColor: x256Colors[x256Color.LightGray],
+          bgColor: namedColors[namedColors.Black],
+          fgColor: namedColors[namedColors.LightGray],
           blink: false,
           bold: false,
           reverseVideo: false,
@@ -391,7 +391,7 @@ export class Screen {
 
     let fgColor = bufferCharacter.attributes.fgColor;
     if (bufferCharacter.attributes.bold) {
-      fgColor = getBoldColor(fgColor);
+      fgColor = getBoldColorIndex(fgColor);
     }
 
     let bgColor = bufferCharacter.attributes.bgColor;
