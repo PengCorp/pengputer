@@ -25,6 +25,7 @@ export class Std {
   // Screen
 
   clearConsole() {
+    this.screen.clear();
     this.textBuffer.eraseScreen();
     this.textBuffer.cursor.setPosition({ x: 0, y: 0 });
   }
@@ -77,7 +78,7 @@ export class Std {
   moveConsoleCursorBy(delta: Vector) {
     const pos = this.textBuffer.cursor.getPosition();
     const newPos = vectorAdd(pos, delta);
-    this.textBuffer.cursor.setPosition(delta);
+    this.textBuffer.cursor.setPosition(newPos);
     this.textBuffer.cursor.wrapToBeInsidePage(this.textBuffer.getPageSize());
   }
 
@@ -97,38 +98,31 @@ export class Std {
     return this.textBuffer.resetCurrentAttributes();
   }
 
-  writeConsole(string: string) {
+  writeConsole(string: string, attr?: Partial<CellAttributes>) {
+    if (attr) {
+      this.updateConsoleAttributes(attr);
+    }
     return this.textBuffer.printString(string);
   }
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
   scrollConsole(numberOfLines: number) {
-    // if (numberOfLines === 0) {
-    //   return;
-    // }
-    // if (numberOfLines > 0) {
-    //   this.screen.scrollUpRect(
-    //     getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-    //     numberOfLines
-    //   );
-    // } else {
-    //   this.screen.scrollDownRect(
-    //     getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-    //     -numberOfLines
-    //   );
-    // }
-  }
-
-  /** Scrolls an area of the console. Positive values scroll down, negative values scroll up. */
-  scrollConsoleRect(rect: Rect, numberOfLines: number) {
-    // if (numberOfLines === 0) {
-    //   return;
-    // }
-    // if (numberOfLines > 0) {
-    //   this.screen.scrollUpRect(rect, numberOfLines);
-    // } else {
-    //   this.screen.scrollDownRect(rect, -numberOfLines);
-    // }
+    if (numberOfLines === 0) {
+      return;
+    }
+    if (numberOfLines > 0) {
+      this.screen.scrollDownRect(
+        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
+        numberOfLines
+      );
+      this.textBuffer.scrollDownBy(numberOfLines);
+    } else {
+      this.screen.scrollUpRect(
+        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
+        -numberOfLines
+      );
+      this.textBuffer.scrollUpBy(numberOfLines);
+    }
   }
 
   drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {

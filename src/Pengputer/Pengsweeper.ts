@@ -13,6 +13,7 @@ import { PC } from "./PC";
 import { State, StateManager } from "../Toolbox/StateManager";
 import { Signal } from "../Toolbox/Signal";
 import { x256Color, x256Colors } from "../Color/ansi";
+import { Color, ColorType } from "../Color/Color";
 
 enum GameStateKey {
   MainMenu,
@@ -37,15 +38,15 @@ interface FieldCell {
 
 const CELL_SIZE: Size = { w: 3, h: 1 };
 
-const NUMBER_COLORS: Record<string, string> = {
-  "1": x256Colors[x256Color.Azure],
-  "2": x256Colors[x256Color.Green],
-  "3": x256Colors[x256Color.LightRed],
-  "4": x256Colors[x256Color.LightViolet],
-  "5": x256Colors[x256Color.LightOrange],
-  "6": x256Colors[x256Color.Cyan],
-  "7": x256Colors[x256Color.LightBlue],
-  "8": x256Colors[x256Color.White],
+const NUMBER_COLORS: Record<string, Color> = {
+  "1": { type: ColorType.Classic, index: x256Color.Azure },
+  "2": { type: ColorType.Classic, index: x256Color.Green },
+  "3": { type: ColorType.Classic, index: x256Color.LightRed },
+  "4": { type: ColorType.Classic, index: x256Color.LightViolet },
+  "5": { type: ColorType.Classic, index: x256Color.LightOrange },
+  "6": { type: ColorType.Classic, index: x256Color.Cyan },
+  "7": { type: ColorType.Classic, index: x256Color.LightBlue },
+  "8": { type: ColorType.Classic, index: x256Color.White },
 };
 
 type PengsweeperSignalData =
@@ -434,12 +435,25 @@ class Pengsweeper extends State {
     const { std } = this.pc;
 
     std.setConsoleCursorPosition({ x: 0, y: 0 });
-    std.writeConsole(
-      `Mines left: \x1b[48;5;52;31m${_.padStart(
-        String(this.minesCount - this.flagCount),
-        3
-      )}\x1b[40;37m. \x1b[1m<F1>\x1b[22m for help. \x1b[1m<esc>\x1b[22m to quit. \x1b[1m<r>\x1b[22m to restart.`
-    );
+    std.writeConsole("Mines left: ");
+    std.writeConsole(_.padStart(String(this.minesCount - this.flagCount), 3), {
+      fgColor: { type: ColorType.Classic, index: x256Color.LightRed },
+      bgColor: { type: ColorType.Indexed, index: 52 },
+    });
+    std.resetConsoleAttributes();
+    std.writeConsole(" ");
+
+    std.writeConsole("<F1>", { bold: true });
+    std.resetConsoleAttributes();
+    std.writeConsole(" for help. ");
+
+    std.writeConsole("<esc>", { bold: true });
+    std.resetConsoleAttributes();
+    std.writeConsole(" to quit. ");
+
+    std.writeConsole("<r>", { bold: true });
+    std.resetConsoleAttributes();
+    std.writeConsole(" to restart.");
 
     if (this.isWin) {
       const screenSize = std.getConsoleSize();
@@ -469,44 +483,83 @@ class Pengsweeper extends State {
         const previousAttributes = std.getConsoleAttributes();
 
         const attributes = std.getConsoleAttributes();
-        attributes.bgColor = x256Colors[x256Color.Black];
+        attributes.bgColor = {
+          type: ColorType.Classic,
+          index: x256Color.Black,
+        };
 
         let cellString = "X";
 
         if (!cell.isOpened) {
           if (cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
             cellString = "?";
           } else {
-            attributes.fgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
             cellString = ".";
           }
         } else {
           if (cell.isMine && cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
             cellString = "@";
           } else if (cell.isMine && !cell.isFlagged) {
             if (cell.isExploded) {
-              attributes.bgColor = x256Colors[x256Color.Red];
-              attributes.fgColor = x256Colors[x256Color.White];
+              attributes.bgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Red,
+              };
+              attributes.fgColor = {
+                type: ColorType.Classic,
+                index: x256Color.White,
+              };
               cellString = "@";
             } else {
-              attributes.bgColor = x256Colors[x256Color.Red];
-              attributes.fgColor = x256Colors[x256Color.Black];
+              attributes.bgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Red,
+              };
+              attributes.fgColor = {
+                type: ColorType.Classic,
+                index: x256Color.Black,
+              };
               cellString = "@";
             }
           } else if (!cell.isMine && cell.isFlagged) {
-            attributes.bgColor = x256Colors[x256Color.LightGray];
-            attributes.fgColor = x256Colors[x256Color.Black];
+            attributes.bgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.Black,
+            };
 
             cellString = "_";
           } else if (cell.adjacentMines > 0) {
             attributes.fgColor = NUMBER_COLORS[cell.adjacentMines];
             cellString = String(cell.adjacentMines);
           } else {
-            attributes.fgColor = x256Colors[x256Color.LightGray];
+            attributes.fgColor = {
+              type: ColorType.Classic,
+              index: x256Color.LightGray,
+            };
             cellString = " ";
           }
         }
@@ -555,8 +608,8 @@ class Help extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
-    std.writeConsole("\x1b[1m== Pengsweeper ==\x1b[22m\n");
-    std.writeConsole("\n");
+    std.writeConsole("== Pengsweeper ==\n", { bold: true });
+    std.writeConsole("\n", { bold: false });
     std.writeConsole("Use <space> to uncover fields.\n");
     std.writeConsole(
       "Use <f> to flag fields if you think they contain a mine.\n"
@@ -579,7 +632,7 @@ class Help extends State {
       "Game is complete when all fields that don't contain a mine are opened.\n"
     );
     std.writeConsole("\n");
-    std.writeConsole("\x1b[1mPress any key to continue...\x1b[22m");
+    std.writeConsole("Press any key to continue...", { bold: true });
   }
 
   override update(dt: number) {
@@ -616,14 +669,18 @@ class MainMenu extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
-    std.writeConsole("\x1b[1m== Pengsweeper ==\x1b[22m\n");
+    std.writeConsole("== Pengsweeper ==\n", { bold: true });
+    std.resetConsoleAttributes();
     std.writeConsole("\n");
     std.writeConsole("Select your difficulty level:\n\n");
     std.writeConsole("  1) beginner\n");
     std.writeConsole("  2) intermediate\n");
     std.writeConsole("  3) expert\n");
     std.writeConsole("\n");
-    std.writeConsole("or press \x1b[1m<esc>\x1b[22m to exit.");
+    std.writeConsole("or press ");
+    std.writeConsole("<esc>", { bold: true });
+    std.resetConsoleAttributes();
+    std.writeConsole(" to exit.");
   }
 
   override update(dt: number) {

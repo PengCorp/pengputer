@@ -198,37 +198,33 @@ export class Colors implements Executable {
     std.writeConsole("Standard colors\n");
 
     for (let i = 0; i < 0x08; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = { type: ColorType.Classic, index: i };
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
+      std.writeConsole(CHAR, {
+        bgColor: { type: ColorType.Classic, index: i },
+      });
     }
     std.resetConsole();
     std.writeConsole("\n");
 
     for (let i = 0x08; i < 0x10; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = { type: ColorType.Classic, index: i };
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
+      std.writeConsole(CHAR, {
+        bgColor: { type: ColorType.Classic, index: i },
+      });
     }
     std.resetConsole();
     std.writeConsole("\n");
 
     for (let i = 0x10; i < 0x18; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = { type: ColorType.Classic, index: i };
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
+      std.writeConsole(CHAR, {
+        bgColor: { type: ColorType.Classic, index: i },
+      });
     }
     std.resetConsole();
     std.writeConsole("\n");
 
     for (let i = 0x18; i < 0x20; i += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = { type: ColorType.Classic, index: i };
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
+      std.writeConsole(CHAR, {
+        bgColor: { type: ColorType.Classic, index: i },
+      });
     }
     std.resetConsole();
     std.writeConsole("\n");
@@ -241,13 +237,12 @@ export class Colors implements Executable {
       std.writeConsole(`216-color cube, page ${z}\n`);
       for (let y = 0; y < 6; y += 1) {
         for (let x = 0; x < 6; x += 1) {
-          const attr = std.getConsoleAttributes();
-          attr.bgColor = {
-            type: ColorType.Indexed,
-            index: 16 + z * 6 * 6 + y * 6 + x,
-          };
-          std.setConsoleAttributes(attr);
-          std.writeConsole(CHAR);
+          std.writeConsole(CHAR, {
+            bgColor: {
+              type: ColorType.Indexed,
+              index: 16 + z * 6 * 6 + y * 6 + x,
+            },
+          });
         }
         std.resetConsole();
         std.writeConsole("\n");
@@ -259,10 +254,9 @@ export class Colors implements Executable {
     std.clearConsole();
     std.writeConsole("Gray scale\n");
     for (let g = 0; g < 24; g += 1) {
-      const attr = std.getConsoleAttributes();
-      attr.bgColor = { type: ColorType.Indexed, index: 232 + g };
-      std.setConsoleAttributes(attr);
-      std.writeConsole(CHAR);
+      std.writeConsole(CHAR, {
+        bgColor: { type: ColorType.Indexed, index: 232 + g },
+      });
     }
     std.resetConsole();
     std.writeConsole("\n");

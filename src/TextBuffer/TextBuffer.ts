@@ -60,6 +60,7 @@ class Cell {
 
   public setAttributes(attr: CellAttributes) {
     this.attributes = attr;
+    this.isDirty = true;
   }
 
   public clone(): Cell {
@@ -323,14 +324,14 @@ export class TextBuffer {
     this.currentAttributes = DEFAULT_ATTRIBUTES;
   }
 
-  public scrollUpBy(numRows: number): void {
+  public scrollDownBy(numRows: number): void {
     for (let i = 0; i < numRows; i += 1) {
       this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
     }
     this.isDirty = true;
   }
 
-  public scrollDownBy(numRows: number): void {
+  public scrollUpBy(numRows: number): void {
     for (let i = 0; i < numRows; i += 1) {
       this.buffer.insertAtWithDiscard(
         -(this.pageSize.h - 1),
@@ -383,7 +384,6 @@ export class TextBuffer {
   }
 
   public eraseScreen() {
-    const curPos = this.cursor.getPosition();
     const page = this.getPage(0);
     const currentAttributes = this.getCurrentAttributes();
 
@@ -395,5 +395,7 @@ export class TextBuffer {
         cell.isDirty = true;
       }
     }
+
+    this.isDirty = true;
   }
 }

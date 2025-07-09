@@ -575,7 +575,7 @@ class PengOS {
   async mainLoop() {
     const { std, fileSystem } = this.pc;
 
-    await new Colors(this.pc).run([]);
+    await new PengsweeperApp(this.pc).run([]);
 
     let previousEntries: string[] = [];
 

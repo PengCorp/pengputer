@@ -1,16 +1,11 @@
 import tc from "tinycolor2";
 import { getBoldColor, x256Color, x256Colors } from "../Color/ansi";
 import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
-import { getIsVectorInZeroAlignedRect, Size } from "../types";
+import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
-import {
-  cloneScreenBufferCharacter,
-  compareScreenBufferCharacter,
-  ScreenBufferCharacter,
-  ScreenCharacterAttributes,
-} from "./types";
+import { cloneScreenBufferCharacter, ScreenBufferCharacter } from "./types";
 import { TextBuffer } from "../TextBuffer/TextBuffer";
 
 export type ClickListener = (clickEvent: {
@@ -70,6 +65,8 @@ export class Screen {
   private charBlinkCounter: number;
 
   private screenBuffer: Array<ScreenBufferCharacter>;
+
+  public isDirty: boolean = false;
 
   constructor() {
     this.widthInCharacters = 80;
@@ -331,6 +328,36 @@ export class Screen {
     this.ctx.imageSmoothingEnabled = false;
   }
 
+  /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
+  clear() {
+    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
+
+    bgCtx.globalCompositeOperation = "source-over";
+    bgCtx.fillStyle = "black";
+    bgCtx.fillRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
+
+    attributeCtx.globalCompositeOperation = "source-over";
+    charCtx.clearRect(0, 0, this.charCanvas.width, this.charCanvas.height);
+
+    attributeCtx.globalCompositeOperation = "source-over";
+    attributeCtx.fillStyle = "white";
+    attributeCtx.fillRect(
+      0,
+      0,
+      this.attributeCanvas.width,
+      this.attributeCanvas.height
+    );
+
+    graphicsCtx.clearRect(
+      0,
+      0,
+      this.graphicsCanvas.width,
+      this.graphicsCanvas.height
+    );
+
+    this.isDirty = true;
+  }
+
   getSizeInCharacters(): Size {
     return {
       w: this.widthInCharacters,
@@ -512,7 +539,7 @@ export class Screen {
         const cell = page.lines[y]?.cells[x];
         if (!cell) continue;
 
-        if (!buffer.isDirty && !cell.isDirty) continue;
+        if (!this.isDirty && !buffer.isDirty && !cell.isDirty) continue;
 
         const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
@@ -525,21 +552,143 @@ export class Screen {
 
         newCharacter.character = cell.rune;
 
-        if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
-          this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
-          this.redrawCharacter(x, y);
-          screenChanged = true;
-        }
+        this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
+        this.redrawCharacter(x, y);
+        screenChanged = true;
 
         cell.isDirty = false;
       }
     }
 
+    this.isDirty = false;
     buffer.isDirty = false;
 
     if (screenChanged) {
       this.redrawUnstable();
     }
+  }
+
+  /*================================ SCROLLING ================================*/
+
+  private scrollCanvases(src: Rect, dst: Rect, clear: Rect) {
+    const scrollDraws = [
+      {
+        ctx: this.bgCtx,
+        canvas: this.bgCanvas,
+        scale: this.bgScale,
+      },
+      {
+        ctx: this.charCtx,
+        canvas: this.charCanvas,
+        scale: this.charScale,
+      },
+      {
+        ctx: this.attributeCtx,
+        canvas: this.attributeCanvas,
+        scale: this.attributeScale,
+      },
+      {
+        ctx: this.graphicsCtx,
+        canvas: this.graphicsCanvas,
+        scale: this.graphicsScale,
+      },
+    ];
+
+    for (const { ctx, canvas, scale } of scrollDraws) {
+      this.bufferCtx.globalCompositeOperation = "copy";
+      this.bufferCtx.drawImage(
+        canvas,
+        src.x * scale,
+        src.y * scale,
+        src.w * scale,
+        src.h * scale,
+        dst.x * this.bufferScale,
+        dst.y * this.bufferScale,
+        dst.w * this.bufferScale,
+        dst.h * this.bufferScale
+      );
+      ctx.clearRect(dst.x * scale, dst.y * scale, dst.w * scale, dst.h * scale);
+      ctx.drawImage(
+        this.bufferCanvas,
+        0,
+        0,
+        this.bufferCanvas.width,
+        this.bufferCanvas.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+    }
+
+    this.bgCtx.fillStyle = "black";
+    this.bgCtx.fillRect(
+      clear.x * this.bgScale,
+      clear.y * this.bgScale,
+      clear.w * this.bgScale,
+      clear.h * this.bgScale
+    );
+    this.charCtx.clearRect(
+      clear.x * this.charScale,
+      clear.y * this.charScale,
+      clear.w * this.charScale,
+      clear.h * this.charScale
+    );
+    this.attributeCtx.fillStyle = "white";
+    this.attributeCtx.fillRect(
+      clear.x * this.attributeScale,
+      clear.y * this.attributeScale,
+      clear.w * this.attributeScale,
+      clear.h * this.attributeScale
+    );
+
+    this.redrawUnstable();
+  }
+
+  scrollDownRect(rect: Rect, linesToScroll: number) {
+    const copyRect = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const copyRectTo = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const clearRect = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + rect.h - linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: linesToScroll * this.characterHeight,
+    };
+
+    this.scrollCanvases(copyRect, copyRectTo, clearRect);
+  }
+
+  scrollUpRect(rect: Rect, linesToScroll: number) {
+    const copyRect = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const copyRectTo = {
+      x: rect.x * this.characterWidth,
+      y: (rect.y + linesToScroll) * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: (rect.h - linesToScroll) * this.characterHeight,
+    };
+    const clearRect = {
+      x: rect.x * this.characterWidth,
+      y: rect.y * this.characterHeight,
+      w: rect.w * this.characterWidth,
+      h: linesToScroll * this.characterHeight,
+    };
+
+    this.scrollCanvases(copyRect, copyRectTo, clearRect);
   }
 
   /*================================ IMAGES ====================================*/
