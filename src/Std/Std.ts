@@ -109,9 +109,16 @@ export class Std {
     }
   }
 
-  writeConsole(string: string, attr?: Partial<CellAttributes>) {
+  writeConsole(
+    string: string,
+    attr?: Partial<CellAttributes> & { reset?: boolean }
+  ) {
     if (attr) {
-      this.updateConsoleAttributes(attr);
+      if (attr.reset) {
+        this.resetConsoleAttributes();
+      } else {
+        this.updateConsoleAttributes(attr);
+      }
     }
     return this.textBuffer.printString(string);
   }

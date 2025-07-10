@@ -631,8 +631,7 @@ class MainMenu extends State {
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
     std.writeConsole("== Pengsweeper ==\n", { bold: true });
-    std.resetConsoleAttributes();
-    std.writeConsole("\n");
+    std.writeConsole("\n", { reset: true });
     std.writeConsole("Select your difficulty level:\n\n");
     std.writeConsole("  1) beginner\n");
     std.writeConsole("  2) intermediate\n");
@@ -640,8 +639,7 @@ class MainMenu extends State {
     std.writeConsole("\n");
     std.writeConsole("or press ");
     std.writeConsole("<esc>", { bold: true });
-    std.resetConsoleAttributes();
-    std.writeConsole(" to exit.");
+    std.writeConsole(" to exit.", { reset: true });
   }
 
   override update(dt: number) {
