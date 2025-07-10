@@ -200,7 +200,7 @@ export class Colors implements Executable {
     const { std } = this.pc;
     std.resetConsole();
     std.clearConsole();
-    std.writeConsole("Standard colors\n");
+    std.writeConsole("Classic colors\n");
 
     for (let i = 0; i < 0x08; i += 1) {
       std.writeConsole(CHAR, {
@@ -229,6 +229,29 @@ export class Colors implements Executable {
     for (let i = 0x18; i < 0x20; i += 1) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
+      });
+    }
+    std.resetConsole();
+    std.writeConsole("\n");
+
+    std.writeConsole("Press ENTER to continue...");
+    await std.readConsoleLine();
+
+    std.resetConsole();
+    std.clearConsole();
+    std.writeConsole("Indexed colors\n");
+
+    for (let i = 0; i < 0x08; i += 1) {
+      std.writeConsole(CHAR, {
+        bgColor: indexedColors[i],
+      });
+    }
+    std.resetConsole();
+    std.writeConsole("\n");
+
+    for (let i = 0x08; i < 0x10; i += 1) {
+      std.writeConsole(CHAR, {
+        bgColor: indexedColors[i],
       });
     }
     std.resetConsole();

@@ -452,6 +452,10 @@ class PengOS {
             y: Math.ceil(image.height / characterSize.h),
           });
         }
+        std.writeConsole("Press ENTER to continue...");
+        await std.readConsoleLine();
+        std.resetConsole();
+        std.clearConsole();
       } else if (
         fileEntry.type === FileSystemObjectType.Link &&
         fileEntry.openType === "open"
