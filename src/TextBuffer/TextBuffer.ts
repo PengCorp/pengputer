@@ -64,6 +64,10 @@ class Cell {
     this.isDirty = true;
   }
 
+  public updateAttributes(update: Partial<CellAttributes>) {
+    this.attributes = { ...this.attributes, ...update };
+  }
+
   public clone(): Cell {
     const c = new Cell();
 

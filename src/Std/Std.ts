@@ -3,10 +3,9 @@ import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
-import { ScreenCharacterAttributes } from "../Screen/types";
 import { CellAttributes, TextBuffer } from "../TextBuffer/TextBuffer";
-import { Vector, vectorAdd, zeroVector } from "../Toolbox/Vector";
-import { getRectFromVectorAndSize, Rect } from "../types";
+import { Vector, vectorAdd } from "../Toolbox/Vector";
+import { Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
 
 export class Std {
@@ -98,6 +97,18 @@ export class Std {
     return this.textBuffer.resetCurrentAttributes();
   }
 
+  updateConsoleRectAttributes(rect: Rect, attr: Partial<CellAttributes>) {
+    const page = this.textBuffer.getPage(0);
+    for (let y = rect.y; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+        const cell = page.lines[y]?.cells[x];
+        if (cell) {
+          cell.updateAttributes(attr);
+        }
+      }
+    }
+  }
+
   writeConsole(string: string, attr?: Partial<CellAttributes>) {
     if (attr) {
       this.updateConsoleAttributes(attr);
@@ -111,16 +122,8 @@ export class Std {
       return;
     }
     if (numberOfLines > 0) {
-      this.screen.scrollDownRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        numberOfLines
-      );
       this.textBuffer.scrollDownBy(numberOfLines);
     } else {
-      this.screen.scrollUpRect(
-        getRectFromVectorAndSize(zeroVector, this.screen.getSizeInCharacters()),
-        -numberOfLines
-      );
       this.textBuffer.scrollUpBy(numberOfLines);
     }
   }

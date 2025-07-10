@@ -575,8 +575,6 @@ class PengOS {
   async mainLoop() {
     const { std, fileSystem } = this.pc;
 
-    await new PengsweeperApp(this.pc).run([]);
-
     let previousEntries: string[] = [];
 
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
