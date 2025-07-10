@@ -6,10 +6,6 @@ import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
 
-const SCROLLBACK_LENGTH = 1024;
-const BUFFER_WIDTH = 80;
-const BUFFER_HEIGHT = 25;
-
 export interface CellAttributes {
   fgColor: Color;
   bgColor: Color;
