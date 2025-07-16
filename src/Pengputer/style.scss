@@ -144,7 +144,7 @@ header a {
     padding-top: 10px;
 }
 
-.keyboard span:active {
+.keyboard span:active, .keyboard span.force-active {
     background: #999;
     border: 4px solid #666;
     padding-top: 10px;

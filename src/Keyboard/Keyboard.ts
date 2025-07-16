@@ -17,16 +17,11 @@ export class Keyboard {
   private typeListeners: Array<TypeListener>;
   private allKeysUpListeners: Array<VoidListener>;
 
-  private autoRepeatDelay: number;
-  private autoRepeatDelayCounter: number;
-  private autoRepeatInterval: number;
-  private autoRepeatIntervalCounter: number;
-  private autoRepeatEvent: KeyboardEvent | null;
-
-  // CLEANUP(nic): maybe put this in an object
-  private autorepeatKeyCode: string | null;
-  private autorepeatKeyIsShiftDown: bool;
-  private autorepeatKeyIsCapsOn: bool;
+  private autorepeatDelay: number;
+  private autorepeatDelayCounter: number;
+  private autorepeatInterval: number;
+  private autorepeatIntervalCounter: number;
+  private autorepeatKey: Key | null;
 
   constructor() {
     this.pressed = [];
@@ -43,7 +38,7 @@ export class Keyboard {
     this.autorepeatDelayCounter = this.autorepeatDelay;
     this.autorepeatInterval = 50;
     this.autorepeatIntervalCounter = this.autorepeatInterval;
-    this.autorepeatKeyCode = null;
+    this.autorepeatKey = null;
   }
 
   private _onKeyDown(e: KeyboardEvent) {
@@ -54,9 +49,10 @@ export class Keyboard {
     this.pressed.push(e.code);
     this.werePressed.add(e.code as KeyCode);
 
+    const code = e.code;
     const isShiftDown = e.getModifierState("Shift");
     const isCapsOn = e.getModifierState("CapsLock");
-    this._simulateKeyPress(e.code, isShiftDown, isCapsOn);
+    this._simulateKeyPress({ code, isShiftDown, isCapsOn });
   }
 
   private _onKeyUp(e: KeyboardEvent) {
@@ -64,7 +60,7 @@ export class Keyboard {
     e.stopPropagation();
 
     this.pressed = this.pressed.filter((kc) => kc !== e.code);
-    if (this.autoRepeatKeyCode === e.code) {
+    if (this.autorepeatKey !== null && this.autorepeatKey.code === e.code) {
       this._resetAutorepeat();
     }
     if (this.pressed.length === 0) {
@@ -96,7 +92,7 @@ export class Keyboard {
   }
 
   private _resetAutorepeat() {
-    this.autorepeatKeyCode = null;
+    this.autorepeatKey = null;
     this.autorepeatDelayCounter = this.autorepeatDelay;
     this.autorepeatIntervalCounter = 0;
   }
@@ -141,65 +137,63 @@ export class Keyboard {
     };
   }
 
-  private _getCharFromLayout(keyCode: string, isShiftDown: bool, isCapsOn: bool) {
+  private _getCharFromLayout(key: Key) {
     const shiftLayout = this.layout["@shift"];
     const capsLayout = this.layout["@caps"];
     const capsShiftLayout = this.layout["@caps-shift"];
 
-    if (isCapsOn && capsLayout) {
-      if (isShiftDown && capsShiftLayout && capsShiftLayout[keyCode]) {
-        return capsShiftLayout[keyCode];
+    if (key.isCapsOn && capsLayout) {
+      if (key.isShiftDown && capsShiftLayout && capsShiftLayout[key.code]) {
+        return capsShiftLayout[key.code];
       }
 
-      if (capsLayout[keyCode]) {
-        return capsLayout[keyCode];
+      if (capsLayout[key.code]) {
+        return capsLayout[key.code];
       }
     }
 
-    if (isShiftDown) {
-      if (shiftLayout && shiftLayout[keyCode]) {
-        return shiftLayout[keyCode];
+    if (key.isShiftDown) {
+      if (shiftLayout && shiftLayout[key.code]) {
+        return shiftLayout[key.code];
       }
       return null;
     }
 
-    if (this.layout[keyCode]) {
-      return this.layout[keyCode];
+    if (this.layout[key.code]) {
+      return this.layout[key.code];
     }
 
     return null;
   }
 
-  _simulateKeyPress(keyCode: string, isShiftDown: bool, isCapsOn: bool) {
-    const char = this._getCharFromLayout(keyCode, isShiftDown, isCapsOn) ?? null;
-    if (keyCode !== this.autorepeatKeyCode) {
+  _simulateKeyPress(key: Key) {
+    const char = this._getCharFromLayout(key) ?? null;
+    if (this.autorepeatKey === null || key.code !== this.autorepeatKey.code) {
       this._resetAutorepeat();
-      this.autorepeatKeyCode = keyCode;
-      this.autorepeatIsShiftDown = isShiftDown;
-      this.autorepeatIsCapsOn = isCapsOn;
+      this.autorepeatKey = key;
     }
-    this.typeListeners.forEach((callback: any) => callback(char, keyCode));
+    this.typeListeners.forEach((callback: any) => callback(char, key.code));
   }
 
-  simulateKeyDown(keyCode: string, isShiftDown: bool, isCapsOn: bool) {
-    this.pressed.add(keyCode);
-    this._simulateKeyPress(keyCode, isShiftDown, isCapsOn);
+  simulateKeyDown(key: Key) {
+    this.pressed.add(key.code);
+    this._simulateKeyPress(key);
   }
 
   simulateKeyUp(keyCode: string) {
-    if (this.autorepeatKeyCode === keyCode) {
+    if (this.autorepeatKey !== null && this.autorepeatKey.code === keyCode) {
       this._resetAutorepeat();
     }
   }
 
   update(dt: any) {
-    if (this.autorepeatKeyCode != null) {
+    if (this.autorepeatKey !== null) {
       this.autorepeatDelayCounter -= dt;
       if (this.autorepeatDelayCounter <= 0) {
         this.autorepeatIntervalCounter -= dt;
         while (this.autorepeatIntervalCounter <= 0) {
           this.autorepeatIntervalCounter += this.autorepeatInterval;
-          this._simulateKeyPress(this.autorepeatKeyCode, this.autorepeatIsShiftDown, this.autorepeatIsCapsOn);
+          this._simulateKeyPress(this.autorepeatKey);
         }
       }
     }

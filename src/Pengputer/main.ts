@@ -667,6 +667,16 @@ class PengOS {
   }
 }
 
+function updateVirtualKey(keys: any[], isPressed: bool) {
+  for (let key of keys) {
+    if (isPressed) {
+      key.classList.add("force-active");
+    } else {
+      key.classList.remove("force-active");
+    }
+  }
+}
+
 (async () => {
   await loadFont9x16();
 
@@ -674,40 +684,50 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
-
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),
     scrollbackLength: 0,
   });
 
-  let screenIsShiftDown = false;
-  let screenIsCapsOn = false;
   const screenKeys = document.querySelectorAll(".row span");
+  let isShiftDown = false;
+  let isCapsOn = false;
+
+  // keyCapsLocks doesn't need to be a list, because you only have one capslock key
+  // but technically since it's class and whatnot... whatever
+  const keyCapsLocks = document.querySelectorAll(".row span.capslock");
+  const keyShifts = document.querySelectorAll(".row span.shift");
+
   for (let screenKey of screenKeys) {
     screenKey.addEventListener("mousedown", () => {
       let keyText = screenKey.innerText;
       if (keyText == "CapLk") {
-        screenIsCapsOn = !screenIsCapsOn;
-        return;
-      }
-      if (keyText == "Shift") {
-        screenIsShiftDown = !screenIsShiftDown;
-        return;
-      }
-
-      let keyCode = screenKey.getAttribute("code");
-      if (keyCode) {
-        keyboard.simulateKeyDown(keyCode, screenIsShiftDown, screenIsCapsOn);
-        screenIsShiftDown = false;
+        isCapsOn = !isCapsOn;
+        updateVirtualKey(keyCapsLocks, isCapsOn);
+      } else if (keyText == "Shift") {
+        isShiftDown = !isShiftDown;
+        updateVirtualKey(keyShifts, isShiftDown);
+      } else {
+        let code = screenKey.getAttribute("code");
+        if (code) {
+          keyboard.simulateKeyDown({ code, isShiftDown, isCapsOn });
+          isShiftDown = false;
+          updateVirtualKey(keyShifts, isShiftDown);
+        }
       }
     });
-    window.addEventListener("mouseup", () => {
+  }
+
+  // NOTE(nic): this needs to be done on the window because of the brilliant
+  // move of moving the mouse off the key and releasing the mouse button
+  window.addEventListener("mouseup", () => {
+    for (let screenKey of screenKeys) {
       let keyCode = screenKey.getAttribute("code");
       if (keyCode && keyboard.getIsKeyPressed(keyCode)) {
         keyboard.simulateKeyUp(keyCode);
       }
-    });
-  }
+    }
+  });
 
   screen.clear();
   screen.drawSomeText();
