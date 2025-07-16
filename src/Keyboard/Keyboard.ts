@@ -43,29 +43,19 @@ export class Keyboard {
   private _onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
-
     if (e.repeat) return;
-    this.pressed.push(e.code);
-    this.werePressed.add(e.code as KeyCode);
 
     const code = e.code;
     const isShiftDown = e.getModifierState("Shift");
     const isCtrlDown = e.getModifierState("Control");
     const isCapsOn = e.getModifierState("CapsLock");
-    this._simulateKeyPress({ code, isShiftDown, isCtrlDown, isCapsOn });
+    this.simulateKeyDown({ code, isShiftDown, isCtrlDown, isCapsOn });
   }
 
   private _onKeyUp(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
-
-    this.pressed = this.pressed.filter((kc) => kc !== e.code);
-    if (this.autorepeatKey !== null && this.autorepeatKey.code === e.code) {
-      this._resetAutorepeat();
-    }
-    if (this.pressed.length === 0) {
-      this.allKeysUpListeners.forEach((callback) => callback());
-    }
+    this.simulateKeyUp(e.code);
   }
 
   /** Get whether any key was pressed since last wasPressed reset. */
@@ -182,8 +172,12 @@ export class Keyboard {
   }
 
   public simulateKeyUp(keyCode: string) {
+    this.pressed = this.pressed.filter((kc) => kc !== keyCode);
     if (this.autorepeatKey !== null && this.autorepeatKey.code === keyCode) {
       this._resetAutorepeat();
+    }
+    if (this.pressed.length === 0) {
+      this.allKeysUpListeners.forEach((callback) => callback());
     }
   }
 
