@@ -31,6 +31,7 @@ import { ColorType } from "../Color/Color";
 import { TextBuffer } from "../TextBuffer/TextBuffer";
 import { Colors } from "./Colors";
 import { classicColors } from "../Color/ansi";
+import { Blackjack } from "./Blackjack";
 
 const PATH_SEPARATOR = "/";
 
@@ -578,6 +579,8 @@ class PengOS {
 
   async mainLoop() {
     const { std, fileSystem } = this.pc;
+
+    await new Blackjack(this.pc).run([]);
 
     let previousEntries: string[] = [];
 
