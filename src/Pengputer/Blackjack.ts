@@ -6,6 +6,7 @@ import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
 const INITIAL_CASH = 100;
+const NAME_FIELD_WIDTH = 10;
 
 const suits = ["hearts", "diamonds", "spades", "clubs"] as const;
 const values = [
@@ -83,43 +84,65 @@ class Hand {
   public pushCard(card: Card) {
     this.cards.push(card);
   }
-}
 
-type PlayerStatus = "playing" | "blackjack" | "busted";
+  public getIsBlackjack() {
+    const cards = this.cards;
+    const sum = this.getSum(true);
+    return sum === 21 && cards.length === 2;
+  }
+
+  public getSum(sumAll: boolean = false) {
+    const cards = this.cards;
+    let acesAvailableToSubtract = 0;
+    for (
+      let i = 0;
+      i < cards.length && cards[i].value === "A" && (sumAll || cards[i].faceUp);
+      i += 1
+    ) {
+      acesAvailableToSubtract += 1;
+    }
+
+    let totalScore = 0;
+    for (let i = 0; i < cards.length && cards[i].faceUp; i += 1) {
+      totalScore += getScoreForCard(cards[i]);
+    }
+
+    while (totalScore > 21 && acesAvailableToSubtract > 0) {
+      totalScore -= 10;
+      acesAvailableToSubtract -= 1;
+    }
+
+    return totalScore;
+  }
+}
 
 class Player {
   public cash: number;
   public hands: Hand[];
-  public status: PlayerStatus;
   public isDealer: boolean;
   public name: string;
 
   constructor(name: string, isDealer: boolean) {
     this.cash = 0;
     this.hands = [];
-    this.status = "playing";
     this.isDealer = isDealer;
     this.name = name;
   }
 
-  public resetHand() {
-    this.hands = [];
-    this.status = "playing";
-  }
-
-  public revealInitialCards() {
-    for (const h of this.hands) {
-      for (const c of h.cards) {
-        c.faceUp = true;
-      }
-      if (this.isDealer) {
-        h.cards[h.cards.length - 1].faceUp = false;
-      }
+  public getCanSplit() {
+    if (this.hands.length > 1) {
+      return false;
     }
-  }
 
-  public getHands() {
-    return this.hands;
+    if (this.hands[0].cards.length > 2) {
+      return false;
+    }
+
+    if (this.cash < this.hands[0].bet) {
+      return false;
+    }
+
+    return true;
   }
 }
 
@@ -129,7 +152,6 @@ export class Blackjack implements Executable {
 
   private isQuitting: boolean = false;
 
-  private initialCash: number = 100;
   private deck: Array<Card> = [];
   private players: Array<Player> = [];
   private dealer: Player = new Player("Dealer", true);
@@ -148,13 +170,19 @@ export class Blackjack implements Executable {
     return result;
   }
 
+  private resetRound() {
+    for (const p of [...this.players, this.dealer]) {
+      p.hands = [];
+      p.hands.push(new Hand());
+    }
+  }
+
   private async askForBets() {
     const { std } = this.pc;
 
     for (let p = 0; p < this.players.length; p += 1) {
       const player = this.players[p];
-      const hand = new Hand();
-      player.hands.push(hand);
+      const hand = player.hands[0];
 
       hand.bet = 0;
       while (hand.bet === 0 || hand.bet > player.cash || hand.bet < 0) {
@@ -174,30 +202,36 @@ export class Blackjack implements Executable {
   }
 
   private async dealInitialCards() {
-    const { std } = this.pc;
-
     this.deck = _.shuffle(getFreshDeck());
-
-    for (const p of [...this.players, this.dealer]) {
-      p.resetHand();
-    }
 
     for (let j = 0; j < 2; j += 1) {
       for (const p of [...this.players, this.dealer]) {
-        p.hands[0].pushCard(this.deck.pop()!);
+        this.dealCard(p.hands[0], !p.isDealer || j === 0);
       }
     }
+  }
 
-    for (const p of [...this.players, this.dealer]) {
-      p.revealInitialCards();
-    }
+  private printHands() {
+    const { std } = this.pc;
 
-    for (const p of [...this.players, this.dealer]) {
-      std.writeConsole(`${_.padEnd(p.name, 9)}: `);
-      this.printHand(p.getHands()[0].cards);
-      std.writeConsole("\n");
+    for (const p of [this.dealer, ...this.players]) {
+      for (let i = 0; i < p.hands.length; i += 1) {
+        if (i === 0) {
+          std.writeConsole(`${_.padEnd(p.name, NAME_FIELD_WIDTH)}: `);
+        } else {
+          std.writeConsole(`${_.padEnd("", NAME_FIELD_WIDTH)}  `);
+        }
+        this.printHand(p.hands[i]);
+        std.writeConsole("\n");
+      }
     }
     std.writeConsole("\n");
+  }
+
+  private dealCard(hand: Hand, facingUp: boolean = true) {
+    const card = this.deck.pop()!;
+    card.faceUp = facingUp;
+    hand.pushCard(card);
   }
 
   private async askForNumberOfPlayers() {
@@ -240,42 +274,37 @@ export class Blackjack implements Executable {
     }
   }
 
-  private printHand(hand: Array<Card>) {
+  private printHand(hand: Hand) {
     const { std } = this.pc;
 
-    for (let c = 0; c < hand.length; c += 1) {
-      this.printCard(hand[c]);
+    const cards = hand.cards;
+
+    for (let c = 0; c < cards.length; c += 1) {
+      this.printCard(cards[c]);
       std.writeConsole(" ");
     }
-    std.writeConsole(`(${this.sumHand(hand)})`);
+    std.writeConsole(`(${hand.getSum()})`);
   }
 
-  private sumHand(hand: Array<Card>, sumAll: boolean = false) {
-    let acesAvailableToSubtract = 0;
-    for (
-      let i = 0;
-      i < hand.length && hand[i].value === "A" && (sumAll || hand[i].faceUp);
-      i += 1
-    ) {
-      acesAvailableToSubtract += 1;
+  private splitHand(player: Player) {
+    if (!player.getCanSplit()) {
+      throw new Error("Cannot split at this point in time.");
     }
 
-    let totalScore = 0;
-    for (let i = 0; i < hand.length && hand[i].faceUp; i += 1) {
-      totalScore += getScoreForCard(hand[i]);
-    }
+    const hand = player.hands[0];
+    player.hands = [];
 
-    while (totalScore > 21 && acesAvailableToSubtract > 0) {
-      totalScore -= 10;
-      acesAvailableToSubtract -= 1;
-    }
+    const leftHand = new Hand();
+    leftHand.bet = hand.bet;
+    leftHand.pushCard(hand.cards[0]);
+    this.dealCard(leftHand);
+    const rightHand = new Hand();
+    rightHand.bet = hand.bet;
+    rightHand.pushCard(hand.cards[1]);
+    this.dealCard(rightHand);
 
-    return totalScore;
-  }
-
-  private getIsBlackjack(hand: Array<Card>) {
-    const sum = this.sumHand(hand, true);
-    return sum === 21 && hand.length === 2;
+    player.cash -= hand.bet;
+    player.hands = [leftHand, rightHand];
   }
 
   async run(args: string[]) {
@@ -295,8 +324,28 @@ export class Blackjack implements Executable {
     await this.askForNumberOfPlayers();
 
     while (!this.isQuitting) {
+      this.resetRound();
       await this.askForBets();
-      await this.dealInitialCards();
+      this.dealInitialCards();
+      this.printHands();
+      for (
+        let playerIndex = 0;
+        playerIndex < this.players.length;
+        playerIndex += 1
+      ) {
+        const player = this.players[playerIndex];
+        for (
+          let handIndex = 0;
+          handIndex < player.hands.length;
+          handIndex += 1
+        ) {
+          std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
+          this.printHand(this.dealer.hands[0]);
+          std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
+          this.printHand(player.hands[handIndex]);
+          std.writeConsole(`\n\n`);
+        }
+      }
     }
 
     std.writeConsole("Now leaving ", { reset: true });
