@@ -35,14 +35,14 @@ export const readLine = (
     let result = "";
     let curIndex = 0;
 
-    const onType: TypeListener = (char, key, ev) => {
-      if (ev.getModifierState("Control")) {
-        if (key === "KeyC") {
+    const onType: TypeListener = (char, key) => {
+      if (key.isCtrlDown) {
+        if (key.code === "KeyC") {
           resolve(null);
         }
       } else {
         if (
-          key === "Tab" &&
+          key.code === "Tab" &&
           autoCompleteStrings.length > 0 &&
           curIndex === result.length
         ) {
@@ -71,10 +71,10 @@ export const readLine = (
               curIndex = result.length;
             }
           }
-        } else if (key === "Home") {
+        } else if (key.code === "Home") {
           moveCursor({ x: -curIndex, y: 0 });
           curIndex = 0;
-        } else if (key === "End") {
+        } else if (key.code === "End") {
           moveCursor({
             x: result.length - curIndex,
             y: 0,
@@ -95,7 +95,7 @@ export const readLine = (
             buffer.printString(stringEnd + " ");
             moveCursor({ x: -(stringEnd.length + 1), y: 0 });
           }
-        } else if (key === "Delete") {
+        } else if (key.code === "Delete") {
           if (curIndex < result.length) {
             isUsingPreviousEntry = false;
             const stringStart = result.slice(0, curIndex);
@@ -104,17 +104,17 @@ export const readLine = (
             buffer.printString(stringEnd + " ");
             moveCursor({ x: -(stringEnd.length + 1), y: 0 });
           }
-        } else if (key === "ArrowLeft") {
+        } else if (key.code === "ArrowLeft") {
           if (curIndex > 0) {
             curIndex -= 1;
             moveCursor({ x: -1, y: 0 });
           }
-        } else if (key === "ArrowRight") {
+        } else if (key.code === "ArrowRight") {
           if (curIndex < result.length) {
             curIndex += 1;
             moveCursor({ x: 1, y: 0 });
           }
-        } else if (key === "ArrowUp") {
+        } else if (key.code === "ArrowUp") {
           if (previousEntries.length > 0) {
             let replaceWith = "";
             if (!isUsingPreviousEntry) {
@@ -135,7 +135,7 @@ export const readLine = (
               curIndex = replaceWith.length;
             }
           }
-        } else if (key === "ArrowDown") {
+        } else if (key.code === "ArrowDown") {
           if (
             isUsingPreviousEntry &&
             previousEntryIndex < previousEntries.length
@@ -178,8 +178,8 @@ export const readKey = (keyboard: Keyboard) => {
   const promise = new Promise<{ char: string | null; key: string }>(
     (resolve) => {
       const onType: TypeListener = (char, key) => {
-        if (!getIsModifierKey(key)) {
-          resolve({ char, key });
+        if (!getIsModifierKey(key.code)) {
+          resolve({ char: char, key: key.code });
         }
       };
       unsubType = keyboard.addTypeListener(onType);

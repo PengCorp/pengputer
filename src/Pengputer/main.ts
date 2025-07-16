@@ -691,6 +691,7 @@ function updateVirtualKey(keys: any[], isPressed: bool) {
 
   const screenKeys = document.querySelectorAll(".row span");
   let isShiftDown = false;
+  let isCtrlDown = false;
   let isCapsOn = false;
 
   // keyCapsLocks doesn't need to be a list, because you only have one capslock key
@@ -710,7 +711,7 @@ function updateVirtualKey(keys: any[], isPressed: bool) {
       } else {
         let code = screenKey.getAttribute("code");
         if (code) {
-          keyboard.simulateKeyDown({ code, isShiftDown, isCapsOn });
+          keyboard.simulateKeyDown({ code, isShiftDown, isCtrlDown, isCapsOn });
           isShiftDown = false;
           updateVirtualKey(keyShifts, isShiftDown);
         }
@@ -728,10 +729,6 @@ function updateVirtualKey(keys: any[], isPressed: bool) {
       }
     }
   });
-
-  screen.clear();
-  screen.drawSomeText();
-  screen.displayString({ x: 1, y: 15 }, "Get scrolled, nerd :P");
 
   let lastTime = performance.now();
   const cb = () => {

@@ -4,8 +4,7 @@ import { KeyCode } from "./types";
 
 export type TypeListener = (
   char: string | null,
-  keyCode: string,
-  ev: KeyboardEvent
+  keyCode: Key
 ) => void;
 export type VoidListener = () => void;
 
@@ -51,8 +50,9 @@ export class Keyboard {
 
     const code = e.code;
     const isShiftDown = e.getModifierState("Shift");
+    const isCtrlDown = e.getModifierState("Control");
     const isCapsOn = e.getModifierState("CapsLock");
-    this._simulateKeyPress({ code, isShiftDown, isCapsOn });
+    this._simulateKeyPress({ code, isShiftDown, isCtrlDown, isCapsOn });
   }
 
   private _onKeyUp(e: KeyboardEvent) {
@@ -166,21 +166,22 @@ export class Keyboard {
     return null;
   }
 
-  _simulateKeyPress(key: Key) {
+  private _simulateKeyPress(key: Key) {
     const char = this._getCharFromLayout(key) ?? null;
     if (this.autorepeatKey === null || key.code !== this.autorepeatKey.code) {
       this._resetAutorepeat();
       this.autorepeatKey = key;
     }
-    this.typeListeners.forEach((callback: any) => callback(char, key.code));
+    this.typeListeners.forEach((callback: any) => callback(char, key));
   }
 
-  simulateKeyDown(key: Key) {
-    this.pressed.add(key.code);
+  public simulateKeyDown(key: Key) {
+    this.pressed.push(key.code);
+    this.werePressed.add(key.code as KeyCode);
     this._simulateKeyPress(key);
   }
 
-  simulateKeyUp(keyCode: string) {
+  public simulateKeyUp(keyCode: string) {
     if (this.autorepeatKey !== null && this.autorepeatKey.code === keyCode) {
       this._resetAutorepeat();
     }
