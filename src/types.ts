@@ -1,12 +1,5 @@
 import { Vector } from "./Toolbox/Vector";
 
-export type Key = {
-  code: string;
-  isShiftDown: bool;
-  isCtrlDown: bool;
-  isCpasOn: bool;
-};
-
 export type Rect = { x: number; y: number; w: number; h: number };
 export type Size = { w: number; h: number };
 

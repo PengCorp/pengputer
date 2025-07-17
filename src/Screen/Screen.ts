@@ -166,7 +166,7 @@ export class Screen {
 
     const scanLines = document.createElement("div");
 
-    scanLines.setAttribute("id", "screen-scanlines");
+    scanLines.setAttribute("id", "screen-scanLines");
 
     canvasBox.appendChild(canvas);
     canvasBox.appendChild(scanLines);
