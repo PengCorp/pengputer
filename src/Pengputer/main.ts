@@ -32,6 +32,7 @@ import { TextBuffer } from "../TextBuffer/TextBuffer";
 import { Colors } from "./Colors";
 import { classicColors } from "../Color/ansi";
 import { Blackjack } from "./Blackjack";
+import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 
 const PATH_SEPARATOR = "/";
 
@@ -677,6 +678,7 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
+  new ScreenKeyboard(keyboard);
 
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),

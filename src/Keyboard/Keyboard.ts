@@ -1,11 +1,11 @@
 import { ANSI_LAYOUT } from "./ansiLayout";
 import { getIsModifierKey } from "./isModifierKey";
-import { KeyCode } from "./types";
+import { KeyCode, PengKeyboardEvent } from "./types";
 
 export type TypeListener = (
   char: string | null,
-  keyCode: string,
-  ev: KeyboardEvent
+  keyCode: KeyCode,
+  ev: PengKeyboardEvent
 ) => void;
 export type VoidListener = () => void;
 
@@ -21,7 +21,7 @@ export class Keyboard {
   private autoRepeatDelayCounter: number;
   private autoRepeatInterval: number;
   private autoRepeatIntervalCounter: number;
-  private autoRepeatEvent: KeyboardEvent | null;
+  private autoRepeatEvent: PengKeyboardEvent | null;
 
   constructor() {
     this.pressed = [];
@@ -41,27 +41,55 @@ export class Keyboard {
     this.autoRepeatEvent = null;
   }
 
+  private getPengKeyboardEventFromKeyboardEvent(
+    e: KeyboardEvent,
+    pressed: boolean
+  ): PengKeyboardEvent {
+    return {
+      code: e.code as KeyCode,
+      pressed,
+      isShiftDown: e.getModifierState("Shift"),
+      isControlDown: e.getModifierState("Control"),
+      isAltDown: e.getModifierState("Alt"),
+      isMetaDown: e.getModifierState("Meta"),
+      isCapsOn: e.getModifierState("CapsLock"),
+    };
+  }
+
+  public handleEvent(ev: PengKeyboardEvent) {
+    if (ev.pressed) {
+      this.pressed.push(ev.code);
+      this.werePressed.add(ev.code);
+      this._onKeyTyped(ev);
+    } else {
+      this.pressed = this.pressed.filter((kc) => kc !== ev.code);
+      if (this.autoRepeatEvent?.code === ev.code) {
+        this._resetAutorepeat();
+      }
+      if (this.pressed.length === 0) {
+        this.allKeysUpListeners.forEach((callback) => callback());
+      }
+    }
+  }
+
   private _onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
 
     if (e.repeat) return;
-    this.pressed.push(e.code);
-    this.werePressed.add(e.code as KeyCode);
-    this._onKeyTyped(e);
+
+    const pengEvent = this.getPengKeyboardEventFromKeyboardEvent(e, true);
+
+    this.handleEvent(pengEvent);
   }
 
   private _onKeyUp(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
 
-    this.pressed = this.pressed.filter((kc) => kc !== e.code);
-    if (this.autoRepeatEvent?.code === e.code) {
-      this._resetAutorepeat();
-    }
-    if (this.pressed.length === 0) {
-      this.allKeysUpListeners.forEach((callback) => callback());
-    }
+    const pengEvent = this.getPengKeyboardEventFromKeyboardEvent(e, false);
+
+    this.handleEvent(pengEvent);
   }
 
   /** Get whether any key was pressed since last wasPressed reset. */
@@ -133,10 +161,8 @@ export class Keyboard {
     };
   }
 
-  private _getCharFromLayout(ev: KeyboardEvent) {
-    const { code: keyCode } = ev;
-    const isShiftDown = ev.getModifierState("Shift");
-    const isCapsOn = ev.getModifierState("CapsLock");
+  private _getCharFromLayout(ev: PengKeyboardEvent) {
+    const { code: keyCode, isShiftDown, isCapsOn } = ev;
 
     const shiftLayout = this.layout["@shift"];
     const capsLayout = this.layout["@caps"];
@@ -166,7 +192,9 @@ export class Keyboard {
     return null;
   }
 
-  private _onKeyTyped(ev: KeyboardEvent) {
+  private _onKeyTyped(ev: PengKeyboardEvent) {
+    if (!ev.pressed) return;
+
     const char = this._getCharFromLayout(ev) ?? null;
     if (ev.code !== this.autoRepeatEvent?.code) {
       this._resetAutorepeat();
