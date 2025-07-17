@@ -18,6 +18,7 @@
         "Autorepeat",
         "Backquote",
         "dedup",
+        "freesound",
         "PBIOS",
         "PENGCORP",
         "penger",
@@ -26,7 +27,9 @@
         "Pengsweeper",
         "PUSHDOWN",
         "SCROLLBACK",
+        "sennahojx",
         "SGCI",
-        "Tetris"
+        "Tetris",
+        "unsub"
     ],
 }

@@ -36,7 +36,7 @@ export const readLine = (
     let curIndex = 0;
 
     const onType: TypeListener = (char, key, ev) => {
-      if (ev.getModifierState("Control")) {
+      if (ev.isControlDown) {
         if (key === "KeyC") {
           resolve(null);
         }
