@@ -75,10 +75,12 @@ const getScoreForCard = (card: Card) => {
 class Hand {
   public cards: Card[];
   public bet: number;
+  public isFinished: boolean;
 
   constructor() {
     this.cards = [];
     this.bet = 0;
+    this.isFinished = false;
   }
 
   public pushCard(card: Card) {
@@ -130,7 +132,7 @@ class Player {
   }
 
   public getCanSplit() {
-    if (this.hands.length > 1) {
+    if (this.hands.length === 0 || this.hands.length > 1) {
       return false;
     }
 
@@ -139,6 +141,10 @@ class Player {
     }
 
     if (this.cash < this.hands[0].bet) {
+      return false;
+    }
+
+    if (this.hands[0].cards[0].value !== this.hands[0].cards[1].value) {
       return false;
     }
 
@@ -307,6 +313,47 @@ export class Blackjack implements Executable {
     player.hands = [leftHand, rightHand];
   }
 
+  private async playHand(player: Player, hand: Hand) {
+    const { std } = this.pc;
+
+    std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
+    this.printHand(this.dealer.hands[0]);
+    std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
+    this.printHand(hand);
+    std.writeConsole(`\n\n`);
+
+    const canDouble = false;
+    const canSplit = player.getCanSplit();
+
+    const action: string | null = null;
+    while (!hand.isFinished) {
+      std.writeConsole(
+        `${["[h]it", "[s]tay", canDouble && "[d]double", canSplit && "[/]split"]
+          .filter(Boolean)
+          .join(", ")}? `
+      );
+      const action = (await this.readLine())?.trim().toLowerCase()[0];
+      switch (action) {
+        case "h":
+          console.log("hit");
+          break;
+        case "s":
+          console.log("stay");
+          break;
+        case "d":
+          if (canDouble) {
+            console.log("double");
+          }
+          break;
+        case "/":
+          if (canSplit) {
+            console.log("split");
+          }
+          break;
+      }
+    }
+  }
+
   async run(args: string[]) {
     const { std } = this.pc;
 
@@ -328,6 +375,7 @@ export class Blackjack implements Executable {
       await this.askForBets();
       this.dealInitialCards();
       this.printHands();
+      std.writeConsole("Cards dealt, let's play!\n\n");
       for (
         let playerIndex = 0;
         playerIndex < this.players.length;
@@ -339,11 +387,8 @@ export class Blackjack implements Executable {
           handIndex < player.hands.length;
           handIndex += 1
         ) {
-          std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
-          this.printHand(this.dealer.hands[0]);
-          std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
-          this.printHand(player.hands[handIndex]);
-          std.writeConsole(`\n\n`);
+          const hand = player.hands[handIndex];
+          await this.playHand(player, hand);
         }
       }
     }
