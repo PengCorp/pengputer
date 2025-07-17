@@ -4,7 +4,7 @@ import { KeyCode, PengKeyboardEvent } from "./types";
 
 export type TypeListener = (
   char: string | null,
-  keyCode: string,
+  keyCode: KeyCode,
   ev: PengKeyboardEvent
 ) => void;
 export type VoidListener = () => void;
