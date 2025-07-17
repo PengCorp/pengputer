@@ -94,7 +94,6 @@ export class ScreenKeyboard {
         isCapsOn: this.isCapsOn,
         isMetaDown: this.isMetaDown,
       });
-      console.log(`${code} down`);
     }
   }
 
@@ -117,7 +116,6 @@ export class ScreenKeyboard {
           isCapsOn: this.isCapsOn,
           isMetaDown: this.isMetaDown,
         });
-        console.log(`${code} up`);
       }
     }
   }
