@@ -1428,6 +1428,7 @@ class MainMenu implements GameState {
     std.writeConsole("Alexey Pajitnov", {
       fgColor: classicColors["lightAzure"],
     });
+    std.resetConsoleAttributes();
   }
 
   update(dt: number) {

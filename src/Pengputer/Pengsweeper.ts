@@ -648,6 +648,7 @@ class MainMenu extends State {
     std.writeConsole("Alexey Kutepov\n", {
       fgColor: classicColors["lightSpringGreen"],
     });
+    std.resetConsoleAttributes();
   }
 
   override update(dt: number) {
