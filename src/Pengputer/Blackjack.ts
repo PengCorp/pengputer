@@ -8,9 +8,12 @@ import { PC } from "./PC";
 const INITIAL_CASH = 100;
 const NAME_FIELD_WIDTH = 10;
 
+const LESS = -1;
+const EQUAL = 0;
+const GREATER = 1;
+
 const suits = ["hearts", "diamonds", "spades", "clubs"] as const;
 const values = [
-  "1",
   "2",
   "3",
   "4",
@@ -29,7 +32,6 @@ export type Suit = (typeof suits)[number];
 export type Value = (typeof values)[number];
 
 const valueScore: Record<Value, number> = {
-  "1": 1,
   "2": 2,
   "3": 3,
   "4": 4,
@@ -89,32 +91,88 @@ class Hand {
 
   public getIsBlackjack() {
     const cards = this.cards;
-    const sum = this.getSum(true);
+    const { sum } = this.getSum(true);
     return sum === 21 && cards.length === 2;
   }
 
   public getSum(sumAll: boolean = false) {
     const cards = this.cards;
     let acesAvailableToSubtract = 0;
-    for (
-      let i = 0;
-      i < cards.length && cards[i].value === "A" && (sumAll || cards[i].faceUp);
-      i += 1
-    ) {
-      acesAvailableToSubtract += 1;
+    for (let i = 0; i < cards.length; i += 1) {
+      if (cards[i].value === "A" && (sumAll || cards[i].faceUp)) {
+        acesAvailableToSubtract += 1;
+      }
     }
+    let isHard = acesAvailableToSubtract === 0;
 
     let totalScore = 0;
-    for (let i = 0; i < cards.length && cards[i].faceUp; i += 1) {
-      totalScore += getScoreForCard(cards[i]);
+    for (let i = 0; i < cards.length; i += 1) {
+      if (sumAll || cards[i].faceUp) {
+        totalScore += getScoreForCard(cards[i]);
+      }
     }
 
     while (totalScore > 21 && acesAvailableToSubtract > 0) {
       totalScore -= 10;
       acesAvailableToSubtract -= 1;
+      isHard = true;
     }
 
-    return totalScore;
+    return { isHard, sum: totalScore };
+  }
+
+  public reveal() {
+    this.cards.forEach((c) => (c.faceUp = true));
+  }
+
+  public getIsRevealed() {
+    return this.cards.reduce((acc, c) => acc && c.faceUp, true);
+  }
+
+  public getIsBusted() {
+    return this.getSum(true).sum > 21;
+  }
+
+  /** b is assumed to be dealer hand. */
+  public compareWith(b: Hand) {
+    const a = this;
+
+    const aSum = a.getSum(true).sum;
+    const bSum = b.getSum(true).sum;
+    const aIsBlackjack = a.getIsBlackjack();
+    const bIsBlackjack = b.getIsBlackjack();
+    const aIsBusted = a.getIsBusted();
+    const bIsBusted = b.getIsBusted();
+
+    if (aIsBusted && bIsBusted) {
+      return LESS;
+    }
+
+    if (aIsBusted) {
+      return LESS;
+    }
+
+    if (bIsBusted) {
+      return GREATER;
+    }
+
+    if (aIsBlackjack && bIsBlackjack) {
+      return EQUAL;
+    }
+
+    if (aIsBlackjack) {
+      return GREATER;
+    }
+
+    if (bIsBlackjack) {
+      return LESS;
+    }
+
+    if (aSum === bSum) {
+      return EQUAL;
+    }
+
+    return aSum < bSum ? LESS : GREATER;
   }
 }
 
@@ -145,6 +203,22 @@ class Player {
     }
 
     if (this.hands[0].cards[0].value !== this.hands[0].cards[1].value) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public getCanDouble() {
+    if (this.hands.length === 0 || this.hands.length > 1) {
+      return false;
+    }
+
+    if (this.hands[0].cards.length > 2) {
+      return false;
+    }
+
+    if (this.cash < this.hands[0].bet) {
       return false;
     }
 
@@ -202,6 +276,8 @@ export class Blackjack implements Executable {
           hand.bet = betValue;
         }
       }
+
+      player.cash -= hand.bet;
     }
 
     std.writeConsole("\n");
@@ -289,7 +365,15 @@ export class Blackjack implements Executable {
       this.printCard(cards[c]);
       std.writeConsole(" ");
     }
-    std.writeConsole(`(${hand.getSum()})`);
+    std.writeConsole(
+      `(${[
+        String(hand.getSum().sum),
+        hand.getIsBlackjack() && hand.getIsRevealed() && " - blackjack!",
+        hand.getIsBusted() && " - busted",
+      ]
+        .filter(Boolean)
+        .join("")})`
+    );
   }
 
   private splitHand(player: Player) {
@@ -313,41 +397,78 @@ export class Blackjack implements Executable {
     player.hands = [leftHand, rightHand];
   }
 
-  private async playHand(player: Player, hand: Hand) {
+  private doubleHand(player: Player) {
+    if (!player.getCanDouble()) {
+      throw new Error("Cannot double at this point in time.");
+    }
+
+    const hand = player.hands[0];
+    this.dealCard(hand);
+    player.cash -= hand.bet;
+    hand.bet += hand.bet;
+
+    hand.isFinished = true;
+  }
+
+  private hitHand(player: Player, hand: Hand) {
+    this.dealCard(hand);
+  }
+
+  private stayHand(player: Player, hand: Hand) {
+    hand.isFinished = true;
+  }
+
+  private async playHand(player: Player, handIndex: number) {
     const { std } = this.pc;
 
-    std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
-    this.printHand(this.dealer.hands[0]);
-    std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
-    this.printHand(hand);
-    std.writeConsole(`\n\n`);
+    while (!player.hands[handIndex].isFinished) {
+      const hand = player.hands[handIndex];
 
-    const canDouble = false;
-    const canSplit = player.getCanSplit();
+      std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
+      this.printHand(this.dealer.hands[0]);
+      std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
+      this.printHand(hand);
+      std.writeConsole(`\n\n`);
 
-    const action: string | null = null;
-    while (!hand.isFinished) {
+      if (hand.getIsBlackjack()) {
+        hand.isFinished = true;
+        std.writeConsole("You got a blackjack!\n\n");
+        continue;
+      }
+
+      if (hand.getIsBusted()) {
+        hand.isFinished = true;
+        std.writeConsole("Busted!\n\n");
+        continue;
+      }
+
+      const canDouble = player.getCanDouble();
+      const canSplit = player.getCanSplit();
+
       std.writeConsole(
         `${["[h]it", "[s]tay", canDouble && "[d]double", canSplit && "[/]split"]
           .filter(Boolean)
           .join(", ")}? `
       );
       const action = (await this.readLine())?.trim().toLowerCase()[0];
+      std.writeConsole("\n");
       switch (action) {
         case "h":
-          console.log("hit");
+          this.hitHand(player, hand);
           break;
         case "s":
-          console.log("stay");
+          this.stayHand(player, hand);
           break;
         case "d":
           if (canDouble) {
-            console.log("double");
+            this.doubleHand(player);
+            std.writeConsole("You doubled.\n\n");
           }
           break;
         case "/":
           if (canSplit) {
-            console.log("split");
+            this.splitHand(player);
+            std.writeConsole("Your hand is split.\n\n");
           }
           break;
       }
@@ -374,8 +495,43 @@ export class Blackjack implements Executable {
       this.resetRound();
       await this.askForBets();
       this.dealInitialCards();
-      this.printHands();
-      std.writeConsole("Cards dealt, let's play!\n\n");
+      const dealerHand = this.dealer.hands[0];
+
+      if (dealerHand.getIsBlackjack()) {
+        std.writeConsole("Dealer has a blackjack!\n\n");
+        dealerHand.reveal();
+        this.printHands();
+      } else {
+        std.writeConsole("Cards dealt, let's play!\n\n");
+        for (
+          let playerIndex = 0;
+          playerIndex < this.players.length;
+          playerIndex += 1
+        ) {
+          const player = this.players[playerIndex];
+          for (
+            let handIndex = 0;
+            handIndex < player.hands.length;
+            handIndex += 1
+          ) {
+            await this.playHand(player, handIndex);
+          }
+        }
+
+        dealerHand.reveal();
+
+        while (
+          dealerHand.getSum().sum < 17 ||
+          (dealerHand.getSum().sum === 17 &&
+            dealerHand.getSum().isHard === false)
+        ) {
+          this.hitHand(this.dealer, dealerHand);
+        }
+
+        this.printHands();
+      }
+
+      // pay out
       for (
         let playerIndex = 0;
         playerIndex < this.players.length;
@@ -388,9 +544,25 @@ export class Blackjack implements Executable {
           handIndex += 1
         ) {
           const hand = player.hands[handIndex];
-          await this.playHand(player, hand);
+          const compareResult = hand.compareWith(this.dealer.hands[0]);
+          if (compareResult === GREATER) {
+            if (hand.getIsBlackjack()) {
+              player.cash += hand.bet + hand.bet * 1.5;
+              std.writeConsole(`${player.name} won $${hand.bet * 1.5}.\n`);
+            } else {
+              player.cash += hand.bet + hand.bet;
+              std.writeConsole(`${player.name} won $${hand.bet}.\n`);
+            }
+          } else if (compareResult === EQUAL) {
+            player.cash += hand.bet;
+            std.writeConsole(`${player.name} pushed.\n`);
+          } else {
+            std.writeConsole(`${player.name} lost $${hand.bet}.\n`);
+          }
         }
       }
+
+      std.writeConsole("\n");
     }
 
     std.writeConsole("Now leaving ", { reset: true });
