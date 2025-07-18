@@ -640,6 +640,14 @@ class MainMenu extends State {
     std.writeConsole("or press ");
     std.writeConsole("<esc>", { bold: true });
     std.writeConsole(" to exit.", { reset: true });
+    std.writeConsole("\n\n");
+    std.writeConsole("Programming: ");
+    std.writeConsole("Strawberry\n", { fgColor: classicColors["lightRed"] });
+    std.resetConsoleAttributes();
+    std.writeConsole("Inspired by: ");
+    std.writeConsole("Alexey Kutepov\n", {
+      fgColor: classicColors["lightSpringGreen"],
+    });
   }
 
   override update(dt: number) {
