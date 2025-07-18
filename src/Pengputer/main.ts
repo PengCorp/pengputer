@@ -52,6 +52,8 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
+  private autorun: Array<string>;
+
   constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
     const std = new Std(keyboard, textBuffer, screen);
     this.pc = {
@@ -64,6 +66,14 @@ class PengOS {
     this.takenPrograms = [];
 
     this.suppressNextPromptNewline = false;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const autorunString = searchParams.get("autorun");
+    if (autorunString) {
+      this.autorun = autorunString.split("/");
+    } else {
+      this.autorun = [];
+    }
   }
 
   async startup() {
@@ -577,6 +587,18 @@ class PengOS {
     }
   }
 
+  private shiftAutorunCommand() {
+    if (this.autorun.length > 1) {
+      return `go ${this.autorun.shift()}`;
+    }
+
+    if (this.autorun.length === 1) {
+      return `run ${this.autorun.shift()}`;
+    }
+
+    return undefined;
+  }
+
   async mainLoop() {
     const { std, fileSystem } = this.pc;
 
@@ -630,10 +652,12 @@ class PengOS {
       ];
 
       const commandString =
+        this.shiftAutorunCommand() ??
         (await std.readConsoleLine({
           autoCompleteStrings,
           previousEntries,
-        })) ?? "";
+        })) ??
+        "";
       const trimmedCommandString = commandString.trim();
       if (trimmedCommandString.length > 0) {
         previousEntries.push(commandString);
