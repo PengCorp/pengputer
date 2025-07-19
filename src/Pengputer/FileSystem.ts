@@ -193,25 +193,25 @@ export class FileSystem {
 
   constructor() {}
 
-  getAt(path: FilePath | null): FileSystemEntry | null {
-    if (path === null) return null;
-    return this.getAtPath(path.pieces);
-  }
+  getAtPath(path: FilePath | null): FileSystemEntry | null {
+    if (path === null) {
+      return this.root;
+    }
 
-  getAtPath(path: string[]): FileSystemEntry | null {
-    if (path.length === 0) {
+    const pieces = path.pieces;
+    if (pieces.length === 0) {
       return this.root;
     }
 
     let cur = this.rootDir;
     let curPathI = 0;
-    while (curPathI < path.length - 1) {
+    while (curPathI < pieces.length - 1) {
       const items = cur.getItems();
       const found =
         items.find(
           (e) =>
             e.type === FileSystemObjectType.Directory &&
-            e.name === path[curPathI],
+            e.name === pieces[curPathI],
         ) ?? null;
       if (found && found.type === FileSystemObjectType.Directory) {
         cur = found.data;
@@ -222,7 +222,7 @@ export class FileSystem {
     }
 
     const items = cur.getItems();
-    const found = items.find((e) => e.name === path[curPathI]) ?? null;
+    const found = items.find((e) => e.name === pieces[curPathI]) ?? null;
     return found;
   }
 }

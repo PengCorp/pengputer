@@ -107,7 +107,7 @@ export class PengerShell implements Executable {
       this.printPrompt();
       let autoCompleteStrings = [...this.takenPrograms.map((p) => p.name)];
 
-      const entry = fileSystem.getAtPath(this.workingDirectory.pieces);
+      const entry = fileSystem.getAtPath(this.workingDirectory);
       if (entry && entry.type === FileSystemObjectType.Directory) {
         const items = entry.data.getItems();
         autoCompleteStrings = [
@@ -159,7 +159,7 @@ export class PengerShell implements Executable {
           await knownCommand(args.slice(1));
           std.resetConsole();
         } else if (knownTakenApp) {
-          const app = fileSystem.getAt(knownTakenApp.path);
+          const app = fileSystem.getAtPath(knownTakenApp.path);
           if (app && app.type === FileSystemObjectType.Executable) {
             await app.createInstance().run(args);
             std.resetConsole();
@@ -231,7 +231,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const entry = fileSystem.getAt(lookPath);
+    const entry = fileSystem.getAtPath(lookPath);
 
     std.writeConsole(`Looking in ${lookPath.toString()}\n\n`);
     if (entry) {
@@ -301,7 +301,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fsEntry = fileSystem.getAt(newPath);
+    const fsEntry = fileSystem.getAtPath(newPath);
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
         this.workingDirectory = newPath;
@@ -352,11 +352,16 @@ export class PengerShell implements Executable {
           pieces.slice(0, pathIndex + 1),
           true,
         );
-        const nextDirEntry = fileSystem.getAt(nextDirPath);
+        const nextDirEntry = fileSystem.getAtPath(nextDirPath);
 
         if (nextDirEntry === null) {
-          const prevDirEntry = fileSystem.getAt(nextDirPath.parentDirectory())!;
-          if (prevDirEntry.type === FileSystemObjectType.Directory) {
+          const prevDirEntry = fileSystem.getAtPath(
+            nextDirPath.parentDirectory(),
+          )!;
+          if (
+            prevDirEntry !== null &&
+            prevDirEntry.type === FileSystemObjectType.Directory
+          ) {
             prevDirEntry.data.mkdir(pieces[pathIndex]);
           }
         } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
@@ -385,7 +390,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAt(path);
+    const fileEntry = fileSystem.getAtPath(path);
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.createInstance().run(args);
@@ -419,7 +424,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAt(path);
+    const fileEntry = fileSystem.getAtPath(path);
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
         std.writeConsole(`${fileEntry.data.getText()}`);
@@ -488,7 +493,7 @@ export class PengerShell implements Executable {
       std.writeConsole(`Can't find ${argsName}\n\n`);
       return;
     }
-    const target = fileSystem.getAt(path);
+    const target = fileSystem.getAtPath(path);
     if (!target) {
       std.writeConsole("Program not found\n");
       return;

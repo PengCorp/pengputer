@@ -60,7 +60,7 @@ class PengOS {
 
   private async runShell() {
     const { std } = this.pc;
-    const pengerShellExe = this.pc.fileSystem.getAt(
+    const pengerShellExe = this.pc.fileSystem.getAtPath(
       parseFilePath("C:/software/psh.exe"),
     );
     if (
@@ -77,7 +77,7 @@ class PengOS {
   }
 
   async startup() {
-    const rootDirEntry = this.pc.fileSystem.getAtPath([])!;
+    const rootDirEntry = this.pc.fileSystem.getAtPath(null)!;
     const rootDir =
       rootDirEntry.type === FileSystemObjectType.Directory && rootDirEntry.data;
 
