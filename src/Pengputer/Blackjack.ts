@@ -451,50 +451,44 @@ export class Blackjack implements Executable {
           .join(", ")}? `,
       );
       const action = (await this.readLine())?.trim().toLowerCase()[0];
-      std.writeConsole("\n");
       switch (action) {
         case "h":
+          std.writeConsole("\n");
           this.hitHand(player, hand);
           break;
         case "s":
+          std.writeConsole("\n");
           this.stayHand(player, hand);
           break;
         case "d":
           if (canDouble) {
             this.doubleHand(player);
+            std.writeConsole("\n");
             std.writeConsole("You doubled.\n\n");
           }
           break;
         case "/":
           if (canSplit) {
             this.splitHand(player);
+            std.writeConsole("\n");
             std.writeConsole("Your hand is split.\n\n");
           }
           break;
+        case "q":
+          this.isQuitting = true;
+          return;
       }
     }
   }
 
-  async run(args: string[]) {
+  private async mainLoop() {
     const { std } = this.pc;
-
-    std.resetConsole();
-    std.clearConsole();
-
-    std.writeConsole(
-      " ".repeat((this.width - "Penger Casino presents...".length) / 2),
-    );
-    std.writeConsole("Penger Casino", { fgColor: classicColors["yellow"] });
-    std.writeConsole(" presents...\n", { reset: true });
-    std.writeConsole(" ".repeat((this.width - "Blackjack".length) / 2));
-    std.writeConsole("Blackjack\n\n");
-
-    await this.askForNumberOfPlayers();
 
     while (!this.isQuitting) {
       this.resetRound();
 
       await this.askForBets();
+      if (this.isQuitting) return;
 
       this.dealInitialCards();
       const dealerHand = this.dealer.hands[0];
@@ -518,6 +512,7 @@ export class Blackjack implements Executable {
             handIndex += 1
           ) {
             await this.playHand(player, handIndex);
+            if (this.isQuitting) return;
           }
         }
 
@@ -567,7 +562,31 @@ export class Blackjack implements Executable {
 
       std.writeConsole("\n");
     }
+  }
 
+  async run(args: string[]) {
+    const { std } = this.pc;
+
+    std.resetConsole();
+    std.clearConsole();
+
+    std.writeConsole(
+      " ".repeat((this.width - "Penger Casino presents...".length) / 2),
+    );
+    std.writeConsole("Penger Casino", { fgColor: classicColors["yellow"] });
+    std.writeConsole(" presents...\n", { reset: true });
+    std.writeConsole(" ".repeat((this.width - "Blackjack".length) / 2));
+    std.writeConsole("Blackjack\n\n");
+
+    std.writeConsole("By: ");
+    std.writeConsole("Strawberry", { fgColor: classicColors["lightRed"] });
+    std.writeConsole("\n\n", { reset: true });
+    std.writeConsole("To quit you can type [q] at any time.\n\n");
+    await this.askForNumberOfPlayers();
+
+    await this.mainLoop();
+
+    std.writeConsole("\n");
     std.writeConsole("Now leaving ", { reset: true });
     std.writeConsole("Penger Casino", { fgColor: classicColors["yellow"] });
     std.writeConsole("...\n", { reset: true });
