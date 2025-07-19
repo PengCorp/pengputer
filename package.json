@@ -9,7 +9,7 @@
     "build": "vite build",
     "type": "tsc --noEmit",
     "prepare": "husky",
-    "format": "npx prettier --write"
+    "format": "npx prettier --write ."
   },
   "keywords": [],
   "author": "",
