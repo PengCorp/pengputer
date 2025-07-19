@@ -53,8 +53,6 @@ class PengOS {
       std,
       reboot: async () => {
         localStorage.removeItem("hasStartedUp");
-        await this.runStartupAnimation();
-        await this.runShell();
       },
     };
   }
@@ -186,6 +184,7 @@ class PengOS {
     await this.runStartupAnimation();
     do {
       await this.runShell();
+      await this.runStartupAnimation();
     } while (true);
   }
 
