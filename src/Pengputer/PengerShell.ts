@@ -58,6 +58,7 @@ export class PengerShell implements Executable {
     const commands: Record<string, (args: string[]) => void | Promise<void>> = {
       help: this.commandHelp.bind(this),
       h: this.commandHelp.bind(this),
+      exit: this.commandExit.bind(this),
       history: (args) => this.commandHistory(args, previousEntries),
       look: this.commandLook.bind(this),
       go: this.commandGo.bind(this),
@@ -97,6 +98,7 @@ export class PengerShell implements Executable {
       autoCompleteStrings = [
         ...autoCompleteStrings,
         "help",
+        "exit",
         "history",
         "look",
         "go",
@@ -174,6 +176,10 @@ export class PengerShell implements Executable {
       `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`
     );
     this.suppressNextPromptNewline = false;
+  }
+
+  private commandExit(args: string[]) {
+    this.isRunning = false;
   }
 
   private commandPrompt(args: string[]) {

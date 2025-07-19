@@ -181,7 +181,12 @@ class PengOS {
     });
 
     await this.runStartupAnimation();
-    await pengerShellExe.createInstance().run([]);
+
+    const { std } = this.pc;
+    do {
+      await pengerShellExe.createInstance().run([]);
+      std.clearConsole();
+    } while (true);
   }
 
   private async runStartupAnimation() {
