@@ -160,6 +160,11 @@ class PengOS {
       name: "pengswp.exe",
       createInstance: () => new PengsweeperApp(this.pc),
     });
+    gamesDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "blakjack.exe",
+      createInstance: () => new Blackjack(this.pc),
+    });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
@@ -602,8 +607,6 @@ class PengOS {
 
   async mainLoop() {
     const { std, fileSystem } = this.pc;
-
-    await new Blackjack(this.pc).run([]);
 
     let previousEntries: string[] = [];
 
