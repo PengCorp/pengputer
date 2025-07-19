@@ -6,7 +6,7 @@ interface TokenData {
 
 const getCharacter = (
   argsString: string,
-  index: number
+  index: number,
 ): { character: string; nextIndex: number; isEscape: boolean } | null => {
   if (index < 0 || index >= argsString.length) {
     return null;

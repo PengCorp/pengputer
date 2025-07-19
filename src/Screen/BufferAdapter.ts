@@ -9,7 +9,7 @@ import { ScreenCharacterAttributes } from "./types";
 import tc from "tinycolor2";
 
 export const getScreenCharacterAttributesFromTermCellAttributes = (
-  cellAttr: CellAttributes
+  cellAttr: CellAttributes,
 ): ScreenCharacterAttributes => {
   const cellFgColor = cellAttr.fgColor;
   const cellBgColor = cellAttr.bgColor;

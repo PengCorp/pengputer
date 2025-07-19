@@ -159,7 +159,7 @@ export class Screen {
     canvas.setAttribute("width", String(this.widthInPixels * this.canvasScale));
     canvas.setAttribute(
       "height",
-      String(this.heightInPixels * this.canvasScale)
+      String(this.heightInPixels * this.canvasScale),
     );
 
     this.ctx = canvas.getContext("2d")!;
@@ -203,7 +203,7 @@ export class Screen {
       0,
       0,
       this.bufferCanvas.width,
-      this.bufferCanvas.height
+      this.bufferCanvas.height,
     );
     this.bufferCtx.drawImage(
       this.bgCanvas,
@@ -214,7 +214,7 @@ export class Screen {
       0,
       0,
       this.bufferCanvas.width,
-      this.bufferCanvas.height
+      this.bufferCanvas.height,
     );
     this.ctx.drawImage(
       this.bufferCanvas,
@@ -225,7 +225,7 @@ export class Screen {
       0,
       0,
       this.canvas.width,
-      this.canvas.height
+      this.canvas.height,
     );
 
     // draw character layer
@@ -233,7 +233,7 @@ export class Screen {
       0,
       0,
       this.bufferCanvas.width,
-      this.bufferCanvas.height
+      this.bufferCanvas.height,
     );
     this.bufferCtx.globalCompositeOperation = "source-over";
     this.bufferCtx.drawImage(
@@ -245,7 +245,7 @@ export class Screen {
       0,
       0,
       this.bufferCanvas.width,
-      this.bufferCanvas.height
+      this.bufferCanvas.height,
     );
 
     // clear blinking characters
@@ -258,7 +258,7 @@ export class Screen {
               x * this.characterWidth * this.bufferScale,
               y * this.characterHeight * this.bufferScale,
               this.characterWidth * this.bufferScale,
-              this.characterHeight * this.bufferScale
+              this.characterHeight * this.bufferScale,
             );
           }
         }
@@ -296,7 +296,7 @@ export class Screen {
       0,
       0,
       this.bufferCanvas.width,
-      this.bufferCanvas.height
+      this.bufferCanvas.height,
     );
 
     // commit characters
@@ -310,7 +310,7 @@ export class Screen {
       0,
       0,
       this.canvas.width,
-      this.canvas.height
+      this.canvas.height,
     );
 
     // display graphics
@@ -323,7 +323,7 @@ export class Screen {
       0,
       0,
       this.canvas.width,
-      this.canvas.height
+      this.canvas.height,
     );
     this.ctx.imageSmoothingEnabled = false;
   }
@@ -345,14 +345,14 @@ export class Screen {
       0,
       0,
       this.attributeCanvas.width,
-      this.attributeCanvas.height
+      this.attributeCanvas.height,
     );
 
     graphicsCtx.clearRect(
       0,
       0,
       this.graphicsCanvas.width,
-      this.graphicsCanvas.height
+      this.graphicsCanvas.height,
     );
 
     this.isDirty = true;
@@ -417,14 +417,14 @@ export class Screen {
       x * this.characterWidth * this.bgScale,
       y * this.characterHeight * this.bgScale,
       this.characterWidth * this.bgScale,
-      this.characterHeight * this.bgScale
+      this.characterHeight * this.bgScale,
     );
 
     charCtx.clearRect(
       x * this.characterWidth * this.charScale,
       y * this.characterHeight * this.charScale,
       this.characterWidth * this.charScale,
-      this.characterHeight * this.charScale
+      this.characterHeight * this.charScale,
     );
     const atlasRegion = font9x16.getCharacter(bufferCharacter.character, x);
     if (atlasRegion) {
@@ -441,7 +441,7 @@ export class Screen {
         x * this.characterWidth * this.charScale,
         y * this.characterHeight * this.charScale,
         this.characterWidth * this.charScale,
-        this.characterHeight * this.charScale
+        this.characterHeight * this.charScale,
       );
     }
 
@@ -449,13 +449,13 @@ export class Screen {
       charCtx.globalCompositeOperation = "xor";
       charCtx.fillStyle = "#ffffff";
       const underlineHeight = Math.floor(
-        (this.characterHeight * this.charScale) / 10
+        (this.characterHeight * this.charScale) / 10,
       );
       charCtx.fillRect(
         x * this.characterWidth * this.charScale,
         (y + 1) * this.characterHeight * this.charScale - underlineHeight,
         this.characterWidth * this.charScale,
-        underlineHeight * this.charScale
+        underlineHeight * this.charScale,
       );
     }
 
@@ -466,7 +466,7 @@ export class Screen {
       x * this.characterWidth * this.attributeScale,
       y * this.characterHeight * this.attributeScale,
       this.characterWidth * this.attributeScale,
-      this.characterHeight * this.attributeScale
+      this.characterHeight * this.attributeScale,
     );
   }
 
@@ -573,7 +573,7 @@ export class Screen {
     this.graphicsCtx.drawImage(
       image,
       dx * this.graphicsScale,
-      dy * this.graphicsScale
+      dy * this.graphicsScale,
     );
   }
 

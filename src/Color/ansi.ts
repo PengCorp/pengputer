@@ -4,7 +4,7 @@ import { CgaColors } from "./types";
 import tc from "tinycolor2";
 
 export const classicColorRgbValues = new Array(32).fill(
-  CGA_PALETTE_DICT[CgaColors.Black]
+  CGA_PALETTE_DICT[CgaColors.Black],
 );
 
 classicColorRgbValues[0x00] = CGA_PALETTE_DICT[CgaColors.Black];
@@ -95,7 +95,7 @@ export const getBoldClassicIndex = (index: number) => {
 };
 
 const indexedColorRgbValues = new Array<string>(256).fill(
-  CGA_PALETTE_DICT[CgaColors.Black]
+  CGA_PALETTE_DICT[CgaColors.Black],
 );
 
 indexedColorRgbValues[0x00] = "#000000";

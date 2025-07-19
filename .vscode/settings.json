@@ -1,39 +1,39 @@
 {
-    "[javascript]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.tabSize": 2
-    },
-    "[typescript]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.tabSize": 2
-    },
-    "[css]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.tabSize": 2
-    },
-    "cSpell.words": [
-        "Alexey",
-        "Autorepeat",
-        "autorun",
-        "Backquote",
-        "dedup",
-        "freesound",
-        "Kutepov",
-        "Pajitnov",
-        "PBIOS",
-        "PENGCORP",
-        "penger",
-        "pengers",
-        "Pengputer",
-        "Pengsweeper",
-        "PUSHDOWN",
-        "SCROLLBACK",
-        "sennahojx",
-        "SGCI",
-        "Tetris",
-        "unsub"
-    ],
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[css]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "cSpell.words": [
+    "Alexey",
+    "Autorepeat",
+    "autorun",
+    "Backquote",
+    "dedup",
+    "freesound",
+    "Kutepov",
+    "Pajitnov",
+    "PBIOS",
+    "PENGCORP",
+    "penger",
+    "pengers",
+    "Pengputer",
+    "Pengsweeper",
+    "PUSHDOWN",
+    "SCROLLBACK",
+    "sennahojx",
+    "SGCI",
+    "Tetris",
+    "unsub"
+  ]
 }

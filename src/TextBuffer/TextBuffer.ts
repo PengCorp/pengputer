@@ -336,7 +336,7 @@ export class TextBuffer {
     for (let i = 0; i < numRows; i += 1) {
       this.buffer.insertAtWithDiscard(
         -(this.pageSize.h - 1),
-        new Line(this.pageSize.w, this.currentAttributes)
+        new Line(this.pageSize.w, this.currentAttributes),
       );
     }
     this.isDirty = true;

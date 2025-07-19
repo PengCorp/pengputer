@@ -15,7 +15,7 @@ export const readLine = (
   }: {
     autoCompleteStrings?: string[];
     previousEntries?: string[];
-  } = {}
+  } = {},
 ): Promise<string | null> => {
   let unsubType: (() => void) | null = null;
   let isUsingPreviousEntry = false;
@@ -53,7 +53,7 @@ export const readLine = (
           if (token.length === 0) return;
 
           const matchingAutoCompleteStrings = autoCompleteStrings.filter((s) =>
-            s.startsWith(token)
+            s.startsWith(token),
           );
 
           if (matchingAutoCompleteStrings.length === 1) {
@@ -183,7 +183,7 @@ export const readKey = (keyboard: Keyboard) => {
         }
       };
       unsubType = keyboard.addTypeListener(onType);
-    }
+    },
   );
 
   return promise.finally(() => {

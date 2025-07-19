@@ -416,7 +416,7 @@ class Piece {
   }
 
   public doForEachSquare(
-    fn: (boardPosition: Vector, localSquarePosition: Vector) => void
+    fn: (boardPosition: Vector, localSquarePosition: Vector) => void,
   ) {
     for (let y = 0; y < this.size.h; y += 1) {
       for (let x = 0; x < this.size.w; x += 1) {
@@ -429,7 +429,7 @@ class Piece {
             {
               x,
               y,
-            }
+            },
           );
         }
       }
@@ -443,7 +443,7 @@ class Piece {
   private _rotateRight() {
     this.currentRotation = wrapMax(
       this.currentRotation + 1,
-      this.descriptor.rotations.length
+      this.descriptor.rotations.length,
     );
     this.updateGrid();
   }
@@ -483,7 +483,7 @@ class Piece {
   private _rotateLeft() {
     this.currentRotation = wrapMax(
       this.currentRotation - 1,
-      this.descriptor.rotations.length
+      this.descriptor.rotations.length,
     );
     this.updateGrid();
   }
@@ -804,7 +804,7 @@ class Board {
               cellClone(
                 this.board[
                   this.getBoardIndexFromBoardPosition({ x, y: y2 - 1 })
-                ]
+                ],
               );
           }
         }
@@ -880,7 +880,7 @@ class Tetris implements GameState {
   }
 
   private getScreenPositionFromBoardPosition(
-    boardPosition: Vector
+    boardPosition: Vector,
   ): Vector | null {
     const { std } = this.pc;
     if (!getIsVectorInRect(boardPosition, BOARD_RECT)) return null;
@@ -893,7 +893,7 @@ class Tetris implements GameState {
     if (
       !getIsVectorInRect(
         screenPos,
-        getRectFromVectorAndSize(zeroVector, std.getConsoleSize())
+        getRectFromVectorAndSize(zeroVector, std.getConsoleSize()),
       )
     )
       return null;
@@ -904,7 +904,7 @@ class Tetris implements GameState {
   private drawSquare(
     screenPos: Vector,
     color: PieceColor,
-    string: string = "[]"
+    string: string = "[]",
   ) {
     const { std } = this.pc;
 
@@ -1011,15 +1011,15 @@ class Tetris implements GameState {
               {
                 x: CELL_WIDTH,
                 y: CELL_HEIGHT,
-              }
+              },
             ),
-            pos
+            pos,
           ),
           {
             bgColor: classicColors["black"],
             fgColor: classicColors["darkGray"],
           },
-          " ."
+          " .",
         );
       }
     }
@@ -1034,11 +1034,11 @@ class Tetris implements GameState {
               {
                 x: CELL_WIDTH,
                 y: CELL_HEIGHT,
-              }
+              },
             ),
-            pos
+            pos,
           ),
-          color
+          color,
         );
       });
     }
@@ -1056,7 +1056,7 @@ class Tetris implements GameState {
 
     this.drawStaticPiece(
       this.bag[this.bagIndex],
-      vectorAdd(this.nextOrigin, { x: 0, y: 1 })
+      vectorAdd(this.nextOrigin, { x: 0, y: 1 }),
     );
   }
 
@@ -1072,7 +1072,7 @@ class Tetris implements GameState {
 
     this.drawStaticPiece(
       this.heldPiece,
-      vectorAdd(this.holdOrigin, { x: 0, y: 1 })
+      vectorAdd(this.holdOrigin, { x: 0, y: 1 }),
     );
   }
 
@@ -1134,7 +1134,7 @@ class Tetris implements GameState {
     const fallingPiece = new FallingPiece(
       this,
       key,
-      levels[Math.min(this.currentLevel, levels.length - 1)]
+      levels[Math.min(this.currentLevel, levels.length - 1)],
     );
     this.fallingPiece = fallingPiece;
     fallingPiece.onPlaced.listen(() => {
@@ -1199,7 +1199,7 @@ class Tetris implements GameState {
     this.linesCleared = linesCleared;
     this.currentLevel = Math.max(
       Math.floor(linesCleared / 10),
-      this.currentLevel
+      this.currentLevel,
     );
   }
 
@@ -1213,7 +1213,7 @@ class Tetris implements GameState {
     std.clearConsole();
     std.setConsoleCursorPosition({ x: 0, y: 0 });
     std.writeConsole(
-      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w)
+      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w),
     );
 
     std.resetKeyPressedHistory();
@@ -1382,12 +1382,12 @@ class MainMenu implements GameState {
 
     std.setConsoleCursorPosition({ x: 0, y: start + 3 });
     std.writeConsole(
-      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w)
+      _.pad("======== P E N G T R I S ========", std.getConsoleSize().w),
     );
 
     std.setConsoleCursorPosition({ x: 0, y: start + 5 });
     std.writeConsole(
-      _.pad("Press ENTER to begin game", std.getConsoleSize().w)
+      _.pad("Press ENTER to begin game", std.getConsoleSize().w),
     );
 
     std.setConsoleCursorPosition({ x: 0, y: start + 6 });
@@ -1398,20 +1398,20 @@ class MainMenu implements GameState {
 
     std.setConsoleCursorPosition({ x: 0, y: start + 9 });
     std.writeConsole(
-      _.pad("[left] and [right] - move piece", std.getConsoleSize().w)
+      _.pad("[left] and [right] - move piece", std.getConsoleSize().w),
     );
 
     std.setConsoleCursorPosition({ x: 0, y: start + 10 });
     std.writeConsole(
       _.pad(
         "[z] - rotate left, [x] - rotate right, [c] - swap",
-        std.getConsoleSize().w
-      )
+        std.getConsoleSize().w,
+      ),
     );
 
     std.setConsoleCursorPosition({
       x: Math.floor(
-        (std.getConsoleSize().w - "Programming: Strawberry".length) / 2
+        (std.getConsoleSize().w - "Programming: Strawberry".length) / 2,
       ),
       y: start + 12,
     });
@@ -1420,7 +1420,7 @@ class MainMenu implements GameState {
 
     std.setConsoleCursorPosition({
       x: Math.floor(
-        (std.getConsoleSize().w - "Original game: Alexey Pajitnov".length) / 2
+        (std.getConsoleSize().w - "Original game: Alexey Pajitnov".length) / 2,
       ),
       y: start + 13,
     });
