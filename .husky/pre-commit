@@ -1,1 +1,1 @@
-npx prettier --write --loglevel silent . && git add .
+npx prettier --write --log-level warn . && git add .
