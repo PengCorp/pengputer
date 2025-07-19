@@ -116,7 +116,7 @@ class Pengsweeper extends State {
           getRectFromVectorAndSize(zeroVector, {
             w: this.fieldSize.w * CELL_SIZE.w,
             h: this.fieldSize.h * CELL_SIZE.h,
-          })
+          }),
         )
       ) {
         this.cursor = {
@@ -157,7 +157,7 @@ class Pengsweeper extends State {
 
     this.cursor = vectorClamp(
       vectorAdd(this.cursor, delta),
-      getRectFromVectorAndSize(zeroVector, this.fieldSize)
+      getRectFromVectorAndSize(zeroVector, this.fieldSize),
     );
 
     this.needsRedraw = true;
@@ -179,7 +179,7 @@ class Pengsweeper extends State {
     if (cell.isOpened && cell.adjacentMines > 0) {
       const adjacentCells = this.getAdjacentCells(pos);
       const flaggedCount = adjacentCells.filter(
-        (cell) => cell.isFlagged
+        (cell) => cell.isFlagged,
       ).length;
       if (flaggedCount === cell.adjacentMines) {
         for (const adjacentCell of adjacentCells) {
@@ -348,7 +348,7 @@ class Pengsweeper extends State {
     if (
       !getIsVectorInRect(
         pos,
-        getRectFromVectorAndSize(zeroVector, this.fieldSize)
+        getRectFromVectorAndSize(zeroVector, this.fieldSize),
       )
     )
       return null;
@@ -414,7 +414,7 @@ class Pengsweeper extends State {
         const cell = this.getCell({ x, y });
         if (!cell) continue;
         const mineCount = this.getAdjacentCells({ x, y }).filter(
-          (c) => c.isMine
+          (c) => c.isMine,
         ).length;
         cell.adjacentMines = mineCount;
       }
@@ -573,24 +573,24 @@ class Help extends State {
     std.writeConsole("\n", { bold: false });
     std.writeConsole("Use <space> to uncover fields.\n");
     std.writeConsole(
-      "Use <f> to flag fields if you think they contain a mine.\n"
+      "Use <f> to flag fields if you think they contain a mine.\n",
     );
     std.writeConsole("\n");
     std.writeConsole(
-      "Each field is either empty, contains a mine or contains a number that shows how\n"
+      "Each field is either empty, contains a mine or contains a number that shows how\n",
     );
     std.writeConsole("many adjacent mines there are.\n");
     std.writeConsole("\n");
     std.writeConsole(
-      "If you try to open a field that has the same number of flags as its value\n"
+      "If you try to open a field that has the same number of flags as its value\n",
     );
     std.writeConsole(
-      "all adjacent unflagged fields will be opened. If your flag was not correct\n"
+      "all adjacent unflagged fields will be opened. If your flag was not correct\n",
     );
     std.writeConsole("this can open a mine!\n");
     std.writeConsole("\n");
     std.writeConsole(
-      "Game is complete when all fields that don't contain a mine are opened.\n"
+      "Game is complete when all fields that don't contain a mine are opened.\n",
     );
     std.writeConsole("\n");
     std.writeConsole("Press any key to continue...", { bold: true });
@@ -640,6 +640,15 @@ class MainMenu extends State {
     std.writeConsole("or press ");
     std.writeConsole("<esc>", { bold: true });
     std.writeConsole(" to exit.", { reset: true });
+    std.writeConsole("\n\n");
+    std.writeConsole("Programming: ");
+    std.writeConsole("Strawberry\n", { fgColor: classicColors["lightRed"] });
+    std.resetConsoleAttributes();
+    std.writeConsole("Inspired by: ");
+    std.writeConsole("Alexey Kutepov\n", {
+      fgColor: classicColors["lightSpringGreen"],
+    });
+    std.resetConsoleAttributes();
   }
 
   override update(dt: number) {

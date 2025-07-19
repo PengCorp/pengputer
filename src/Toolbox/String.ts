@@ -5,7 +5,7 @@ export const getCenteredString = (
   string: string,
   length: number,
   centerAlign: "left" | "right" = "left",
-  character: string = " "
+  character: string = " ",
 ) => {
   const spaceLeft = length - string.length;
   if (spaceLeft <= 0) {
@@ -17,7 +17,7 @@ export const getCenteredString = (
   } else {
     const pad = Math.floor(spaceLeft / 2);
     return `${character.repeat(
-      pad + (centerAlign === "left" ? 0 : 1)
+      pad + (centerAlign === "left" ? 0 : 1),
     )}${string}${character.repeat(pad + (centerAlign === "right" ? 0 : 1))}`;
   }
 };

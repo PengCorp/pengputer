@@ -53,6 +53,8 @@ class PengOS {
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
+  private autorun: Array<string>;
+
   constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
     const std = new Std(keyboard, textBuffer, screen);
     this.pc = {
@@ -65,6 +67,14 @@ class PengOS {
     this.takenPrograms = [];
 
     this.suppressNextPromptNewline = false;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const autorunString = searchParams.get("autorun");
+    if (autorunString) {
+      this.autorun = autorunString.split("/");
+    } else {
+      this.autorun = [];
+    }
   }
 
   async startup() {
@@ -91,7 +101,7 @@ class PengOS {
     licenseTxt.replace(
       "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
         "BY VIEWING THIS FILE YOU ARE COMMITTING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
-        "XII OF THE PENGER CRIMINAL JUSTICE CODE"
+        "XII OF THE PENGER CRIMINAL JUSTICE CODE",
     );
     pengOSDir.addItem({
       type: FileSystemObjectType.TextFile,
@@ -100,7 +110,7 @@ class PengOS {
     });
     const pplTxt = new TextFile();
     pplTxt.replace(
-      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`
+      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
     );
     pengOSDir.addItem({
       type: FileSystemObjectType.TextFile,
@@ -220,34 +230,34 @@ class PengOS {
       await waitFor(2500);
       std.clearConsole();
       std.writeConsole(
-        "╔═══════════════════════════════════════════════════════════════════════════╗\n"
+        "╔═══════════════════════════════════════════════════════════════════════════╗\n",
       );
       std.writeConsole(
-        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n"
+        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n",
       );
       std.writeConsole(
-        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n"
+        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n",
       );
       std.writeConsole(
-        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n"
+        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n",
       );
       std.writeConsole(
-        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
+        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n",
       );
       std.writeConsole(
-        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n"
+        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n",
       ); // 1.44 MB, 3½"
       std.writeConsole(
-        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
+        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n",
       );
       std.writeConsole(
-        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n"
+        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n",
       );
       std.writeConsole(
-        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n"
+        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n",
       );
       std.writeConsole(
-        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n"
+        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n",
       );
       await waitFor(1500);
       std.writeConsole("Starting PengOS...\n\n");
@@ -280,7 +290,7 @@ class PengOS {
       .replace("%D", `${currentDrive}:`)
       .replace("%P", pathString);
     std.writeConsole(
-      `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`
+      `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`,
     );
     this.suppressNextPromptNewline = false;
   }
@@ -297,7 +307,7 @@ class PengOS {
   private commandLook() {
     const { fileSystem, currentPath, std } = this.pc;
     std.writeConsole(
-      `Currently in ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n\n`
+      `Currently in ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n\n`,
     );
     const entry = fileSystem.getAtPath(currentPath);
     if (entry && entry.type === FileSystemObjectType.Directory) {
@@ -331,7 +341,7 @@ class PengOS {
         for (const directoryEntry of items) {
           const isDir = directoryEntry.type === FileSystemObjectType.Directory;
           std.writeConsole(
-            `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`
+            `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`,
           );
         }
       } else {
@@ -357,8 +367,8 @@ class PengOS {
         this.pc.currentPath = newPath;
         std.writeConsole(
           `Now in ${this.pc.currentDrive}:${this.formatPath(
-            this.pc.currentPath
-          )}\n`
+            this.pc.currentPath,
+          )}\n`,
         );
       } else {
         std.writeConsole("Not a directory\n");
@@ -373,7 +383,7 @@ class PengOS {
     if (currentPath.length > 0) {
       currentPath.splice(currentPath.length - 1, 1);
       std.writeConsole(
-        `Went up to ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n`
+        `Went up to ${this.pc.currentDrive}:${this.formatPath(currentPath)}\n`,
       );
     } else {
       std.writeConsole("Already at the root of the drive.\n");
@@ -515,7 +525,7 @@ class PengOS {
     }
 
     std.writeConsole(
-      `Added "${argsName}" as "${candidateName}" to command list\n`
+      `Added "${argsName}" as "${candidateName}" to command list\n`,
     );
     this.takenPrograms.push({
       name: candidateName,
@@ -578,6 +588,18 @@ class PengOS {
     }
   }
 
+  private shiftAutorunCommand() {
+    if (this.autorun.length > 1) {
+      return `go ${this.autorun.shift()}`;
+    }
+
+    if (this.autorun.length === 1) {
+      return `run ${this.autorun.shift()}`;
+    }
+
+    return undefined;
+  }
+
   async mainLoop() {
     const { std, fileSystem } = this.pc;
 
@@ -633,10 +655,12 @@ class PengOS {
       ];
 
       const commandString =
+        this.shiftAutorunCommand() ??
         (await std.readConsoleLine({
           autoCompleteStrings,
           previousEntries,
-        })) ?? "";
+        })) ??
+        "";
       const trimmedCommandString = commandString.trim();
       if (trimmedCommandString.length > 0) {
         previousEntries.push(commandString);
@@ -649,7 +673,7 @@ class PengOS {
       if (commandName) {
         const knownCommand = commands[commandName.toLowerCase()];
         const knownTakenApp = this.takenPrograms.find(
-          (p) => p.name === commandName
+          (p) => p.name === commandName,
         );
         if (knownCommand) {
           await knownCommand(args.slice(1));

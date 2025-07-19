@@ -54,7 +54,7 @@ export const cp437legacyCharacterValueMap: charArray[] = [
 ].map((l) => splitStringIntoCharacters(l));
 
 export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
-  (l) => splitStringIntoCharacters(l)
+  (l) => splitStringIntoCharacters(l),
 );
 
 export const font9x16 = new Font(9, 16, "░▒▓");
@@ -65,7 +65,7 @@ export const loadFont9x16 = async () => {
     cp437patterns,
     cp437patternsCharacterValueMap,
     1,
-    4
+    4,
   );
   await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap);
   await font9x16.loadAtlas("cp437plus", cp437plus, cp437plusCharacterValueMap);
@@ -73,6 +73,6 @@ export const loadFont9x16 = async () => {
     "cp437legacy",
     cp437legacy,
     cp437legacyCharacterValueMap,
-    2
+    2,
   );
 };

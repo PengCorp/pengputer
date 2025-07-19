@@ -101,7 +101,7 @@ export class FileSystem {
         items.find(
           (e) =>
             e.type === FileSystemObjectType.Directory &&
-            e.name === path[curPathI]
+            e.name === path[curPathI],
         ) ?? null;
       if (found && found.type === FileSystemObjectType.Directory) {
         cur = found.data;

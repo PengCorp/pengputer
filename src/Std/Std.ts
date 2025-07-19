@@ -111,7 +111,7 @@ export class Std {
 
   writeConsole(
     string: string,
-    attr?: Partial<CellAttributes> & { reset?: boolean }
+    attr?: Partial<CellAttributes> & { reset?: boolean },
   ) {
     if (attr) {
       if (attr.reset) {

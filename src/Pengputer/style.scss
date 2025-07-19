@@ -138,10 +138,11 @@ header a {
   box-sizing: border-box;
 }
 
-.keyboard span:active, .keyboard span.key-down {
-    background: #aaa;
-    border: 4px solid #666;
-    padding-top: 10px;
+.keyboard span:active,
+.keyboard span.key-down {
+  background: #aaa;
+  border: 4px solid #666;
+  padding-top: 10px;
 }
 
 .keyboard .space {
