@@ -267,7 +267,7 @@ export class Blackjack implements Executable {
       hand.bet = 0;
       while (hand.bet === 0 || hand.bet > player.cash || hand.bet < 0) {
         std.writeConsole(
-          `Player ${p + 1}, currently you have: $${player.cash}. Your bet? `
+          `Player ${p + 1}, currently you have: $${player.cash}. Your bet? `,
         );
         const betString = await this.readLine();
         if (this.isQuitting) return;
@@ -372,7 +372,7 @@ export class Blackjack implements Executable {
         hand.getIsBusted() && " - busted",
       ]
         .filter(Boolean)
-        .join("")})`
+        .join("")})`,
     );
   }
 
@@ -448,7 +448,7 @@ export class Blackjack implements Executable {
       std.writeConsole(
         `${["[h]it", "[s]tay", canDouble && "[d]double", canSplit && "[/]split"]
           .filter(Boolean)
-          .join(", ")}? `
+          .join(", ")}? `,
       );
       const action = (await this.readLine())?.trim().toLowerCase()[0];
       std.writeConsole("\n");
@@ -482,7 +482,7 @@ export class Blackjack implements Executable {
     std.clearConsole();
 
     std.writeConsole(
-      " ".repeat((this.width - "Penger Casino presents...".length) / 2)
+      " ".repeat((this.width - "Penger Casino presents...".length) / 2),
     );
     std.writeConsole("Penger Casino", { fgColor: classicColors["yellow"] });
     std.writeConsole(" presents...\n", { reset: true });
@@ -493,7 +493,9 @@ export class Blackjack implements Executable {
 
     while (!this.isQuitting) {
       this.resetRound();
+
       await this.askForBets();
+
       this.dealInitialCards();
       const dealerHand = this.dealer.hands[0];
 
@@ -503,6 +505,7 @@ export class Blackjack implements Executable {
         this.printHands();
       } else {
         std.writeConsole("Cards dealt, let's play!\n\n");
+
         for (
           let playerIndex = 0;
           playerIndex < this.players.length;
