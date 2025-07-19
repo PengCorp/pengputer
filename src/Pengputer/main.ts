@@ -7,6 +7,7 @@ import { waitFor } from "../Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import { FileSystem, FileSystemObjectType } from "./FileSystem";
+import { FilePath, parseFilePath } from "./FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { PengerShell } from "./PengerShell";
 import { PC } from "./PC";
@@ -53,9 +54,20 @@ class PengOS {
       reboot: async () => {
         localStorage.removeItem("hasStartedUp");
         await this.runStartupAnimation();
-        await pengerShellExe.createInstance().run([]);
+        await this.runShell();
       },
     };
+  }
+
+  private async runShell() {
+    const { std } = this.pc;
+    const pengerShellExe = this.pc.fileSystem.getAt(parseFilePath("C:/software/psh.exe"));
+    if (pengerShellExe !== null && pengerShellExe.type === FileSystemObjectType.Executable) {
+      await pengerShellExe.createInstance().run([]);
+    } else {
+      throw "fuck";
+    }
+    std.clearConsole();
   }
 
   async startup() {
@@ -107,17 +119,20 @@ class PengOS {
       name: "8ball.exe",
       createInstance: () => new EightBall(this.pc),
     });
-
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "args.exe",
       createInstance: () => new PrintArgs(this.pc),
     });
-
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "colors.exe",
       createInstance: () => new Colors(this.pc),
+    });
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "psh.exe",
+      createInstance: () => new PengerShell(this.pc),
     });
 
     const gamesDir = rootDir.mkdir("games");
@@ -136,11 +151,6 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "pengswp.exe",
       createInstance: () => new PengsweeperApp(this.pc),
-    });
-    const pengerShellExe = softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "psh.exe",
-      createInstance: () => new PengerShell(this.pc),
     });
 
     const documentsDir = rootDir.mkdir("documents");
@@ -174,11 +184,8 @@ class PengOS {
     });
 
     await this.runStartupAnimation();
-
-    const { std } = this.pc;
     do {
-      await pengerShellExe.createInstance().run([]);
-      std.clearConsole();
+      await this.runShell();
     } while (true);
   }
 

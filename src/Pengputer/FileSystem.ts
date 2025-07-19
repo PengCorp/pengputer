@@ -21,7 +21,7 @@ export interface Executable {
   run: (args: string[]) => Promise<void>;
 }
 
-export class FileInfo {
+export class FilePath {
   private _drive: string | null;
   private _pieces: string[];
   private _isAbsolute: boolean;
@@ -63,9 +63,9 @@ export class FileInfo {
     return !this._isAbsolute;
   }
 
-  combine(other: FileInfo) {
+  combine(other: FilePath) {
     if (other.isAbsolute()) return this;
-    return new FileInfo(
+    return new FilePath(
       this._drive,
       [...this._pieces, ...other._pieces],
       this._isAbsolute,
@@ -84,7 +84,7 @@ export class FileInfo {
   parentDirectory() {
     const pieces = this._pieces;
     if (pieces.length === 0) return this;
-    return new FileInfo(
+    return new FilePath(
       this._drive,
       pieces.slice(0, pieces.length - 1),
       this._isAbsolute,
@@ -92,12 +92,12 @@ export class FileInfo {
   }
 }
 
-export function parseFileInfo(
+export function parseFilePath(
   path: string,
-  defaultDrive: string | null,
-): FileInfo | null {
-  if (path.length === 0) return new FileInfo(null, [], false);
-  if (path === "/") return new FileInfo(null, [], true);
+  defaultDrive: string | null = null,
+): FilePath | null {
+  if (path.length === 0) return new FilePath(null, [], false);
+  if (path === "/") return new FilePath(null, [], true);
 
   let drive: string | null = null;
 
@@ -120,7 +120,7 @@ export function parseFileInfo(
   }
 
   const pieces = path.split("/").filter((s) => s.length > 0);
-  return new FileInfo(drive, pieces, isAbsolute);
+  return new FilePath(drive, pieces, isAbsolute);
 }
 
 export class Directory {
@@ -193,7 +193,8 @@ export class FileSystem {
 
   constructor() {}
 
-  getAt(path: FileInfo) {
+  getAt(path: FilePath | null): FileSystemEntry | null {
+    if (path === null) return null;
     return this.getAtPath(path.pieces);
   }
 
