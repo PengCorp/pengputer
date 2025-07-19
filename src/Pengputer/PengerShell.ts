@@ -331,36 +331,37 @@ export class PengerShell implements Executable {
 
   private commandMakeDir(args: string[]) {
     const { fileSystem, std } = this.pc;
-    const [newDirName] = args;
-    if (!newDirName) {
+    if (args.length === 0) {
       std.writeConsole("Must provide a name\n");
     }
 
-    const newDirPath = this.getCanonicalPath(this.workingDirectory, newDirName);
-    if (newDirPath.drive !== "C") {
-      std.writeConsole("Cannot leave drive C\n");
-      return;
-    }
-
-    const pieces = newDirPath.pieces;
-    for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
-      const nextDirPath = new FileInfo(
-        newDirPath.drive,
-        pieces.slice(0, pathIndex + 1),
-        true,
-      );
-      const nextDirEntry = fileSystem.getAt(nextDirPath);
-
-      if (nextDirEntry === null) {
-        const prevDirEntry = fileSystem.getAtPath(pieces.slice(0, pathIndex));
-        prevDirEntry.data.mkdir(pieces[pathIndex]);
-      } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-        std.writeConsole(`Path ${nextDirPath.ToString()} is not a directory\n`);
+    for (let i = 0; i < args.length; i++) {
+      const newDirPath = this.getCanonicalPath(this.workingDirectory, args[i]);
+      if (newDirPath.drive !== "C") {
+        std.writeConsole("Cannot leave drive C\n");
         return;
       }
-    }
 
-    std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
+      const pieces = newDirPath.pieces;
+      for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
+        const nextDirPath = new FileInfo(
+          newDirPath.drive,
+          pieces.slice(0, pathIndex + 1),
+          true,
+        );
+        const nextDirEntry = fileSystem.getAt(nextDirPath);
+
+        if (nextDirEntry === null) {
+          const prevDirEntry = fileSystem.getAtPath(pieces.slice(0, pathIndex));
+          prevDirEntry.data.mkdir(pieces[pathIndex]);
+        } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
+          std.writeConsole(`Path ${nextDirPath.ToString()} is not a directory\n`);
+          return;
+        }
+      }
+
+      std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
+    }
   }
 
   private async commandRun(args: string[]) {
