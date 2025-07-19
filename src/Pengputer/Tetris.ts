@@ -1318,7 +1318,7 @@ class MainMenu implements GameState {
     std.setConsoleAttributes(currentAttributes);
     std.clearConsole();
 
-    let start = 9;
+    let start = 6;
     for (let titleLineIndex = 0; titleLineIndex < 2; titleLineIndex += 1) {
       std.setConsoleCursorPosition({ x: 12, y: start + titleLineIndex });
       for (const char of this.titleGraphic[titleLineIndex]) {
@@ -1379,6 +1379,7 @@ class MainMenu implements GameState {
     currentAttributes.bgColor = classicColors["black"];
     currentAttributes.fgColor = classicColors["lightGray"];
     std.setConsoleAttributes(currentAttributes);
+
     std.setConsoleCursorPosition({ x: 0, y: start + 3 });
     std.writeConsole(
       _.pad("======== P E N G T R I S ========", std.getConsoleSize().w)
@@ -1388,8 +1389,46 @@ class MainMenu implements GameState {
     std.writeConsole(
       _.pad("Press ENTER to begin game", std.getConsoleSize().w)
     );
+
     std.setConsoleCursorPosition({ x: 0, y: start + 6 });
     std.writeConsole(_.pad("Press ESCAPE to quit", std.getConsoleSize().w));
+
+    std.setConsoleCursorPosition({ x: 0, y: start + 8 });
+    std.writeConsole(_.pad("== Controls ==", std.getConsoleSize().w));
+
+    std.setConsoleCursorPosition({ x: 0, y: start + 9 });
+    std.writeConsole(
+      _.pad("[left] and [right] - move piece", std.getConsoleSize().w)
+    );
+
+    std.setConsoleCursorPosition({ x: 0, y: start + 10 });
+    std.writeConsole(
+      _.pad(
+        "[z] - rotate left, [x] - rotate right, [c] - swap",
+        std.getConsoleSize().w
+      )
+    );
+
+    std.setConsoleCursorPosition({
+      x: Math.floor(
+        (std.getConsoleSize().w - "Programming: Strawberry".length) / 2
+      ),
+      y: start + 12,
+    });
+    std.writeConsole("Programming: ");
+    std.writeConsole("Strawberry", { fgColor: classicColors["lightRed"] });
+
+    std.setConsoleCursorPosition({
+      x: Math.floor(
+        (std.getConsoleSize().w - "Original game: Alexey Pajitnov".length) / 2
+      ),
+      y: start + 13,
+    });
+    std.writeConsole("Original game: ", { reset: true });
+    std.writeConsole("Alexey Pajitnov", {
+      fgColor: classicColors["lightAzure"],
+    });
+    std.resetConsoleAttributes();
   }
 
   update(dt: number) {
