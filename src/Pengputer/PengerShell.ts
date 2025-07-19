@@ -360,7 +360,9 @@ export class PengerShell implements Executable {
             prevDirEntry.data.mkdir(pieces[pathIndex]);
           }
         } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-          std.writeConsole(`Path ${nextDirPath.toString()} is not a directory\n`);
+          std.writeConsole(
+            `Path ${nextDirPath.toString()} is not a directory\n`,
+          );
           continue;
         }
       }

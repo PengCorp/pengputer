@@ -59,11 +59,18 @@ class PengOS {
 
   private async runShell() {
     const { std } = this.pc;
-    const pengerShellExe = this.pc.fileSystem.getAt(parseFilePath("C:/software/psh.exe"));
-    if (pengerShellExe !== null && pengerShellExe.type === FileSystemObjectType.Executable) {
+    const pengerShellExe = this.pc.fileSystem.getAt(
+      parseFilePath("C:/software/psh.exe"),
+    );
+    if (
+      pengerShellExe !== null &&
+      pengerShellExe.type === FileSystemObjectType.Executable
+    ) {
       await pengerShellExe.createInstance().run([]);
     } else {
-      throw "fuck";
+      throw new Error(
+        "Missing default PengerShell executable at 'C:/software/psh.exe'.",
+      );
     }
     std.clearConsole();
   }
