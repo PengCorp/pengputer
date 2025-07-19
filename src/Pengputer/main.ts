@@ -42,22 +42,19 @@ declare global {
   }
 }
 
-interface TakenProgram {
-  path: Array<string>;
-  name: string;
-}
-
 class PengOS {
   private pc: PC;
 
   constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
     const std = new Std(keyboard, textBuffer, screen);
     this.pc = {
-      currentDrive: "C",
-      currentPath: [],
-      prompt: "%D%P",
       fileSystem: new FileSystem(),
       std,
+      reboot: async () => {
+        localStorage.removeItem("hasStartedUp");
+        await this.runStartupAnimation();
+        await pengerShellExe.createInstance().run([]);
+      },
     };
   }
 
@@ -143,11 +140,7 @@ class PengOS {
     const pengerShellExe = softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "psh.exe",
-      createInstance: () => new PengerShell(this.pc, async () => {
-        localStorage.removeItem("hasStartedUp");
-        await this.runStartupAnimation();
-        await pengerShellExe.createInstance().run([]);
-      }),
+      createInstance: () => new PengerShell(this.pc),
     });
 
     const documentsDir = rootDir.mkdir("documents");
