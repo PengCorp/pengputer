@@ -24,6 +24,10 @@ export class PengerShell implements Executable {
 
   private isRunning: boolean;
 
+  private currentDrive: string;
+  private currentPath: string[];
+  private prompt: string;
+
   private suppressNextPromptNewline: boolean;
   private takenPrograms: Array<TakenProgram>;
 
@@ -34,6 +38,10 @@ export class PengerShell implements Executable {
     this.rebootCallback = rebootCallback;
     this.takenPrograms = [];
     this.suppressNextPromptNewline = false;
+
+    this.currentDrive = "C";
+    this.currentPath = [];
+    this.prompt = "%D%P>";
 
     const searchParams = new URLSearchParams(window.location.search);
     const autorunString = searchParams.get("autorun");
@@ -77,10 +85,6 @@ export class PengerShell implements Executable {
       drop: this.commandDrop.bind(this),
       reboot: this.commandReboot.bind(this),
     };
-
-    this.pc.currentDrive = "C";
-    this.pc.currentPath = [];
-    this.pc.prompt = "%D%P>";
 
     this.isRunning = true;
 
@@ -160,12 +164,14 @@ export class PengerShell implements Executable {
 
   formatPath(path: string[]): string {
     return path.length > 0
-      ? `${PATH_SEPARATOR}${path.join(PATH_SEPARATOR)}${PATH_SEPARATOR}`
+      ? `${PATH_SEPARATOR}${path.join(PATH_SEPARATOR)}`
       : PATH_SEPARATOR;
   }
 
   printPrompt() {
-    const { std, prompt, currentDrive, currentPath } = this.pc;
+    const { std } = this.pc;
+    const { prompt, currentDrive, currentPath } = this;
+
     std.setIsConsoleCursorVisible(true);
 
     const currentAttributes = std.getConsoleAttributes();
@@ -183,6 +189,11 @@ export class PengerShell implements Executable {
     this.suppressNextPromptNewline = false;
   }
 
+  private getCanonicalPath(relativeToPath: string[], inputPath: string | null): string[] {
+    if (!inputPath || inputPath.length === 0) return relativeToPath;
+    return [...relativeToPath, ...inputPath.split("/")].filter(s => s.length > 0);
+  }
+
   private commandExit(args: string[]) {
     this.isRunning = false;
   }
@@ -193,16 +204,14 @@ export class PengerShell implements Executable {
       std.writeConsole(`${this.pc.prompt}\n`);
       return;
     }
-    this.pc.prompt = args[0];
+    this.prompt = args[0];
   }
 
   private commandLook(args: string[]) {
     const { fileSystem, currentPath, std } = this.pc;
     const [dirName] = args;
 
-    const lookPath = !!dirName
-      ? [...currentPath, ...dirName.split("/")]
-      : currentPath;
+    const lookPath = this.getCanonicalPath(currentPath, dirName);
     const entry = fileSystem.getAtPath(lookPath);
 
     std.writeConsole(
@@ -264,7 +273,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const newPath = [...currentPath, ...dirName.split("/")];
+    const newPath = this.getCanonicalPath(currentPath, dirName);
     const fsEntry = fileSystem.getAtPath(newPath);
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
@@ -301,14 +310,21 @@ export class PengerShell implements Executable {
       std.writeConsole("Must provide a name\n");
     }
 
-    const currentDirEntry = fileSystem.getAtPath(currentPath);
-    if (currentDirEntry?.type === FileSystemObjectType.Directory) {
-      const currentDir = currentDirEntry.data;
-      currentDir.mkdir(newDirName);
-      std.writeConsole("Directory created\n");
-    } else {
-      std.writeConsole("Current path is not a directory\n");
+    const newDirPath = this.getCanonicalPath(currentPath, newDirName);
+    for (let pathIndex = 0; pathIndex < newDirPath.length; pathIndex++) {
+      const nextDirPath = newDirPath.slice(0, pathIndex + 1);
+      const nextDirEntry = fileSystem.getAtPath(nextDirPath);
+
+      if (nextDirEntry === null) {
+        const prevDirEntry = fileSystem.getAtPath(newDirPath.slice(0, pathIndex));
+        prevDirEntry.data.mkdir(newDirPath[pathIndex]);
+      } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
+        std.writeConsole(`Path ${this.pc.currentDrive}:${nextDirPath} is not a directory\n`);
+        return;
+      }
     }
+
+    std.writeConsole(`Directory ${this.pc.currentDrive}:${this.formatPath(newDirPath)} created\n`);
   }
 
   private async commandRun(args: string[]) {
@@ -319,7 +335,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAtPath([...currentPath, fileName]);
+    const fileEntry = fileSystem.getAtPath(this.getCanonicalPath(currentPath, fileName));
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.createInstance().run(args);
@@ -346,7 +362,7 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAtPath([...currentPath, ...fileName.split("/")]);
+    const fileEntry = fileSystem.getAtPath(this.getCanonicalPath(currentPath, fileName));
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
         std.writeConsole(`${fileEntry.data.getText()}`);
@@ -410,7 +426,7 @@ export class PengerShell implements Executable {
       std.writeConsole(`Invalid name provided\n`);
       return;
     }
-    const path = [...this.pc.currentPath, ...argsName.split("/")];
+    const path = this.getCanonicalPath(currentPath, argsName);
     const target = fileSystem.getAtPath(path);
     if (!target) {
       std.writeConsole("Program not found\n");
