@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "type": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "npx prettier --write"
   },
   "keywords": [],
   "author": "",
