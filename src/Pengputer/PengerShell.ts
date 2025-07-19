@@ -13,6 +13,11 @@ import { classicColors } from "../Color/ansi";
 
 const PATH_SEPARATOR = "/";
 
+interface TakenProgram {
+  path: Array<string>;
+  name: string;
+}
+
 export class PengerShell implements Executable {
   private pc: PC;
   private rebootCallback: () => Promise<void>;
@@ -405,7 +410,7 @@ export class PengerShell implements Executable {
       std.writeConsole(`Invalid name provided\n`);
       return;
     }
-    const path = [...this.pc.currentPath, argsName];
+    const path = [...this.pc.currentPath, ...argsName.split("/")];
     const target = fileSystem.getAtPath(path);
     if (!target) {
       std.writeConsole("Program not found\n");
@@ -415,7 +420,8 @@ export class PengerShell implements Executable {
       std.writeConsole("Not executable\n");
       return;
     }
-    const strippedName = strippedNameMatch[0];
+    const strippedSplit = strippedNameMatch[0].split("/");
+    const strippedName = strippedSplit[strippedSplit.length - 1];
     let candidateName = strippedName;
     let dedupIndex = 0;
     while (this.takenPrograms.find((p) => p.name === candidateName)) {
@@ -466,6 +472,7 @@ export class PengerShell implements Executable {
     };
 
     printEntry("help", "List available commands\n");
+    printEntry("exit", "Exit this shell instance\n");
     printEntry("history", "View previously run commands\n");
     printEntry("look", "Display contents of current directory\n");
     printEntry("go", "Navigate directories\n");
