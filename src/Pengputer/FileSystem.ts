@@ -42,6 +42,7 @@ export class Directory {
 
   addItem(item: FileSystemEntry) {
     this.items.push(item);
+    return item;
   }
 }
 
