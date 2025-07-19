@@ -33,6 +33,7 @@ import { ColorType } from "../Color/Color";
 import { TextBuffer } from "../TextBuffer/TextBuffer";
 import { Colors } from "./Colors";
 import { classicColors } from "../Color/ansi";
+import { Blackjack } from "./Blackjack";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 
 const PATH_SEPARATOR = "/";
@@ -156,6 +157,11 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "pengswp.exe",
       createInstance: () => new PengsweeperApp(this.pc),
+    });
+    gamesDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "blakjack.exe",
+      createInstance: () => new Blackjack(this.pc),
     });
 
     const documentsDir = rootDir.mkdir("documents");
