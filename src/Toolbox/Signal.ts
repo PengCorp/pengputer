@@ -12,7 +12,7 @@ export class Signal<D = void> {
 
     return () => {
       this.listeners = this.listeners.filter(
-        (currentListener) => currentListener !== listener
+        (currentListener) => currentListener !== listener,
       );
     };
   }

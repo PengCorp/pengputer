@@ -5,7 +5,7 @@ import { KeyCode, PengKeyboardEvent } from "./types";
 export type TypeListener = (
   char: string | null,
   keyCode: KeyCode,
-  ev: PengKeyboardEvent
+  ev: PengKeyboardEvent,
 ) => void;
 export type VoidListener = () => void;
 
@@ -43,7 +43,7 @@ export class Keyboard {
 
   private getPengKeyboardEventFromKeyboardEvent(
     e: KeyboardEvent,
-    pressed: boolean
+    pressed: boolean,
   ): PengKeyboardEvent {
     return {
       code: e.code as KeyCode,
@@ -156,7 +156,7 @@ export class Keyboard {
     this.allKeysUpListeners.push(callback);
     return () => {
       this.allKeysUpListeners = this.allKeysUpListeners.filter(
-        (cb) => cb !== callback
+        (cb) => cb !== callback,
       );
     };
   }

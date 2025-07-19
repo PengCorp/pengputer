@@ -10,7 +10,7 @@ export interface ScreenCharacterAttributes {
 
 export const compareScreenCharacterAttributes = (
   a: ScreenCharacterAttributes,
-  b: ScreenCharacterAttributes
+  b: ScreenCharacterAttributes,
 ) => {
   return (
     a.fgColor === b.fgColor &&
@@ -29,7 +29,7 @@ export interface ScreenBufferCharacter {
 }
 
 export const cloneScreenBufferCharacter = (
-  a: ScreenBufferCharacter
+  a: ScreenBufferCharacter,
 ): ScreenBufferCharacter => {
   return {
     character: a.character,
@@ -39,7 +39,7 @@ export const cloneScreenBufferCharacter = (
 
 export const compareScreenBufferCharacter = (
   a: ScreenBufferCharacter,
-  b: ScreenBufferCharacter
+  b: ScreenBufferCharacter,
 ) => {
   return (
     a.character === b.character &&

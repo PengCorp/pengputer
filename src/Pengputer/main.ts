@@ -78,7 +78,7 @@ class PengOS {
     licenseTxt.replace(
       "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
         "BY VIEWING THIS FILE YOU ARE COMMITTING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
-        "XII OF THE PENGER CRIMINAL JUSTICE CODE"
+        "XII OF THE PENGER CRIMINAL JUSTICE CODE",
     );
     pengOSDir.addItem({
       type: FileSystemObjectType.TextFile,
@@ -87,7 +87,7 @@ class PengOS {
     });
     const pplTxt = new TextFile();
     pplTxt.replace(
-      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`
+      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
     );
     pengOSDir.addItem({
       type: FileSystemObjectType.TextFile,
@@ -218,34 +218,34 @@ class PengOS {
       await waitFor(2500);
       std.clearConsole();
       std.writeConsole(
-        "╔═══════════════════════════════════════════════════════════════════════════╗\n"
+        "╔═══════════════════════════════════════════════════════════════════════════╗\n",
       );
       std.writeConsole(
-        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n"
+        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n",
       );
       std.writeConsole(
-        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n"
+        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n",
       );
       std.writeConsole(
-        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n"
+        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n",
       );
       std.writeConsole(
-        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n"
+        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n",
       );
       std.writeConsole(
-        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n"
+        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n",
       ); // 1.44 MB, 3½"
       std.writeConsole(
-        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n"
+        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n",
       );
       std.writeConsole(
-        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n"
+        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n",
       );
       std.writeConsole(
-        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n"
+        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n",
       );
       std.writeConsole(
-        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n"
+        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n",
       );
       await waitFor(1500);
       std.writeConsole("Starting PengOS...\n\n");

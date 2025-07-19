@@ -27,7 +27,7 @@ export class FileInfo {
   private _isAbsolute: boolean;
 
   constructor(drive: string | null, pieces: string[], isAbsolute: boolean) {
-    isAbsolute = drive !== null || isAbsolute;;
+    isAbsolute = drive !== null || isAbsolute;
 
     this._drive = drive;
     this._isAbsolute = isAbsolute;
@@ -38,8 +38,7 @@ export class FileInfo {
 
       if (piece === "..") {
         if (isAbsolute) {
-          if (this._pieces.length !== 0)
-            this._pieces.pop();
+          if (this._pieces.length !== 0) this._pieces.pop();
         } else this._pieces.push("..");
       } else if (piece === ".") {
         continue;
@@ -47,16 +46,30 @@ export class FileInfo {
     }
   }
 
-  get drive() { return this._drive; }
-  get pieces() { return [...this._pieces]; }
+  get drive() {
+    return this._drive;
+  }
+  get pieces() {
+    return [...this._pieces];
+  }
 
-  hasDrive() { return this.drive !== null; }
-  isAbsolute() { return  this._isAbsolute; }
-  isRelative() { return !this._isAbsolute; }
+  hasDrive() {
+    return this.drive !== null;
+  }
+  isAbsolute() {
+    return this._isAbsolute;
+  }
+  isRelative() {
+    return !this._isAbsolute;
+  }
 
   combine(other: FileInfo) {
     if (other.isAbsolute()) return this;
-    return new FileInfo(this._drive, [...this._pieces, ...other._pieces], this._isAbsolute);
+    return new FileInfo(
+      this._drive,
+      [...this._pieces, ...other._pieces],
+      this._isAbsolute,
+    );
   }
 
   toString() {
@@ -71,17 +84,24 @@ export class FileInfo {
   parentDirectory() {
     const pieces = this._pieces;
     if (pieces.length === 0) return this;
-    return new FileInfo(this._drive, pieces.slice(0, pieces.length - 1), this._isAbsolute);
+    return new FileInfo(
+      this._drive,
+      pieces.slice(0, pieces.length - 1),
+      this._isAbsolute,
+    );
   }
 }
 
-export function parseFileInfo(path: string, defaultDrive: string | null): FileInfo | null {
+export function parseFileInfo(
+  path: string,
+  defaultDrive: string | null,
+): FileInfo | null {
   if (path.length === 0) return new FileInfo(null, [], false);
   if (path === "/") return new FileInfo(null, [], true);
 
   let drive: string | null = null;
 
-  const colonIndex = path.indexOf(':');
+  const colonIndex = path.indexOf(":");
   if (colonIndex >= 0) {
     drive = path.slice(0, colonIndex).toUpperCase();
     path = path.slice(colonIndex + 1);
@@ -99,7 +119,7 @@ export function parseFileInfo(path: string, defaultDrive: string | null): FileIn
     if (drive === null) drive = defaultDrive;
   }
 
-  const pieces = path.split("/").filter(s => s.length > 0);
+  const pieces = path.split("/").filter((s) => s.length > 0);
   return new FileInfo(drive, pieces, isAbsolute);
 }
 
@@ -190,7 +210,7 @@ export class FileSystem {
         items.find(
           (e) =>
             e.type === FileSystemObjectType.Directory &&
-            e.name === path[curPathI]
+            e.name === path[curPathI],
         ) ?? null;
       if (found && found.type === FileSystemObjectType.Directory) {
         cur = found.data;

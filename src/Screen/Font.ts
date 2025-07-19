@@ -23,7 +23,7 @@ export class Font {
   constructor(
     characterWidth: number,
     characterHeight: number,
-    unstableCharacters: string = ""
+    unstableCharacters: string = "",
   ) {
     this.characterWidth = characterWidth;
     this.characterHeight = characterHeight;
@@ -52,7 +52,7 @@ export class Font {
     dataURL: string,
     valueMap: string[][],
     scale: number = 1,
-    patternRunLength: number = 1
+    patternRunLength: number = 1,
   ) {
     // load image
 

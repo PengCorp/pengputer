@@ -22,7 +22,7 @@ export class PengerShell implements Executable {
 
   private isRunning: boolean;
 
-  private workingDirectories : { [id: string]: FileInfo };
+  private workingDirectories: { [id: string]: FileInfo };
   private currentDrive: string;
   private currentPath: string[];
   private prompt: string;
@@ -53,7 +53,11 @@ export class PengerShell implements Executable {
   private get workingDirectory(): FileInfo {
     let wd = this.workingDirectories[this.currentDrive];
     if (!wd) {
-      this.workingDirectories[this.currentDrive] = wd = new FileInfo(this.currentDrive, [], true);
+      this.workingDirectories[this.currentDrive] = wd = new FileInfo(
+        this.currentDrive,
+        [],
+        true,
+      );
     }
     return wd;
   }
@@ -152,7 +156,7 @@ export class PengerShell implements Executable {
       if (commandName) {
         const knownCommand = commands[commandName.toLowerCase()];
         const knownTakenApp = this.takenPrograms.find(
-          (p) => p.name === commandName
+          (p) => p.name === commandName,
         );
         if (knownCommand) {
           await knownCommand(args.slice(1));
@@ -193,13 +197,19 @@ export class PengerShell implements Executable {
     let pathString = this.workingDirectory.toString();
     const promptString = prompt.replace("%P", pathString);
     std.writeConsole(
-      `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`
+      `${this.suppressNextPromptNewline ? "" : "\n"}${promptString}`,
     );
     this.suppressNextPromptNewline = false;
   }
 
-  private getCanonicalPath(relativeToPath: FileInfo, inputPath: string | null): FileInfo {
-    const inputFileInfo = parseFileInfo(!!inputPath ? inputPath : "", this.currentDrive);
+  private getCanonicalPath(
+    relativeToPath: FileInfo,
+    inputPath: string | null,
+  ): FileInfo {
+    const inputFileInfo = parseFileInfo(
+      !!inputPath ? inputPath : "",
+      this.currentDrive,
+    );
     if (inputFileInfo === null) return null;
 
     if (inputFileInfo.isRelative()) {
@@ -228,7 +238,7 @@ export class PengerShell implements Executable {
     const entry = fileSystem.getAt(lookPath);
 
     std.writeConsole(
-      `Looking in ${this.currentDrive}:${this.formatPath(lookPath)}\n\n`
+      `Looking in ${this.currentDrive}:${this.formatPath(lookPath)}\n\n`,
     );
     if (entry) {
       if (entry.type === FileSystemObjectType.Directory) {
@@ -260,9 +270,10 @@ export class PengerShell implements Executable {
             return 1;
           });
           for (const directoryEntry of items) {
-            const isDir = directoryEntry.type === FileSystemObjectType.Directory;
+            const isDir =
+              directoryEntry.type === FileSystemObjectType.Directory;
             std.writeConsole(
-              `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`
+              `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`,
             );
           }
         } else {
@@ -309,7 +320,9 @@ export class PengerShell implements Executable {
     const { workingDirectory } = this;
     const { std } = this.pc;
     this.workingDirectory = workingDirectory.parentDirectory();
-    if (workingDirectory.pieces.length !== this.workingDirectory.pieces.length) {
+    if (
+      workingDirectory.pieces.length !== this.workingDirectory.pieces.length
+    ) {
       std.writeConsole(`Went up to ${this.workingDirectory.toString()}\n`);
     } else {
       std.writeConsole("Already at the root of the drive.\n");
@@ -331,7 +344,11 @@ export class PengerShell implements Executable {
 
     const pieces = newDirPath.pieces;
     for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
-      const nextDirPath = new FileInfo(newDirPath.drive, pieces.slice(0, pathIndex + 1), true);
+      const nextDirPath = new FileInfo(
+        newDirPath.drive,
+        pieces.slice(0, pathIndex + 1),
+        true,
+      );
       const nextDirEntry = fileSystem.getAt(nextDirPath);
 
       if (nextDirEntry === null) {
@@ -354,7 +371,9 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAt(this.getCanonicalPath(this.workingDirectory, fileName));
+    const fileEntry = fileSystem.getAt(
+      this.getCanonicalPath(this.workingDirectory, fileName),
+    );
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.Executable) {
         await fileEntry.createInstance().run(args);
@@ -382,7 +401,9 @@ export class PengerShell implements Executable {
       return;
     }
 
-    const fileEntry = fileSystem.getAt(this.getCanonicalPath(this.workingDirectory, fileName));
+    const fileEntry = fileSystem.getAt(
+      this.getCanonicalPath(this.workingDirectory, fileName),
+    );
     if (fileEntry) {
       if (fileEntry.type === FileSystemObjectType.TextFile) {
         std.writeConsole(`${fileEntry.data.getText()}`);
@@ -466,7 +487,7 @@ export class PengerShell implements Executable {
     }
 
     std.writeConsole(
-      `Added "${argsName}" as "${candidateName}" to command list\n`
+      `Added "${argsName}" as "${candidateName}" to command list\n`,
     );
     this.takenPrograms.push({
       name: candidateName,
@@ -533,7 +554,10 @@ export class PengerShell implements Executable {
   private commandFullpath(args: string[]) {
     const { std } = this.pc;
     const [input] = args;
-    const path = this.getCanonicalPath(this.workingDirectory, !!input ? input : "");
+    const path = this.getCanonicalPath(
+      this.workingDirectory,
+      !!input ? input : "",
+    );
     std.writeConsole(`${path.toString()}\n`);
   }
 }
