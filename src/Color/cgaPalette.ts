@@ -64,4 +64,4 @@ const CGA_PALETTE_DICT_CALCULATED: Record<CgaColors, string> = {
   [CgaColors.White]: "#ffffff",
 };
 
-export const CGA_PALETTE_DICT = CGA_PALETTE_DICT_CALCULATED;
+export const CGA_PALETTE_DICT = CGA_PALETTE_DICT_RGB_SHIFTED;
