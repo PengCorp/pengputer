@@ -6,17 +6,15 @@ import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
 import { waitFor } from "../Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
-import { FileSystem, FileSystemObjectType } from "./FileSystem";
-import { FilePath, parseFilePath } from "./FileSystem";
+import { FileSystem, FileSystemObjectType, parseFilePath } from "./FileSystem";
 import { HelloWorld } from "./HelloWorld";
-import { PengerShell } from "./PengerShell";
 import { PC } from "./PC";
+import { PengerShell } from "./PengerShell";
 
 import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
 import { Std } from "../Std";
-import { argparse } from "../Toolbox/argparse";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
@@ -27,14 +25,11 @@ import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 
-import _ from "lodash";
 import "../Color/ansi";
-import { ColorType } from "../Color/Color";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
-import { Colors } from "./Colors";
-import { classicColors } from "../Color/ansi";
-import { Blackjack } from "./Blackjack";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
+import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { Blackjack } from "./Blackjack";
+import { Colors } from "./Colors";
 
 const PATH_SEPARATOR = "/";
 

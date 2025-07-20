@@ -143,7 +143,6 @@ class Pengsweeper extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
-    std.setIsConsoleScrollable(false);
 
     this.needsRedraw = true;
   }
