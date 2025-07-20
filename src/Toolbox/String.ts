@@ -16,3 +16,9 @@ export const splitStringIntoCharacters = (string: string): charArray => {
   }
   return chars;
 };
+
+/** Get string length in terms of graphemes. */
+export const getStringLength = (str: string) => {
+  const chars = splitStringIntoCharacters(str);
+  return chars.length;
+};

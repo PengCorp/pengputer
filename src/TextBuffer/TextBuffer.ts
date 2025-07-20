@@ -226,22 +226,19 @@ export class TextBuffer {
   }
 
   public printCharacter(character: string) {
+    if (character === "\n") {
+      this.lineFeed();
+      this.carriageReturn();
+      return;
+    }
+
     if (!getIsPrintable(character)) {
       return;
     }
 
     if (this.cursor.getIsWrapPending()) {
-      const cursorPosition = this.cursor.getPosition();
-      cursorPosition.x = 0;
-      cursorPosition.y += 1;
-
-      if (cursorPosition.y === this.pageSize.h) {
-        cursorPosition.y -= 1;
-        this.buffer.push(new Line(this.pageSize.w, this.currentAttributes));
-        this.isDirty = true;
-      }
-
-      this.cursor.setPosition(cursorPosition);
+      this.lineFeed();
+      this.carriageReturn();
     }
 
     const page = this.getPage(0);
@@ -269,12 +266,7 @@ export class TextBuffer {
   public printString(string: string) {
     const chars = splitStringIntoCharacters(string);
     for (const ch of chars) {
-      if (ch === "\n") {
-        this.lineFeed();
-        this.carriageReturn();
-      } else {
-        this.printCharacter(ch);
-      }
+      this.printCharacter(ch);
     }
   }
 

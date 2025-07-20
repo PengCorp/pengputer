@@ -178,6 +178,17 @@ export class Std {
     return this.textBuffer.printString(string);
   }
 
+  writeConsoleCharacter(character: string, attr?: ConsoleWriteAttributes) {
+    if (attr) {
+      if (attr.reset) {
+        this.resetConsoleAttributes();
+      } else {
+        this.updateConsoleAttributes(attr);
+      }
+    }
+    return this.textBuffer.printCharacter(character);
+  }
+
   /* ===================== CONSOLE SCROLLING ========================= */
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
