@@ -4,7 +4,7 @@ import {
   indexedColorRgbValues,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
-import { CellAttributes } from "../TextBuffer/TextBuffer";
+import { CellAttributes } from "../TextBuffer";
 import { ScreenCharacterAttributes } from "./types";
 import tc from "tinycolor2";
 
@@ -50,5 +50,6 @@ export const getScreenCharacterAttributesFromTermCellAttributes = (
     reverseVideo: cellAttr.reverseVideo,
     underline: cellAttr.underline,
     halfBright: cellAttr.halfBright,
+    boxed: cellAttr.boxed,
   };
 };

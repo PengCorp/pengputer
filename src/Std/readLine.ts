@@ -3,7 +3,7 @@ import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
 import { Vector } from "../Toolbox/Vector";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { TextBuffer } from "../TextBuffer";
 
 export const readLine = (
   screen: Screen,

@@ -27,9 +27,10 @@ import { TetrisApp } from "./Tetris";
 
 import "../Color/ansi";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
+import { PengPaint } from "./PengPaint";
 
 const PATH_SEPARATOR = "/";
 
@@ -134,6 +135,11 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "psh.exe",
       createInstance: () => new PengerShell(this.pc),
+    });
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "ppaint.exe",
+      createInstance: () => new PengPaint(this.pc),
     });
 
     const gamesDir = rootDir.mkdir("games");
