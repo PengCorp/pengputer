@@ -5,6 +5,7 @@ import { RingBuffer } from "../Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Size } from "../types";
+import { BOXED_NO_BOX } from "./constants";
 
 export interface CellAttributes {
   fgColor: Color;
@@ -14,6 +15,8 @@ export interface CellAttributes {
   reverseVideo: boolean;
   underline: boolean;
   halfBright: boolean;
+  /** A bitfield for the character being boxed. */
+  boxed: number;
 }
 
 const cloneCellAttributes = (attr: CellAttributes): CellAttributes => {
@@ -25,6 +28,7 @@ const cloneCellAttributes = (attr: CellAttributes): CellAttributes => {
     reverseVideo: attr.reverseVideo,
     underline: attr.underline,
     halfBright: attr.halfBright,
+    boxed: attr.boxed,
   };
 };
 
@@ -36,6 +40,7 @@ const DEFAULT_ATTRIBUTES: CellAttributes = {
   reverseVideo: false,
   underline: false,
   halfBright: false,
+  boxed: BOXED_NO_BOX,
 };
 
 class Cell {
@@ -225,6 +230,18 @@ export class TextBuffer {
     };
   }
 
+  private stepCursorForward() {
+    const page = this.getPage(0);
+    const cursorPosition = this.cursor.getPosition();
+    cursorPosition.x += 1;
+    if (cursorPosition.x === page.size.w) {
+      cursorPosition.x -= 1;
+      this.cursor.setPosition(cursorPosition, { isWrapPending: true });
+    } else {
+      this.cursor.setPosition(cursorPosition);
+    }
+  }
+
   public printCharacter(character: string) {
     if (character === "\n") {
       this.lineFeed();
@@ -252,13 +269,7 @@ export class TextBuffer {
     cell.rune = character;
     cell.isDirty = true;
 
-    cursorPosition.x += 1;
-    if (cursorPosition.x === page.size.w) {
-      cursorPosition.x -= 1;
-      this.cursor.setPosition(cursorPosition, { isWrapPending: true });
-    } else {
-      this.cursor.setPosition(cursorPosition);
-    }
+    this.stepCursorForward();
 
     this.topLine = 0;
   }
@@ -267,6 +278,19 @@ export class TextBuffer {
     const chars = splitStringIntoCharacters(string);
     for (const ch of chars) {
       this.printCharacter(ch);
+    }
+  }
+
+  public printAttributes(length: number = 1) {
+    for (let i = 0; i < length; i += 1) {
+      const page = this.getPage(0);
+      const cursorPosition = this.cursor.getPosition();
+
+      const cell = page.lines[cursorPosition.y]?.cells[cursorPosition.x];
+      cell.setAttributes(this.currentAttributes);
+      cell.isDirty = true;
+
+      this.stepCursorForward();
     }
   }
 

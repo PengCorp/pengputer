@@ -27,7 +27,7 @@ import { TetrisApp } from "./Tetris";
 
 import "../Color/ansi";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
+import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 

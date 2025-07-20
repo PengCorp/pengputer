@@ -3,7 +3,7 @@ import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
-import { CellAttributes, TextBuffer } from "../TextBuffer/TextBuffer";
+import { CellAttributes, TextBuffer } from "../TextBuffer";
 import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
 import { readKey, readLine, waitForKeysUp } from "./readLine";
@@ -187,6 +187,11 @@ export class Std {
       }
     }
     return this.textBuffer.printCharacter(character);
+  }
+
+  /** Writes the provided number of cells with current console attributes without changing underlying rune. */
+  writeConsoleAttributes(length: number = 1) {
+    this.textBuffer.printAttributes(length);
   }
 
   /* ===================== CONSOLE SCROLLING ========================= */

@@ -6,7 +6,14 @@ import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
 import { cloneScreenBufferCharacter, ScreenBufferCharacter } from "./types";
-import { TextBuffer } from "../TextBuffer/TextBuffer";
+import {
+  BOXED_BOTTOM,
+  BOXED_LEFT,
+  BOXED_NO_BOX,
+  BOXED_RIGHT,
+  BOXED_TOP,
+  TextBuffer,
+} from "../TextBuffer";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -49,6 +56,10 @@ export class Screen {
   private graphicsCanvas!: HTMLCanvasElement;
   private graphicsCtx!: CanvasRenderingContext2D;
   private graphicsScale: number = 1;
+
+  private tempCanvas!: HTMLCanvasElement;
+  private tempCtx!: CanvasRenderingContext2D;
+  private tempScale: number = RENDER_SCALE;
 
   private cursor: Cursor;
   private curDisplay: boolean;
@@ -105,6 +116,7 @@ export class Screen {
           reverseVideo: false,
           underline: false,
           halfBright: false,
+          boxed: BOXED_NO_BOX,
         },
       };
     }
@@ -146,6 +158,12 @@ export class Screen {
     this.graphicsCanvas.height = this.heightInPixels * this.graphicsScale;
     this.graphicsCtx = this.graphicsCanvas.getContext("2d")!;
     this.graphicsCtx.imageSmoothingEnabled = false;
+
+    this.tempCanvas = document.createElement("canvas");
+    this.tempCanvas.width = this.widthInPixels * this.tempScale;
+    this.tempCanvas.height = this.heightInPixels * this.tempScale;
+    this.tempCtx = this.tempCanvas.getContext("2d")!;
+    this.tempCtx.imageSmoothingEnabled = false;
   }
 
   initCanvas(containerEl: HTMLElement) {
@@ -401,6 +419,7 @@ export class Screen {
       fgColor = bgColor;
       bgColor = t;
     }
+
     if (bufferCharacter.attributes.halfBright) {
       const f = tc(fgColor).toHsv();
       f.v = f.v / 2;
@@ -445,15 +464,73 @@ export class Screen {
       );
     }
 
-    if (bufferCharacter.attributes.underline) {
+    if (bufferCharacter.attributes.boxed) {
+      const boxedAttr = bufferCharacter.attributes.boxed;
+
+      const tempCtx = this.tempCtx;
+      tempCtx.reset();
+
+      // Uncomment below to make the box rounder.
+      tempCtx.globalCompositeOperation = "xor";
+
+      tempCtx.fillStyle = "#ffffff";
+      const boxBorderWidth = 1;
+
+      if (boxedAttr & BOXED_BOTTOM) {
+        tempCtx.fillRect(
+          0,
+          (this.characterHeight - boxBorderWidth) * this.charScale,
+          this.characterWidth * this.charScale,
+          boxBorderWidth * this.charScale,
+        );
+      }
+
+      if (boxedAttr & BOXED_TOP) {
+        tempCtx.fillRect(
+          0,
+          0,
+          this.characterWidth * this.charScale,
+          boxBorderWidth * this.charScale,
+        );
+      }
+
+      if (boxedAttr & BOXED_LEFT) {
+        tempCtx.fillRect(
+          0,
+          0,
+          1 * this.charScale,
+          this.characterHeight * this.charScale,
+        );
+      }
+
+      if (boxedAttr & BOXED_RIGHT) {
+        tempCtx.fillRect(
+          (this.characterWidth - boxBorderWidth) * this.charScale,
+          0,
+          1 * this.charScale,
+          this.characterHeight * this.charScale,
+        );
+      }
+
+      charCtx.globalCompositeOperation = "xor";
+      charCtx.drawImage(
+        this.tempCanvas,
+        0,
+        0,
+        this.characterWidth * this.charScale,
+        this.characterHeight * this.charScale,
+        x * this.characterWidth * this.charScale,
+        y * this.characterHeight * this.charScale,
+        this.characterWidth * this.charScale,
+        this.characterHeight * this.charScale,
+      );
+    } else if (bufferCharacter.attributes.underline) {
       charCtx.globalCompositeOperation = "xor";
       charCtx.fillStyle = "#ffffff";
-      const underlineHeight = Math.floor(
-        (this.characterHeight * this.charScale) / 10,
-      );
+      const underlineHeight = Math.floor(this.characterHeight / 8);
       charCtx.fillRect(
         x * this.characterWidth * this.charScale,
-        (y + 1) * this.characterHeight * this.charScale - underlineHeight,
+        ((y + 1) * this.characterHeight - underlineHeight) * this.charScale,
         this.characterWidth * this.charScale,
         underlineHeight * this.charScale,
       );

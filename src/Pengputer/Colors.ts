@@ -5,6 +5,13 @@ import {
   namedColors,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
+import {
+  BOXED,
+  BOXED_BOTTOM,
+  BOXED_LEFT,
+  BOXED_RIGHT,
+  BOXED_TOP,
+} from "../TextBuffer";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -161,6 +168,22 @@ export class Colors implements Executable {
     std.writeConsole("Half-bright");
     std.resetConsoleAttributes();
     std.writeConsole(" and regular\n");
+
+    std.updateConsoleAttributes({
+      boxed: BOXED_LEFT | BOXED_TOP | BOXED_BOTTOM,
+    });
+    std.writeConsole("B");
+    std.updateConsoleAttributes({ boxed: BOXED_TOP | BOXED_BOTTOM });
+    std.writeConsole("oxe");
+    std.updateConsoleAttributes({
+      boxed: BOXED_RIGHT | BOXED_TOP | BOXED_BOTTOM,
+    });
+    std.writeConsole("d");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and not boxed. Full box: ");
+    std.updateConsoleAttributes({ boxed: BOXED });
+    std.writeConsole(".\n");
+    std.resetConsoleAttributes();
 
     std.updateConsoleAttributes({
       fgColor: classicColors[3],
