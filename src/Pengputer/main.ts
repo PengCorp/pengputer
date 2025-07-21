@@ -35,6 +35,7 @@ import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
+import { FileTransferTest } from "./FileTransferTest";
 
 const PATH_SEPARATOR = "/";
 
@@ -112,27 +113,34 @@ class PengOS {
       name: "PPL.TXT",
     });
 
-    const softwareDir = rootDir.mkdir("software");
-    softwareDir.addItem({
+    const testDir = rootDir.mkdir("test");
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "colors.exe",
+      createInstance: () => new Colors(this.pc),
+    });
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "args.exe",
+      createInstance: () => new PrintArgs(this.pc),
+    });
+    testDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "hello.exe",
       createInstance: () => new HelloWorld(this.pc),
     });
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "transfer.exe",
+      createInstance: () => new FileTransferTest(this.pc),
+    });
+
+    const softwareDir = rootDir.mkdir("software");
 
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "8ball.exe",
       createInstance: () => new EightBall(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "args.exe",
-      createInstance: () => new PrintArgs(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "colors.exe",
-      createInstance: () => new Colors(this.pc),
     });
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
