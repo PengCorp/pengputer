@@ -1,7 +1,6 @@
 import _ from "lodash";
 import { classicColors } from "../Color/ansi";
 import { Color } from "../Color/Color";
-import { getCenteredString } from "../Toolbox/String";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -570,17 +569,25 @@ export class Blackjack implements Executable {
     std.resetConsole();
     std.clearConsole();
 
-    std.writeConsole(
-      " ".repeat((this.width - "Penger Casino presents...".length) / 2),
+    std.writeConsoleSequence(
+      [
+        { fgColor: classicColors["yellow"] },
+        "Penger Casino",
+        { reset: true },
+        " presents...\n",
+      ],
+      { align: "center" },
     );
-    std.writeConsole("Penger Casino", { fgColor: classicColors["yellow"] });
-    std.writeConsole(" presents...\n", { reset: true });
-    std.writeConsole(" ".repeat((this.width - "Blackjack".length) / 2));
-    std.writeConsole("Blackjack\n\n");
+    std.writeConsoleSequence(["Blackjack\n\n"], { align: "center" });
 
-    std.writeConsole("By: ");
-    std.writeConsole("Strawberry", { fgColor: classicColors["lightRed"] });
-    std.writeConsole("\n\n", { reset: true });
+    std.writeConsoleSequence([
+      "By: ",
+      { fgColor: classicColors["lightRed"] },
+      "Strawberry",
+      { reset: true },
+      "\n\n",
+    ]);
+
     std.writeConsole("To quit you can type [q] at any time.\n\n");
     await this.askForNumberOfPlayers();
 

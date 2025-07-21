@@ -5,6 +5,13 @@ import {
   namedColors,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
+import {
+  BOXED,
+  BOXED_BOTTOM,
+  BOXED_LEFT,
+  BOXED_RIGHT,
+  BOXED_TOP,
+} from "../TextBuffer";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -163,6 +170,22 @@ export class Colors implements Executable {
     std.writeConsole(" and regular\n");
 
     std.updateConsoleAttributes({
+      boxed: BOXED_LEFT | BOXED_TOP | BOXED_BOTTOM,
+    });
+    std.writeConsole("B");
+    std.updateConsoleAttributes({ boxed: BOXED_TOP | BOXED_BOTTOM });
+    std.writeConsole("oxe");
+    std.updateConsoleAttributes({
+      boxed: BOXED_RIGHT | BOXED_TOP | BOXED_BOTTOM,
+    });
+    std.writeConsole("d");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and not boxed. Full box: ");
+    std.updateConsoleAttributes({ boxed: BOXED });
+    std.writeConsole(".\n");
+    std.resetConsoleAttributes();
+
+    std.updateConsoleAttributes({
       fgColor: classicColors[3],
     });
     std.writeConsole("Classic");
@@ -202,7 +225,20 @@ export class Colors implements Executable {
     std.clearConsole();
     std.writeConsole("Classic colors\n");
 
-    for (let i = 0; i < 0x08; i += 1) {
+    for (const i of [
+      "red",
+      "orange",
+      "yellow",
+      "chartreuse",
+      "green",
+      "springGreen",
+      "cyan",
+      "azure",
+      "blue",
+      "violet",
+      "magenta",
+      "rose",
+    ]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });
@@ -210,23 +246,20 @@ export class Colors implements Executable {
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x08; i < 0x10; i += 1) {
-      std.writeConsole(CHAR, {
-        bgColor: classicColors[i],
-      });
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x10; i < 0x18; i += 1) {
-      std.writeConsole(CHAR, {
-        bgColor: classicColors[i],
-      });
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x18; i < 0x20; i += 1) {
+    for (const i of [
+      "lightRed",
+      "lightOrange",
+      "lightYellow",
+      "lightChartreuse",
+      "lightGreen",
+      "lightSpringGreen",
+      "lightCyan",
+      "lightAzure",
+      "lightBlue",
+      "lightViolet",
+      "lightMagenta",
+      "lightRose",
+    ]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });

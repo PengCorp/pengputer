@@ -98,7 +98,15 @@ export class PengerShell implements Executable {
 
     this.isRunning = true;
 
-    std.writeConsole("PengOS 2.1\n(c) Copyright 1985 PengCorp\n");
+    std.writeConsoleCharacter("penger00");
+    std.writeConsoleCharacter("penger01");
+    std.writeConsoleCharacter("penger02");
+    std.writeConsole(" PengOS 2.1\n");
+    std.writeConsoleCharacter("penger10");
+    std.writeConsoleCharacter("penger11");
+    std.writeConsoleCharacter("penger12");
+    std.writeConsole(" (c) Copyright 1985 PengCorp\n");
+
     std.setIsConsoleCursorVisible(true);
 
     while (this.isRunning) {
@@ -545,10 +553,12 @@ export class PengerShell implements Executable {
     const { std } = this.pc;
 
     const printEntry = (cmd: string, text: string) => {
-      std.updateConsoleAttributes({ bold: true });
-      std.writeConsole(_.padEnd(cmd, 10) + " ");
-      std.resetConsoleAttributes();
-      std.writeConsole(text);
+      std.writeConsoleSequence([
+        { bold: true },
+        _.padEnd(cmd, 10) + " ",
+        { reset: true },
+        text,
+      ]);
     };
 
     printEntry("help", "List available commands\n");

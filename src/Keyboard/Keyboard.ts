@@ -10,7 +10,7 @@ export type TypeListener = (
 export type VoidListener = () => void;
 
 export class Keyboard {
-  private pressed: string[];
+  private pressed: KeyCode[];
   private werePressed: Set<KeyCode>;
   private layout: any;
 
@@ -125,12 +125,12 @@ export class Keyboard {
     console["log"](this.pressed);
   }
 
-  public getIsKeyPressed(keyCode: string) {
+  public getIsKeyPressed(keyCode: KeyCode) {
     return this.pressed.includes(keyCode);
   }
 
   /** Takes a set of keyCodes. Returns the keyCode that was most recently pressed. Returns `null` otherwise. */
-  public getLastPressedOf(keyCodes: string[]): string | null {
+  public getLastPressedOf(keyCodes: KeyCode[]): KeyCode | null {
     let lastPressed = null;
     let lastPressedIndex = -1;
 
