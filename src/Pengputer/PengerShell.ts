@@ -4,7 +4,12 @@
  */
 
 import { Executable } from "./FileSystem";
-import { DriveLabel, FileSystem, FileSystemObjectType } from "./FileSystem";
+import {
+  DriveLabel,
+  isDriveLabel,
+  FileSystem,
+  FileSystemObjectType,
+} from "./FileSystem";
 import { FilePath, FloppyStorage } from "./FileSystem";
 import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
 import { PC } from "./PC";
@@ -640,7 +645,9 @@ export class PengerShell implements Executable {
         if (floppy.drive) {
           std.writeConsole(`${floppy.drive}: `);
         } else std.writeConsole("   ");
-        std.writeConsole(`${floppy.name}\n`);
+        std.writeConsoleCharacter("floppy0");
+        std.writeConsoleCharacter("floppy1");
+        std.writeConsole(` ${floppy.name}\n`);
       }
 
       return;
@@ -653,8 +660,20 @@ export class PengerShell implements Executable {
         return;
       }
 
+      if (!name.match(/^[a-zA-Z0-9_]+$/)) {
+        std.writeConsole("Invalid floppy name\n");
+        return;
+      }
+
       const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
       const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+      const existing = _.find(floppyData, (d) => d.name === name);
+      if (existing) {
+        std.writeConsole(`Floppy '${name}' already exists\n`);
+        return;
+      }
+
       floppyData.push({ name: name, drive: null, data: "" });
       localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       return;
@@ -669,6 +688,88 @@ export class PengerShell implements Executable {
     }
 
     if (command === "burn") {
+      const [name] = rest;
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+      const floppyCount = floppyData.length;
+      _.remove(floppyData, (d) => d.name === name);
+      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+
+      if (floppyCount === floppyData.length) {
+        std.writeConsole(`No floppy with that name\n`);
+      } else std.writeConsole(`Floppy '${name}' is now a pile of ash\n`);
+
+      return;
+    }
+
+    if (command === "insert") {
+      const [label, name] = rest;
+
+      if (!label) {
+        std.writeConsole("Missing drive label\n");
+        return;
+      }
+
+      if (!isDriveLabel(label)) {
+        std.writeConsole("Invalid drive label\n");
+        return;
+      }
+
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+      const floppy = _.find(floppyData, (d) => d.name === name);
+      if (!floppy) {
+        std.writeConsole(`No floppy with that name\n`);
+        return;
+      }
+
+      floppy.drive = label;
+      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+      std.writeConsole(
+        `Floppy '${name}' is now available through ${label}:/\n`,
+      );
+      return;
+    }
+
+    if (command === "eject") {
+      const [label] = rest;
+
+      if (!label) {
+        std.writeConsole("Missing drive label\n");
+        return;
+      }
+
+      if (!isDriveLabel(label)) {
+        std.writeConsole("Invalid drive label\n");
+        return;
+      }
+
+      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+      const floppy = _.find(floppyData, (d) => d.drive === label);
+      if (!floppy) {
+        std.writeConsole(`No floppy mounted to that drive\n`);
+        return;
+      }
+
+      floppy.drive = null;
+      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+      std.writeConsole(
+        `Floppy '${floppy.name}' is no longer available through ${label}:/\n`,
+      );
       return;
     }
 
