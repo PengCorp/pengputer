@@ -1,3 +1,2 @@
 set -e
 
-npx prettier --write --log-level warn . && git add .
