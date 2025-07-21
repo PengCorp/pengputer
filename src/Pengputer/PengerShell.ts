@@ -4,7 +4,7 @@
  */
 
 import { Executable } from "./FileSystem";
-import { FileSystem, FileSystemObjectType } from "./FileSystem";
+import { DriveLabel, FileSystem, FileSystemObjectType } from "./FileSystem";
 import { PATH_SEPARATOR, FilePath } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -25,7 +25,7 @@ export class PengerShell implements Executable {
   private isRunning: boolean = false;
 
   private workingDirectories: { [id: string]: FilePath } = {};
-  private currentDrive: string = "C";
+  private currentDrive: DriveLabel = "C";
   private currentPath: string[] = [];
   private prompt: string = "%P>";
 

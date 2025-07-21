@@ -17,6 +17,41 @@ export enum FileSystemObjectType {
   Link = "lnk",
 }
 
+export const DriveLabelValues: string[] = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+] as const;
+
+export type DriveLabel = (typeof DriveLabelValues)[number];
+
+export function isDriveLabel(label: string): label is DriveLabel {
+  return DriveLabelValues.includes(label);
+}
+
 export interface Executable {
   run: (args: string[]) => Promise<void>;
 }
@@ -24,16 +59,20 @@ export interface Executable {
 export class FilePath {
   static tryParse(
     path: string,
-    defaultDrive: string | null = null,
+    defaultDrive: DriveLabel | null = null,
   ): FilePath | null {
     if (path.length === 0) return new FilePath(null, [], false);
     if (path === "/") return new FilePath(null, [], true);
 
-    let drive: string | null = null;
+    let drive: DriveLabel | null = null;
 
     const colonIndex = path.indexOf(":");
     if (colonIndex >= 0) {
-      drive = path.slice(0, colonIndex).toUpperCase();
+      const driveName = path.slice(0, colonIndex).toUpperCase();
+      // TODO(local): file info parse error
+      if (!isDriveLabel(driveName)) return null;
+      drive = driveName;
+
       path = path.slice(colonIndex + 1);
       // TODO(local): file info parse error
       if (drive.length !== 1) return null;
@@ -53,40 +92,40 @@ export class FilePath {
     return new FilePath(drive, pieces, isAbsolute);
   }
 
-  private _drive: string | null;
-  private _pieces: string[];
-  private _isAbsolute: boolean;
+  #drive: DriveLabel | null;
+  #pieces: string[];
+  #isAbsolute: boolean;
 
   private constructor(
-    drive: string | null,
+    drive: DriveLabel | null,
     pieces: string[],
     isAbsolute: boolean,
   ) {
     isAbsolute = drive !== null || isAbsolute;
 
-    this._drive = drive;
-    this._isAbsolute = isAbsolute;
+    this.#drive = drive;
+    this.#isAbsolute = isAbsolute;
 
-    this._pieces = [];
+    this.#pieces = [];
     for (let i = 0; i < pieces.length; i++) {
       const piece = pieces[i];
 
       if (piece === "..") {
         if (isAbsolute) {
-          if (this._pieces.length !== 0) this._pieces.pop();
-        } else this._pieces.push("..");
+          if (this.#pieces.length !== 0) this.#pieces.pop();
+        } else this.#pieces.push("..");
       } else if (piece === ".") {
         continue;
-      } else this._pieces.push(piece);
+      } else this.#pieces.push(piece);
     }
   }
 
-  get drive() {
-    return this._drive;
+  get drive(): DriveLabel | null {
+    return this.#drive;
   }
 
   get pieces(): readonly string[] {
-    return [...this._pieces];
+    return [...this.#pieces];
   }
 
   hasDrive() {
@@ -94,38 +133,38 @@ export class FilePath {
   }
 
   isAbsolute() {
-    return this._isAbsolute;
+    return this.#isAbsolute;
   }
 
   isRelative() {
-    return !this._isAbsolute;
+    return !this.#isAbsolute;
   }
 
   combine(other: FilePath) {
     if (other.isAbsolute()) return this;
     return new FilePath(
-      this._drive,
-      [...this._pieces, ...other._pieces],
-      this._isAbsolute,
+      this.#drive,
+      [...this.#pieces, ...other.#pieces],
+      this.#isAbsolute,
     );
   }
 
   toString() {
-    const pathPart = this._pieces.join(PATH_SEPARATOR);
+    const pathPart = this.#pieces.join(PATH_SEPARATOR);
     if (this.drive !== null) {
       return `${this.drive}:${PATH_SEPARATOR}${pathPart}`;
-    } else if (this._isAbsolute) {
+    } else if (this.#isAbsolute) {
       return `${PATH_SEPARATOR}${pathPart}`;
     } else return `.${PATH_SEPARATOR}${pathPart}`;
   }
 
   parentDirectory() {
-    const pieces = this._pieces;
+    const pieces = this.#pieces;
     if (pieces.length === 0) return this;
     return new FilePath(
-      this._drive,
+      this.#drive,
       pieces.slice(0, pieces.length - 1),
-      this._isAbsolute,
+      this.#isAbsolute,
     );
   }
 }
@@ -200,18 +239,33 @@ export type FileInfo =
   | FileInfoImage
   | FileInfoLink;
 
-interface FileSystemDrive {
-  rootEntry: FileInfoDirectory;
+export interface FileSystemDrive {
+  get rootEntry(): FileInfoDirectory;
+}
+
+export class TransientFileSystemDrive implements FileSystemDrive {
+  #rootEntry: FileInfoDirectory;
+
+  constructor() {
+    this.#rootEntry = new FileInfoDirectory("/", []);
+  }
+
+  get rootEntry(): FileInfoDirectory {
+    return this.#rootEntry;
+  }
 }
 
 export class FileSystem {
-  private drives: { [id: string]: FileSystemDrive };
+  private drives: { [id: DriveLabel]: FileSystemDrive } = {};
 
   constructor() {
-    this.drives = {
-      A: { rootEntry: new FileInfoDirectory("/", []) },
-      C: { rootEntry: new FileInfoDirectory("/", []) },
-    };
+    this.mount(new TransientFileSystemDrive(), "C");
+  }
+
+  mount(drive: FileSystemDrive, label: DriveLabel): boolean {
+    if (label in this.drives) return false;
+    this.drives[label] = drive;
+    return true;
   }
 
   getFileInfo(path: FilePath | null): FileInfo | null {
