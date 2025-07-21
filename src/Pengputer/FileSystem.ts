@@ -149,7 +149,7 @@ export class FileInfoDirectory {
     return [...this.#entries];
   }
 
-  addItem(info: FileInfoNoDirectory) {
+  addItem(info: Exclude<FileInfo, FileInfoDirectory>) {
     this.#entries.push(info);
     return info;
   }
@@ -194,13 +194,6 @@ export interface FileInfoLink {
 
 export type FileInfo =
   | FileInfoDirectory
-  | FileInfoText
-  | FileInfoExecutable
-  | FileInfoAudio
-  | FileInfoImage
-  | FileInfoLink;
-
-export type FileInfoNoDirectory =
   | FileInfoText
   | FileInfoExecutable
   | FileInfoAudio
