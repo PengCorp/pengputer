@@ -22,27 +22,46 @@ class FileTransferManager {
     });
   }
 
-  public static askForUpload() {
+  public static askForUpload(
+    extension: string = "flp",
+    mime: string = "text/plain",
+  ) {
     if (this.#actionInProgress) {
       throw new Error("TextDrive is busy.");
     }
 
     this.#actionInProgress = true;
     return new Promise<{ text: string; name: string }>((resolve, reject) => {
+      let dialogOpen = false;
+
       const input = document.createElement("input");
       input.type = "file";
-      input.accept = ".flp, text/plain";
-      input.onchange = async (e: Event) => {
+      input.accept = `.${extension}, ${mime}`;
+
+      input.addEventListener("change", async (e: Event) => {
         const target = e.target as HTMLInputElement;
         const file = target.files?.[0];
         if (file) {
           const text = await file.text();
           resolve({ text, name: file.name });
-        } else {
-          reject();
+        }
+      });
+
+      const windowFocusListener = () => {
+        if (dialogOpen) {
+          setTimeout(() => {
+            if (!input.files?.length) {
+              reject();
+            }
+            window.removeEventListener("focus", windowFocusListener);
+            dialogOpen = false;
+          }, 500);
         }
       };
+      window.addEventListener("focus", windowFocusListener);
+
       input.click();
+      dialogOpen = true;
     }).finally(() => {
       this.#actionInProgress = false;
     });
