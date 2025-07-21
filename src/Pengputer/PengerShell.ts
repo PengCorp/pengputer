@@ -5,7 +5,8 @@
 
 import { Executable } from "./FileSystem";
 import { DriveLabel, FileSystem, FileSystemObjectType } from "./FileSystem";
-import { PATH_SEPARATOR, FilePath } from "./FileSystem";
+import { FilePath, FloppyStorage } from "./FileSystem";
+import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
 import { PC } from "./PC";
 
 import { argparse } from "../Toolbox/argparse";
@@ -605,7 +606,7 @@ export class PengerShell implements Executable {
       };
 
       printEntry("flp list", "List all mounted floppies\n");
-      printEntry("flp make <name>", "Create a blank floppy '<name>'\n");
+      printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
       printEntry("flp import <name>", "Import data onto floppy '<name>'\n");
       printEntry("flp export <name>", "Export data off of floppy '<name>'\n");
       printEntry("flp burn <name>", "Completely destroy floppy '<name>'\n");
@@ -618,10 +619,44 @@ export class PengerShell implements Executable {
     }
 
     if (command === "list") {
+      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES);
+      if (!floppyDataString) {
+        std.writeConsole("You have no floppies\n");
+        return;
+      }
+
+      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+      floppyData.sort((a, b) => {
+        if (a.name === b.name) {
+          return 0;
+        }
+        if (b.name > a.name) {
+          return -1;
+        }
+        return 1;
+      });
+
+      for (const floppy of floppyData) {
+        if (floppy.drive) {
+          std.writeConsole(`${floppy.drive}: `);
+        } else std.writeConsole("   ");
+        std.writeConsole(`${floppy.name}\n`);
+      }
+
       return;
     }
 
-    if (command === "make") {
+    if (command === "spawn") {
+      const [name] = rest;
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+      floppyData.push({ name: name, drive: null, data: "" });
+      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       return;
     }
 

@@ -7,6 +7,7 @@ import {
 } from "./fileTypes";
 
 export const PATH_SEPARATOR = "/";
+export const LSKEY_FLOPPIES = "floppies";
 
 export enum FileSystemObjectType {
   Directory = "dir",
@@ -164,6 +165,12 @@ export class FilePath {
     );
   }
 }
+
+export type FloppyStorage = {
+  name: string;
+  drive: DriveLabel | null;
+  data: string;
+};
 
 export class FileInfoDirectory {
   type: FileSystemObjectType.Directory = FileSystemObjectType.Directory;
