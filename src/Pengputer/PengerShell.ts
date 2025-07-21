@@ -93,7 +93,7 @@ export class PengerShell implements Executable {
       take: this.commandTake.bind(this),
       drop: this.commandDrop.bind(this),
       reboot: this.commandReboot.bind(this),
-      fullpath: this.commandFullpath.bind(this),
+      flp: this.commandFloppy.bind(this),
     };
 
     this.isRunning = true;
@@ -572,6 +572,7 @@ export class PengerShell implements Executable {
     printEntry("prompt", "Change your command prompt text\n");
     printEntry("take", "Add a program to the command list\n");
     printEntry("drop", "Remove a program from the command list\n");
+    printEntry("flp", "Manage floppy disks\n");
     printEntry("reboot", "Restart the system\n");
 
     if (this.takenPrograms.length > 0) {
@@ -582,13 +583,35 @@ export class PengerShell implements Executable {
     }
   }
 
-  private commandFullpath(args: string[]) {
+  private commandFloppy(args: string[]) {
     const { std } = this.pc;
-    const [input] = args;
-    const path = this.getCanonicalPath(
-      this.workingDirectory,
-      !!input ? input : "",
-    )!;
-    std.writeConsole(`${path.toString()}\n`);
+    const [command, ...rest] = args;
+
+    if (command === "help") {
+      const printEntry = (cmd: string, text: string) => {
+        const cmdFmt =
+          cmd.length < 10 ? _.padEnd(cmd, 10) + " " : cmd + "\n           ";
+        std.writeConsoleSequence([
+          { bold: true },
+          cmdFmt,
+          { reset: true },
+          text,
+        ]);
+      };
+
+      printEntry("flp list", "List all mounted floppies\n");
+      printEntry("flp make <name>", "Create a blank floppy '<name>'\n");
+      printEntry("flp import <name>", "Import data onto floppy '<name>'\n");
+      printEntry("flp export <name>", "Export data off of floppy '<name>'\n");
+      printEntry("flp burn <name>", "Completely destroy floppy '<name>'\n");
+      printEntry(
+        "flp insert <label> <name>",
+        "Insert floppy '<name>' into drive <label>\n",
+      );
+      printEntry("flp eject <label>", "Eject the floppy at drive <label>\n");
+      return;
+    }
+
+    std.writeConsole(`It's floppin' time!\n`);
   }
 }
