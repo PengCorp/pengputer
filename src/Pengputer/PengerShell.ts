@@ -587,6 +587,11 @@ export class PengerShell implements Executable {
     const { std } = this.pc;
     const [command, ...rest] = args;
 
+    if (!command) {
+      std.writeConsole(`Missing a command\n`);
+      return;
+    }
+
     if (command === "help") {
       const printEntry = (cmd: string, text: string) => {
         const cmdFmt =
@@ -612,6 +617,26 @@ export class PengerShell implements Executable {
       return;
     }
 
-    std.writeConsole(`It's floppin' time!\n`);
+    if (command === "list") {
+      return;
+    }
+
+    if (command === "make") {
+      return;
+    }
+
+    if (command === "import") {
+      return;
+    }
+
+    if (command === "export") {
+      return;
+    }
+
+    if (command === "burn") {
+      return;
+    }
+
+    std.writeConsole(`Unknown floppy command "${command}"\n`);
   }
 }
