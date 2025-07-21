@@ -10,7 +10,7 @@ import {
   FileSystem,
   FileSystemObjectType,
 } from "./FileSystem";
-import { FilePath, FloppyStorage } from "./FileSystem";
+import { FilePath, FloppyStorage, FloppySerialized } from "./FileSystem";
 import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -63,8 +63,9 @@ export class PengerShell implements Executable {
   }
 
   private set workingDirectory(wd: FilePath) {
-    const drive = wd.drive;
-    this.workingDirectories[!!drive ? drive : "C"] = wd;
+    const drive = wd.drive ?? "C";
+    this.currentDrive = drive;
+    this.workingDirectories[drive] = wd;
   }
 
   private shiftAutorunCommand() {
@@ -100,6 +101,7 @@ export class PengerShell implements Executable {
       drop: this.commandDrop.bind(this),
       reboot: this.commandReboot.bind(this),
       flp: this.commandFloppy.bind(this),
+      fscommit: (args) => this.pc.fileSystem.commit(),
     };
 
     this.isRunning = true;
@@ -304,11 +306,6 @@ export class PengerShell implements Executable {
       return;
     }
 
-    if (newPath.drive !== "C") {
-      std.writeConsole("Cannot leave drive C\n");
-      return;
-    }
-
     const fsEntry = fileSystem.getFileInfo(newPath);
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
@@ -345,11 +342,6 @@ export class PengerShell implements Executable {
       const newDirPath = this.getCanonicalPath(this.workingDirectory, args[i]);
       if (newDirPath === null) {
         std.writeConsole(`Can't find ${args[i]}\n\n`);
-        continue;
-      }
-
-      if (newDirPath.drive !== "C") {
-        std.writeConsole("Cannot leave drive C\n");
         continue;
       }
 
@@ -630,6 +622,7 @@ export class PengerShell implements Executable {
         return;
       }
 
+      console.log(floppyDataString);
       const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
       floppyData.sort((a, b) => {
         if (a.name === b.name) {
@@ -674,7 +667,19 @@ export class PengerShell implements Executable {
         return;
       }
 
-      floppyData.push({ name: name, drive: null, data: "" });
+      const floppyContents: FloppySerialized = {
+        root: {
+          type: FileSystemObjectType.Directory,
+          name: "/",
+          entries: [],
+        },
+      };
+
+      floppyData.push({
+        name: name,
+        drive: null,
+        data: JSON.stringify(floppyContents),
+      });
       localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       return;
     }
@@ -735,11 +740,17 @@ export class PengerShell implements Executable {
         return;
       }
 
+      if (!this.pc.fileSystem.tryInsertFloppy(label, floppy.data)) {
+        std.writeConsole(`Failed to insert floppy; it might be corrupt\n`);
+        return;
+      }
+
       floppy.drive = label;
       localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       std.writeConsole(
         `Floppy '${name}' is now available through ${label}:/\n`,
       );
+
       return;
     }
 
@@ -765,11 +776,14 @@ export class PengerShell implements Executable {
         return;
       }
 
+      this.pc.fileSystem.unmount(label);
+
       floppy.drive = null;
       localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       std.writeConsole(
         `Floppy '${floppy.name}' is no longer available through ${label}:/\n`,
       );
+
       return;
     }
 

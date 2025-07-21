@@ -4,6 +4,7 @@ import {
   LinkFile,
   LinkOpenType,
   TextFile,
+  BinaryFile,
 } from "./fileTypes";
 
 export const PATH_SEPARATOR = "/";
@@ -16,6 +17,7 @@ export enum FileSystemObjectType {
   Audio = "aud",
   Image = "img",
   Link = "lnk",
+  Binary = "bin",
 }
 
 export const DriveLabelValues: string[] = [
@@ -166,12 +168,6 @@ export class FilePath {
   }
 }
 
-export type FloppyStorage = {
-  name: string;
-  drive: DriveLabel | null;
-  data: string;
-};
-
 export class FileInfoDirectory {
   type: FileSystemObjectType.Directory = FileSystemObjectType.Directory;
 
@@ -234,19 +230,35 @@ export interface FileInfoLink {
   openType: LinkOpenType;
 }
 
+export interface FileInfoBinary {
+  type: FileSystemObjectType.Binary;
+  name: string;
+  data: BinaryFile;
+}
+
 export type FileInfo =
   | FileInfoDirectory
   | FileInfoText
   | FileInfoExecutable
   | FileInfoAudio
   | FileInfoImage
-  | FileInfoLink;
+  | FileInfoLink
+  | FileInfoBinary;
 
-export interface FileSystemDrive {
+enum FileSystemDriveKind {
+  Transient = "Transient",
+  Floppy = "Floppy",
+}
+
+interface FileSystemDriveInterface {
   get rootEntry(): FileInfoDirectory;
 }
 
-export class TransientFileSystemDrive implements FileSystemDrive {
+type FileSystemDrive = TransientFileSystemDrive | FloppyFileSystemDrive;
+
+class TransientFileSystemDrive implements FileSystemDriveInterface {
+  type: FileSystemDriveKind.Transient = FileSystemDriveKind.Transient;
+
   #rootEntry: FileInfoDirectory;
 
   constructor() {
@@ -258,17 +270,216 @@ export class TransientFileSystemDrive implements FileSystemDrive {
   }
 }
 
+export type FloppyStorage = {
+  name: string;
+  drive: DriveLabel | null;
+  data: string;
+};
+
+export type FloppySerializedFile =
+  | {
+      type: FileSystemObjectType.TextFile;
+      name: string;
+      textData: string;
+    }
+  | {
+      type: FileSystemObjectType.Binary;
+      name: string;
+      binaryData: string;
+    }; // etc., soon
+
+export type FloppySerializedDirectory = {
+  type: FileSystemObjectType.Directory;
+  name: string;
+  entries: (FloppySerializedFile | FloppySerializedDirectory)[];
+};
+
+export type FloppySerialized = {
+  root: FloppySerializedDirectory;
+};
+
+class FloppyFileSystemDrive implements FileSystemDriveInterface {
+  type: FileSystemDriveKind.Floppy = FileSystemDriveKind.Floppy;
+
+  static fromSerialized(
+    floppyContents: FloppySerialized,
+  ): FloppyFileSystemDrive {
+    const rootEntry = FloppyFileSystemDrive.#deserializeDirectory(
+      floppyContents.root,
+    );
+    return new FloppyFileSystemDrive(rootEntry);
+  }
+
+  static #deserializeDirectory(
+    dir: FloppySerializedDirectory,
+  ): FileInfoDirectory {
+    const entries = dir.entries.map((e) =>
+      FloppyFileSystemDrive.#deserializeFile(e),
+    );
+    return new FileInfoDirectory(dir.name, entries);
+  }
+
+  static #deserializeFile(
+    file: FloppySerializedFile | FloppySerializedDirectory,
+  ): FileInfo {
+    if (file.type === FileSystemObjectType.Directory) {
+      return FloppyFileSystemDrive.#deserializeDirectory(file);
+    }
+
+    if (file.type === FileSystemObjectType.TextFile) {
+      const textFile = new TextFile();
+      textFile.replace(file.textData);
+      return {
+        type: FileSystemObjectType.TextFile,
+        name: file.name,
+        data: textFile,
+      };
+    }
+
+    if (file.type === FileSystemObjectType.Binary) {
+      const binaryFile = new BinaryFile(file.binaryData);
+      return {
+        type: FileSystemObjectType.Binary,
+        name: file.name,
+        data: binaryFile,
+      };
+    }
+
+    throw new Error(
+      `Unrecognized or unsupported serialized file type: ${(<any>file).type}`,
+    );
+  }
+
+  static #serializeDirectory(
+    dir: FileInfoDirectory,
+  ): FloppySerializedDirectory {
+    const entries = dir.entries.map((e) =>
+      FloppyFileSystemDrive.#serializeFile(e),
+    );
+    return {
+      type: FileSystemObjectType.Directory,
+      name: dir.name,
+      entries: entries,
+    };
+  }
+
+  static #serializeFile(
+    file: FileInfo,
+  ): FloppySerializedFile | FloppySerializedDirectory {
+    if (file.type === FileSystemObjectType.Directory) {
+      return FloppyFileSystemDrive.#serializeDirectory(file);
+    }
+
+    if (file.type === FileSystemObjectType.TextFile) {
+      return {
+        type: FileSystemObjectType.TextFile,
+        name: file.name,
+        textData: file.data.getText(),
+      };
+    }
+
+    if (file.type === FileSystemObjectType.Binary) {
+      return {
+        type: FileSystemObjectType.Binary,
+        name: file.name,
+        binaryData: file.data.data,
+      };
+    }
+
+    throw new Error(
+      `Unrecognized or unsupported file info type: ${(<any>file).type}`,
+    );
+  }
+
+  #rootEntry: FileInfoDirectory;
+
+  private constructor(rootEntry: FileInfoDirectory) {
+    this.#rootEntry = rootEntry;
+  }
+
+  get rootEntry(): FileInfoDirectory {
+    return this.#rootEntry;
+  }
+
+  serialize(): FloppySerialized {
+    return {
+      root: FloppyFileSystemDrive.#serializeDirectory(this.#rootEntry),
+    };
+  }
+}
+
 export class FileSystem {
   private drives: { [id: DriveLabel]: FileSystemDrive } = {};
 
   constructor() {
-    this.mount(new TransientFileSystemDrive(), "C");
+    this.mount("C", new TransientFileSystemDrive());
+
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+    for (let floppy of floppyData) {
+      if (floppy.drive === null) continue;
+      this.tryInsertFloppy(floppy.drive, floppy.data);
+    }
   }
 
-  mount(drive: FileSystemDrive, label: DriveLabel): boolean {
+  mount(label: DriveLabel, drive: FileSystemDrive): boolean {
     if (label in this.drives) return false;
     this.drives[label] = drive;
     return true;
+  }
+
+  unmount(label: DriveLabel) {
+    delete this.drives[label];
+  }
+
+  commit() {
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+    for (let floppy of floppyData) {
+      if (floppy.drive === null) continue;
+      let drive = this.drives[floppy.drive];
+      if (drive.type !== FileSystemDriveKind.Floppy) {
+        floppy.drive = null;
+      } else {
+        floppy.data = JSON.stringify(drive.serialize());
+      }
+    }
+
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+  }
+
+  tryInsertFloppy(label: DriveLabel, floppyString: string): boolean {
+    try {
+      const floppyContents = JSON.parse(floppyString) as FloppySerialized;
+      const drive = FloppyFileSystemDrive.fromSerialized(floppyContents);
+      if (drive === null) {
+        console.error("Failed to deserialize drive; can't mount it");
+        return false;
+      }
+
+      return this.mount(label, drive);
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }
+
+  trySerializeFloppy(label: DriveLabel): string | null {
+    try {
+      const drive = this.drives[label];
+      if (!drive) return null;
+
+      if (drive.type !== FileSystemDriveKind.Floppy) {
+        return null;
+      }
+
+      return JSON.stringify(drive.serialize());
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }
 
   getFileInfo(path: FilePath | null): FileInfo | null {
