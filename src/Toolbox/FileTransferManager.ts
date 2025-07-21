@@ -1,9 +1,11 @@
 class FileTransferManager {
   static #actionInProgress: boolean = false;
 
+  static #isUploadOpen: boolean = false;
+
   public static presentDownload(text: string, filename: string) {
     if (this.#actionInProgress) {
-      throw new Error("TextDrive is busy.");
+      throw new Error("FileTransferManager is busy.");
     }
 
     this.#actionInProgress = true;
@@ -27,12 +29,12 @@ class FileTransferManager {
     mime: string = "text/plain",
   ) {
     if (this.#actionInProgress) {
-      throw new Error("TextDrive is busy.");
+      throw new Error("FileTransferManager is busy.");
     }
 
     this.#actionInProgress = true;
     return new Promise<{ text: string; name: string }>((resolve, reject) => {
-      let dialogOpen = false;
+      this.#isUploadOpen = false;
 
       const input = document.createElement("input");
       input.type = "file";
@@ -48,20 +50,20 @@ class FileTransferManager {
       });
 
       const windowFocusListener = () => {
-        if (dialogOpen) {
+        if (this.#isUploadOpen) {
           setTimeout(() => {
             if (!input.files?.length) {
               reject();
             }
             window.removeEventListener("focus", windowFocusListener);
-            dialogOpen = false;
+            this.#isUploadOpen = false;
           }, 500);
         }
       };
       window.addEventListener("focus", windowFocusListener);
 
+      this.#isUploadOpen = true;
       input.click();
-      dialogOpen = true;
     }).finally(() => {
       this.#actionInProgress = false;
     });
