@@ -1216,7 +1216,7 @@ class Tetris implements GameState {
       _.pad("======== P E N G T R I S ========", std.getConsoleSize().w),
     );
 
-    std.resetKeyPressedHistory();
+    std.flushKeyboardEvents();
   }
 
   public onLeave() {}
@@ -1228,25 +1228,32 @@ class Tetris implements GameState {
 
     // input
 
-    if (std.getWasKeyPressed("ArrowUp")) {
-      this.fallingPiece?.rotateRight();
+    while (true) {
+      const ev = std.getNextKeyboardEvent();
+      if (!ev) break;
+      if (ev.isModifier || !ev.pressed || ev.isAutoRepeat) continue;
+
+      if (ev.code === "ArrowUp") {
+        this.fallingPiece?.rotateRight();
+      }
+      if (ev.code === "KeyZ") {
+        this.fallingPiece?.rotateLeft();
+      }
+      if (ev.code === "KeyX") {
+        this.fallingPiece?.rotateRight();
+      }
+      if (ev.code === "KeyC") {
+        this.holdPiece();
+      }
+      if (ev.code === "Space") {
+        this.fallingPiece?.hardDrop();
+      }
+      if (ev.code === "Escape") {
+        this.onQuit.emit();
+        return;
+      }
     }
-    if (std.getWasKeyPressed("KeyZ")) {
-      this.fallingPiece?.rotateLeft();
-    }
-    if (std.getWasKeyPressed("KeyX")) {
-      this.fallingPiece?.rotateRight();
-    }
-    if (std.getWasKeyPressed("KeyC")) {
-      this.holdPiece();
-    }
-    if (std.getWasKeyPressed("Space")) {
-      this.fallingPiece?.hardDrop();
-    }
-    if (std.getWasKeyPressed("Escape")) {
-      this.onQuit.emit();
-      return;
-    }
+
     if (this.fallingPiece) {
       this.fallingPiece.setIsPushdown(std.getIsKeyPressed("ArrowDown"));
       if (std.getIsKeyPressed("ArrowLeft")) {
@@ -1260,7 +1267,6 @@ class Tetris implements GameState {
         this.fallingPiece.setDirection({ x: 0, y: 0 });
       }
     }
-    std.resetKeyPressedHistory();
 
     // logic
 
@@ -1434,12 +1440,17 @@ class MainMenu implements GameState {
   update(dt: number) {
     const { std } = this.pc;
 
-    if (std.getWasKeyPressed("Enter")) {
-      this.onStartGame.emit();
-    } else if (std.getWasKeyPressed("Escape")) {
-      this.onQuit.emit();
+    while (true) {
+      const ev = std.getNextKeyboardEvent();
+      if (!ev) break;
+      if (ev.isModifier || !ev.pressed) continue;
+
+      if (ev.code === "Enter") {
+        this.onStartGame.emit();
+      } else if (ev.code === "Escape") {
+        this.onQuit.emit();
+      }
     }
-    std.resetKeyPressedHistory();
   }
 
   onLeave() {}
@@ -1471,10 +1482,13 @@ class GameOver implements GameState {
   update() {
     const { std } = this.pc;
 
-    if (std.getWasKeyPressed("Escape")) {
+    while (true) {
+      const ev = std.getNextKeyboardEvent();
+      if (!ev) break;
+      if (ev.isModifier || !ev.pressed) continue;
+
       this.onContinue.emit();
     }
-    std.resetKeyPressedHistory();
   }
 
   onLeave() {}
@@ -1494,7 +1508,7 @@ export class TetrisApp implements Executable {
 
   private changeState(newStateKey: GameStateKey) {
     const { std } = this.pc;
-    std.resetKeyPressedHistory();
+    std.flushKeyboardEvents();
     this.currentState?.onLeave();
     switch (newStateKey) {
       case GameStateKey.MainMenu:
@@ -1535,7 +1549,7 @@ export class TetrisApp implements Executable {
   async run(args: string[]) {
     const { std } = this.pc;
 
-    std.resetKeyPressedHistory();
+    std.flushKeyboardEvents();
     this.changeState(GameStateKey.MainMenu);
 
     return new Promise<void>((resolve) => {

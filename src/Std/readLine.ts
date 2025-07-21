@@ -4,6 +4,7 @@ import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
 import { Vector } from "../Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
+import { KeyCode } from "../Keyboard/types";
 
 export const readLine = (
   screen: Screen,
@@ -17,7 +18,8 @@ export const readLine = (
     previousEntries?: string[];
   } = {},
 ): Promise<string | null> => {
-  let unsubType: (() => void) | null = null;
+  keyboard.flushEventBuffer();
+
   let isUsingPreviousEntry = false;
   let previousEntryIndex = 0;
   let savedResult = "";
@@ -31,11 +33,18 @@ export const readLine = (
     buffer.cursor.wrapToBeInsidePage(pageSize);
   };
 
-  const promise = new Promise<string | null>((resolve) => {
+  const promise = new Promise<string | null>(async (resolve) => {
     let result = "";
     let curIndex = 0;
 
-    const onType: TypeListener = (char, key, ev) => {
+    while (true) {
+      const ev = await keyboard.waitForNextEvent();
+
+      if (!ev.pressed) continue;
+
+      const key = ev.code;
+      const char = ev.char;
+
       if (ev.isControlDown) {
         if (key === "KeyC") {
           resolve(null);
@@ -163,45 +172,23 @@ export const readLine = (
           curIndex += 1;
         }
       }
-    };
-    unsubType = keyboard.addTypeListener(onType);
+    }
   });
 
-  return promise.finally(() => {
-    unsubType?.();
-  });
+  return promise;
 };
 
-export const readKey = (keyboard: Keyboard) => {
-  let unsubType: (() => void) | null = null;
-
-  const promise = new Promise<{ char: string | null; key: string }>(
-    (resolve) => {
-      const onType: TypeListener = (char, key) => {
-        if (!getIsModifierKey(key)) {
-          resolve({ char, key });
-        }
-      };
-      unsubType = keyboard.addTypeListener(onType);
-    },
-  );
-
-  return promise.finally(() => {
-    unsubType?.();
-  });
-};
-
-export const waitForKeysUp = (keyboard: Keyboard) => {
-  let unsub: (() => void) | null = null;
-
-  const promise = new Promise<void>((resolve) => {
-    const onType: VoidListener = () => {
-      resolve();
+export const readKey = async (
+  keyboard: Keyboard,
+): Promise<{ char: string | null; key: KeyCode }> => {
+  keyboard.flushEventBuffer();
+  while (true) {
+    const ev = await keyboard.waitForNextEvent();
+    if (!ev.pressed) continue;
+    if (getIsModifierKey(ev.code)) continue;
+    return {
+      char: ev.char,
+      key: ev.code,
     };
-    unsub = keyboard.addAllKeysUpListener(onType);
-  });
-
-  return promise.finally(() => {
-    unsub?.();
-  });
+  }
 };

@@ -1,3 +1,4 @@
+import { getIsModifierKey } from "./isModifierKey";
 import { Keyboard } from "./Keyboard";
 import { KeyCode } from "./types";
 
@@ -93,6 +94,9 @@ export class ScreenKeyboard {
         isAltDown: this.isAltDown,
         isCapsOn: this.isCapsOn,
         isMetaDown: this.isMetaDown,
+        isAutoRepeat: false,
+        char: null,
+        isModifier: getIsModifierKey(code),
       });
     }
   }
@@ -115,6 +119,9 @@ export class ScreenKeyboard {
           isAltDown: this.isAltDown,
           isCapsOn: this.isCapsOn,
           isMetaDown: this.isMetaDown,
+          isAutoRepeat: false,
+          char: null,
+          isModifier: getIsModifierKey(code),
         });
       }
     }

@@ -143,6 +143,7 @@ class Pengsweeper extends State {
     std.resetConsole();
     std.clearConsole();
     std.setIsConsoleCursorVisible(false);
+    std.flushKeyboardEvents();
 
     this.needsRedraw = true;
   }
@@ -292,38 +293,43 @@ class Pengsweeper extends State {
   update(dt: number) {
     const { std } = this.pc;
     if (this.getIsFocused()) {
-      if (std.getWasKeyPressed("ArrowRight")) {
-        this.moveCursor({ x: 1, y: 0 });
-      }
-      if (std.getWasKeyPressed("ArrowLeft")) {
-        this.moveCursor({ x: -1, y: 0 });
-      }
-      if (std.getWasKeyPressed("ArrowUp")) {
-        this.moveCursor({ x: 0, y: -1 });
-      }
-      if (std.getWasKeyPressed("ArrowDown")) {
-        this.moveCursor({ x: 0, y: 1 });
-      }
-      if (std.getWasKeyPressed("Space")) {
-        if (this.cursor) {
-          this.openCell(this.cursor);
+      while (true) {
+        const ev = std.getNextKeyboardEvent();
+        if (!ev) break;
+        if (ev.isModifier || !ev.pressed) continue;
+
+        if (ev.code === "ArrowRight") {
+          this.moveCursor({ x: 1, y: 0 });
+        }
+        if (ev.code === "ArrowLeft") {
+          this.moveCursor({ x: -1, y: 0 });
+        }
+        if (ev.code === "ArrowUp") {
+          this.moveCursor({ x: 0, y: -1 });
+        }
+        if (ev.code === "ArrowDown") {
+          this.moveCursor({ x: 0, y: 1 });
+        }
+        if (ev.code === "Space") {
+          if (this.cursor) {
+            this.openCell(this.cursor);
+          }
+        }
+        if (ev.code === "KeyF") {
+          if (this.cursor) {
+            this.toggleCellFlag(this.cursor);
+          }
+        }
+        if (ev.code === "KeyR") {
+          this.signal.emit({ key: "reset" });
+        }
+        if (ev.code === "F1") {
+          this.signal.emit({ key: "help" });
+        }
+        if (ev.code === "Escape") {
+          this.signal.emit({ key: "quit" });
         }
       }
-      if (std.getWasKeyPressed("KeyF")) {
-        if (this.cursor) {
-          this.toggleCellFlag(this.cursor);
-        }
-      }
-      if (std.getWasKeyPressed("KeyR")) {
-        this.signal.emit({ key: "reset" });
-      }
-      if (std.getWasKeyPressed("F1")) {
-        this.signal.emit({ key: "help" });
-      }
-      if (std.getWasKeyPressed("Escape")) {
-        this.signal.emit({ key: "quit" });
-      }
-      std.resetKeyPressedHistory();
     }
 
     if (this.needsRedraw) {
@@ -558,7 +564,7 @@ class Help extends State {
 
     const { std } = this.pc;
 
-    std.resetKeyPressedHistory();
+    std.flushKeyboardEvents();
   }
 
   override onFocus() {
@@ -600,11 +606,13 @@ class Help extends State {
 
     const { std } = this.pc;
 
-    if (std.getWasAnyKeyPressed()) {
-      this.signal.emit({ key: "exit" });
+    while (true) {
+      const ev = std.getNextKeyboardEvent();
+      if (!ev) break;
+      if (!ev.isModifier && ev.pressed) {
+        this.signal.emit({ key: "exit" });
+      }
     }
-
-    std.resetKeyPressedHistory();
   }
 }
 
@@ -648,6 +656,7 @@ class MainMenu extends State {
       fgColor: classicColors["lightSpringGreen"],
     });
     std.resetConsoleAttributes();
+    std.flushKeyboardEvents();
   }
 
   override update(dt: number) {
@@ -659,20 +668,24 @@ class MainMenu extends State {
       return;
     }
 
-    if (std.getWasKeyPressed("Digit1") || std.getWasKeyPressed("Numpad1")) {
-      this.signal.emit({ key: "select", value: "1" });
-    }
-    if (std.getWasKeyPressed("Digit2") || std.getWasKeyPressed("Numpad2")) {
-      this.signal.emit({ key: "select", value: "2" });
-    }
-    if (std.getWasKeyPressed("Digit3") || std.getWasKeyPressed("Numpad3")) {
-      this.signal.emit({ key: "select", value: "3" });
-    }
-    if (std.getWasKeyPressed("Escape")) {
-      this.signal.emit({ key: "exit" });
-    }
+    while (true) {
+      const ev = std.getNextKeyboardEvent();
+      if (!ev) break;
+      if (ev.isModifier || !ev.pressed) continue;
 
-    std.resetKeyPressedHistory();
+      if (ev.code === "Digit1" || ev.code === "Numpad1") {
+        this.signal.emit({ key: "select", value: "1" });
+      }
+      if (ev.code === "Digit2" || ev.code === "Numpad2") {
+        this.signal.emit({ key: "select", value: "2" });
+      }
+      if (ev.code === "Digit3" || ev.code === "Numpad3") {
+        this.signal.emit({ key: "select", value: "3" });
+      }
+      if (ev.code === "Escape") {
+        this.signal.emit({ key: "exit" });
+      }
+    }
   }
 }
 
