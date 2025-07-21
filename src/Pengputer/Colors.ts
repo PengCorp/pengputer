@@ -225,7 +225,20 @@ export class Colors implements Executable {
     std.clearConsole();
     std.writeConsole("Classic colors\n");
 
-    for (let i = 0; i < 0x08; i += 1) {
+    for (const i of [
+      "red",
+      "orange",
+      "yellow",
+      "chartreuse",
+      "green",
+      "springGreen",
+      "cyan",
+      "azure",
+      "blue",
+      "violet",
+      "magenta",
+      "rose",
+    ]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });
@@ -233,23 +246,20 @@ export class Colors implements Executable {
     std.resetConsole();
     std.writeConsole("\n");
 
-    for (let i = 0x08; i < 0x10; i += 1) {
-      std.writeConsole(CHAR, {
-        bgColor: classicColors[i],
-      });
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x10; i < 0x18; i += 1) {
-      std.writeConsole(CHAR, {
-        bgColor: classicColors[i],
-      });
-    }
-    std.resetConsole();
-    std.writeConsole("\n");
-
-    for (let i = 0x18; i < 0x20; i += 1) {
+    for (const i of [
+      "lightRed",
+      "lightOrange",
+      "lightYellow",
+      "lightChartreuse",
+      "lightGreen",
+      "lightSpringGreen",
+      "lightCyan",
+      "lightAzure",
+      "lightBlue",
+      "lightViolet",
+      "lightMagenta",
+      "lightRose",
+    ]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });
