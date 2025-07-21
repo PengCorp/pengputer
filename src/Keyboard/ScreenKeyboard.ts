@@ -1,4 +1,3 @@
-import { getIsModifierKey } from "./isModifierKey";
 import { Keyboard } from "./Keyboard";
 import { KeyCode } from "./types";
 
