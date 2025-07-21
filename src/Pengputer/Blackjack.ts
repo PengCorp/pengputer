@@ -486,6 +486,16 @@ export class Blackjack implements Executable {
     while (!this.isQuitting) {
       this.resetRound();
 
+      this.players = this.players.filter((p) => p.cash > 0);
+
+      if (this.players.length === 0) {
+        std.writeConsole(
+          "Seems like you are a little short on cash... Better luck next time!\n",
+        );
+        this.isQuitting = true;
+        continue;
+      }
+
       await this.askForBets();
       if (this.isQuitting) return;
 
@@ -556,6 +566,10 @@ export class Blackjack implements Executable {
           } else {
             std.writeConsole(`${player.name} lost $${hand.bet}.\n`);
           }
+        }
+
+        if (player.cash === 0) {
+          std.writeConsole(`${player.name} is felted!\n`);
         }
       }
 
