@@ -190,6 +190,7 @@ export class Keyboard {
   }
 
   public flushEventBuffer() {
+    this._resetAutorepeat();
     this.eventBuffer = [];
   }
 
