@@ -22,11 +22,46 @@ export interface Executable {
 }
 
 export class FilePath {
+  static tryParse(
+    path: string,
+    defaultDrive: string | null = null,
+  ): FilePath | null {
+    if (path.length === 0) return new FilePath(null, [], false);
+    if (path === "/") return new FilePath(null, [], true);
+
+    let drive: string | null = null;
+
+    const colonIndex = path.indexOf(":");
+    if (colonIndex >= 0) {
+      drive = path.slice(0, colonIndex).toUpperCase();
+      path = path.slice(colonIndex + 1);
+      // TODO(local): file info parse error
+      if (drive.length !== 1) return null;
+      if (path.slice(0, 1) !== "/") return null;
+
+      // TODO(local): file info parse error
+      if (drive !== "A" && drive !== "C") return null;
+    }
+
+    const isAbsolute = path.length > 1 && path[0] === "/";
+    if (isAbsolute) {
+      path = path.slice(1);
+      if (drive === null) drive = defaultDrive;
+    }
+
+    const pieces = path.split("/").filter((s) => s.length > 0);
+    return new FilePath(drive, pieces, isAbsolute);
+  }
+
   private _drive: string | null;
   private _pieces: string[];
   private _isAbsolute: boolean;
 
-  constructor(drive: string | null, pieces: string[], isAbsolute: boolean) {
+  private constructor(
+    drive: string | null,
+    pieces: string[],
+    isAbsolute: boolean,
+  ) {
     isAbsolute = drive !== null || isAbsolute;
 
     this._drive = drive;
@@ -49,16 +84,19 @@ export class FilePath {
   get drive() {
     return this._drive;
   }
-  get pieces() {
+
+  get pieces(): readonly string[] {
     return [...this._pieces];
   }
 
   hasDrive() {
     return this.drive !== null;
   }
+
   isAbsolute() {
     return this._isAbsolute;
   }
+
   isRelative() {
     return !this._isAbsolute;
   }
@@ -92,137 +130,130 @@ export class FilePath {
   }
 }
 
-export function parseFilePath(
-  path: string,
-  defaultDrive: string | null = null,
-): FilePath | null {
-  if (path.length === 0) return new FilePath(null, [], false);
-  if (path === "/") return new FilePath(null, [], true);
+export class FileInfoDirectory {
+  type: FileSystemObjectType.Directory = FileSystemObjectType.Directory;
 
-  let drive: string | null = null;
+  #name: string;
+  #entries: FileInfo[] = [];
 
-  const colonIndex = path.indexOf(":");
-  if (colonIndex >= 0) {
-    drive = path.slice(0, colonIndex).toUpperCase();
-    path = path.slice(colonIndex + 1);
-    // TODO(local): file info parse error
-    if (drive.length !== 1) return null;
-    if (path.slice(0, 1) !== "/") return null;
-
-    // TODO(local): file info parse error
-    if (drive !== "A" && drive !== "C") return null;
+  constructor(name: string, entries: FileInfo[]) {
+    this.#name = name;
+    this.#entries = entries;
   }
 
-  const isAbsolute = path.length > 1 && path[0] === "/";
-  if (isAbsolute) {
-    path = path.slice(1);
-    if (drive === null) drive = defaultDrive;
+  get name() {
+    return this.#name;
   }
 
-  const pieces = path.split("/").filter((s) => s.length > 0);
-  return new FilePath(drive, pieces, isAbsolute);
-}
-
-export class Directory {
-  private items: FileSystemEntry[] = [];
-
-  getItems() {
-    return [...this.items];
+  get entries(): readonly FileInfo[] {
+    return [...this.#entries];
   }
 
-  getItem(name: string) {
-    return this.items.find((e) => e.name === name) ?? null;
+  addItem(info: FileInfoNoDirectory) {
+    this.#entries.push(info);
+    return info;
   }
 
-  mkdir(name: string) {
-    const newDir = new Directory();
-    this.items.push({
-      type: FileSystemObjectType.Directory,
-      data: newDir,
-      name,
-    });
-    return newDir;
-  }
-
-  addItem(item: FileSystemEntry) {
-    this.items.push(item);
-    return item;
+  mkdir(name: string): FileInfoDirectory {
+    const dir = new FileInfoDirectory(name, []);
+    this.#entries.push(dir);
+    return dir;
   }
 }
 
-export type FileSystemEntry =
-  | {
-      type: FileSystemObjectType.Directory;
-      name: string;
-      data: Directory;
-    }
-  | {
-      type: FileSystemObjectType.TextFile;
-      name: string;
-      data: TextFile;
-    }
-  | {
-      type: FileSystemObjectType.Executable;
-      name: string;
-      createInstance: () => Executable;
-    }
-  | {
-      type: FileSystemObjectType.Audio;
-      name: string;
-      data: AudioFile;
-    }
-  | {
-      type: FileSystemObjectType.Image;
-      name: string;
-      data: ImageFile;
-    }
-  | {
-      type: FileSystemObjectType.Link;
-      name: string;
-      data: LinkFile;
-      openType: LinkOpenType;
-    };
+export interface FileInfoText {
+  type: FileSystemObjectType.TextFile;
+  name: string;
+  data: TextFile;
+}
+
+export interface FileInfoExecutable {
+  type: FileSystemObjectType.Executable;
+  name: string;
+  createInstance: () => Executable;
+}
+
+export interface FileInfoAudio {
+  type: FileSystemObjectType.Audio;
+  name: string;
+  data: AudioFile;
+}
+
+export interface FileInfoImage {
+  type: FileSystemObjectType.Image;
+  name: string;
+  data: ImageFile;
+}
+
+export interface FileInfoLink {
+  type: FileSystemObjectType.Link;
+  name: string;
+  data: LinkFile;
+  openType: LinkOpenType;
+}
+
+export type FileInfo =
+  | FileInfoDirectory
+  | FileInfoText
+  | FileInfoExecutable
+  | FileInfoAudio
+  | FileInfoImage
+  | FileInfoLink;
+
+export type FileInfoNoDirectory =
+  | FileInfoText
+  | FileInfoExecutable
+  | FileInfoAudio
+  | FileInfoImage
+  | FileInfoLink;
+
+interface FileSystemDrive {
+  rootEntry: FileInfoDirectory;
+}
 
 export class FileSystem {
-  private rootDir: Directory = new Directory();
-  private root: FileSystemEntry = {
-    type: FileSystemObjectType.Directory,
-    name: "/",
-    data: this.rootDir,
-  };
+  private drives: { [id: string]: FileSystemDrive };
 
-  constructor() {}
+  constructor() {
+    this.drives = {
+      A: { rootEntry: new FileInfoDirectory("/", []) },
+      C: { rootEntry: new FileInfoDirectory("/", []) },
+    };
+  }
 
-  getAtPath(path: FilePath | null): FileSystemEntry | null {
-    if (path === null) {
-      return this.root;
-    }
+  getFileInfo(path: FilePath | null): FileInfo | null {
+    if (path === null) return null;
 
-    const pieces = path.pieces;
+    const { drive, pieces } = path;
+    if (drive === null) return null;
+
+    const fsDrive: FileSystemDrive = this.drives[drive];
+    if (fsDrive === undefined) return null;
+
+    const rootEntry = fsDrive.rootEntry;
     if (pieces.length === 0) {
-      return this.root;
+      return rootEntry;
     }
 
-    let cur = this.rootDir;
-    let curPathI = 0;
-    while (curPathI < pieces.length - 1) {
-      const items = cur.getItems();
+    let cur: FileInfoDirectory = rootEntry;
+    for (let i = 0; i < pieces.length - 1; i++) {
+      const pathName = pieces[i];
+
+      const entries = cur.entries;
       const found =
-        items.find(
+        entries.find(
           (e) =>
-            e.type === FileSystemObjectType.Directory &&
-            e.name === pieces[curPathI],
+            e.type === FileSystemObjectType.Directory && e.name === pathName,
         ) ?? null;
+
       if (found && found.type === FileSystemObjectType.Directory) {
-        cur = found.data;
-        curPathI += 1;
-      } else {
-        return null;
-      }
+        cur = found;
+      } else return null;
     }
 
-    const items = cur.getItems();
-    const found = items.find((e) => e.name === pieces[curPathI]) ?? null;
-    return found;
+    const pathName = pieces[pieces.length - 1];
+
+    const entries = cur.entries;
+    return entries.find((e) => e.name === pathName) ?? null;
   }
 }
