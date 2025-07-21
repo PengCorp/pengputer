@@ -1502,7 +1502,9 @@ class GameOver implements GameState {
       if (!ev) break;
       if (ev.isModifier || !ev.pressed) continue;
 
-      this.onContinue.emit();
+      if (ev.code === "Escape") {
+        this.onContinue.emit();
+      }
     }
   }
 
