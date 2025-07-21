@@ -19,6 +19,7 @@
     "@types/lodash": "^4.17.17",
     "@types/tinycolor2": "^1.4.6",
     "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "sass": "^1.89.2",
     "typescript": "^5.8.3",
@@ -28,5 +29,10 @@
     "grapheme-splitter": "^1.0.4",
     "lodash": "^4.17.21",
     "tinycolor2": "^1.6.0"
+  },
+  "lint-staged": {
+    "src/**/*.{js,ts,jsx,tsx,html,css,scss}": [
+      "prettier --write --ignore-unknown"
+    ]
   }
 }
