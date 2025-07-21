@@ -399,7 +399,6 @@ export class PengerShell implements Executable {
         fileEntry.openType === "run"
       ) {
         std.writeConsole("Running...\n");
-        await std.waitForKeyboardKeysUp();
         fileEntry.data.open();
       } else {
         std.writeConsole(`Not executable\n`);
@@ -455,7 +454,6 @@ export class PengerShell implements Executable {
         fileEntry.openType === "open"
       ) {
         std.writeConsole("Opening...\n");
-        await std.waitForKeyboardKeysUp();
         fileEntry.data.open();
       } else {
         std.writeConsole(`Not readable\n`);

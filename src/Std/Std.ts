@@ -6,7 +6,7 @@ import { ClickListener } from "../Screen/Screen";
 import { CellAttributes, TextBuffer } from "../TextBuffer";
 import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
-import { readKey, readLine, waitForKeysUp } from "./readLine";
+import { readKey, readLine } from "./readLine";
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
   reset?: boolean;
@@ -228,36 +228,20 @@ export class Std {
     return readKey(this.keyboard);
   }
 
-  waitForKeyboardKeysUp() {
-    return waitForKeysUp(this.keyboard);
-  }
-
   getIsKeyPressed(keyCode: KeyCode) {
     return this.keyboard.getIsKeyPressed(keyCode);
   }
 
-  getLastKeyPressedOf(keyCodes: KeyCode[]) {
-    return this.keyboard.getLastPressedOf(keyCodes);
+  flushKeyboardEvents() {
+    return this.keyboard.flushEventBuffer();
   }
 
-  addKeyTypeListener(callback: TypeListener) {
-    return this.keyboard.addTypeListener(callback);
+  getNextKeyboardEvent() {
+    return this.keyboard.getNextEvent();
   }
 
-  addAllKeysUpListener(callback: VoidListener) {
-    return this.keyboard.addAllKeysUpListener(callback);
-  }
-
-  getWasKeyPressed(keyCode: KeyCode) {
-    return this.keyboard.getWasKeyPressed(keyCode);
-  }
-
-  getWasAnyKeyPressed() {
-    return this.keyboard.getWasAnyKeyPressed();
-  }
-
-  resetKeyPressedHistory() {
-    return this.keyboard.resetWereKeysPressed();
+  async waitForNextKeyboardEvent() {
+    return await this.keyboard.waitForNextEvent();
   }
 
   /* ===================== MOUSE ========================= */
