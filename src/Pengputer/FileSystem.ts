@@ -77,11 +77,9 @@ export class FilePath {
       drive = driveName;
 
       path = path.slice(colonIndex + 1);
-      // TODO(local): file info parse error
-      if (path.slice(0, 1) !== "/") return null;
     }
 
-    const isAbsolute = path.length > 1 && path[0] === "/";
+    const isAbsolute = path.length === 0 || path[0] === "/";
     if (isAbsolute) {
       path = path.slice(1);
       if (drive === null) drive = defaultDrive;
