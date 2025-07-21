@@ -77,16 +77,6 @@ export const loadFont9x16 = async () => {
     2,
   );
 
-
-
-
-
-
-
-
-
-
-  
   await font9x16.loadAtlas("cp437custom", cp437custom, [
     [
       "penger00",

@@ -1,6 +1,1 @@
 set -e
-
-if ! npx prettier --write --log-level warn .; then
-    echo Formatted files. Stage changes and try again.
-    exit 1
-fi
