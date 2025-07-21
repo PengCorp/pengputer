@@ -6,7 +6,12 @@ import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
 import { waitFor } from "../Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
-import { FileSystem, FileSystemObjectType, parseFilePath } from "./FileSystem";
+import {
+  FileSystem,
+  FileSystemObjectType,
+  FileInfoDirectory,
+} from "./FileSystem";
+import { FilePath, FileInfo } from "./FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { PC } from "./PC";
 import { PengerShell } from "./PengerShell";
@@ -56,8 +61,8 @@ class PengOS {
 
   private async runShell() {
     const { std } = this.pc;
-    const pengerShellExe = this.pc.fileSystem.getAt(
-      parseFilePath("C:/software/psh.exe"),
+    const pengerShellExe = this.pc.fileSystem.getFileInfo(
+      FilePath.tryParse("C:/software/psh.exe"),
     );
     if (
       pengerShellExe !== null &&
@@ -73,10 +78,9 @@ class PengOS {
   }
 
   async startup() {
-    const rootDirEntry = this.pc.fileSystem.getAtPath([])!;
-    const rootDir =
-      rootDirEntry.type === FileSystemObjectType.Directory && rootDirEntry.data;
-
+    const rootDir = this.pc.fileSystem.getFileInfo(
+      FilePath.tryParse("C:/"),
+    )! as FileInfoDirectory;
     if (!rootDir) {
       throw new Error("Root dir is undefined.");
     }

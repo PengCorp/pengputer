@@ -847,6 +847,10 @@ class Tetris implements GameState {
   public onQuit: Signal = new Signal();
   public onGameOver: Signal = new Signal();
 
+  private isDownPressed: boolean = false;
+  private isLeftPressed: boolean = false;
+  private isRightPressed: boolean = false;
+
   constructor(pc: PC) {
     this.pc = pc;
 
@@ -1217,6 +1221,9 @@ class Tetris implements GameState {
     );
 
     std.flushKeyboardEvents();
+    this.isLeftPressed = false;
+    this.isRightPressed = false;
+    this.isRightPressed = false;
   }
 
   public onLeave() {}
@@ -1231,6 +1238,17 @@ class Tetris implements GameState {
     while (true) {
       const ev = std.getNextKeyboardEvent();
       if (!ev) break;
+
+      if (ev.code === "ArrowDown") {
+        this.isDownPressed = ev.pressed;
+      }
+      if (ev.code === "ArrowLeft") {
+        this.isLeftPressed = ev.pressed;
+      }
+      if (ev.code === "ArrowRight") {
+        this.isRightPressed = ev.pressed;
+      }
+
       if (ev.isModifier || !ev.pressed || ev.isAutoRepeat) continue;
 
       if (ev.code === "ArrowUp") {
@@ -1255,15 +1273,12 @@ class Tetris implements GameState {
     }
 
     if (this.fallingPiece) {
-      this.fallingPiece.setIsPushdown(std.getIsKeyPressed("ArrowDown"));
-      if (std.getIsKeyPressed("ArrowLeft")) {
+      this.fallingPiece.setIsPushdown(this.isDownPressed);
+      if (this.isLeftPressed) {
         this.fallingPiece.setDirection({ x: -1, y: 0 });
-      } else if (std.getIsKeyPressed("ArrowRight")) {
+      } else if (this.isRightPressed) {
         this.fallingPiece.setDirection({ x: 1, y: 0 });
-      } else if (
-        !std.getIsKeyPressed("ArrowLeft") &&
-        !std.getIsKeyPressed("ArrowRight")
-      ) {
+      } else if (!this.isLeftPressed && !this.isRightPressed) {
         this.fallingPiece.setDirection({ x: 0, y: 0 });
       }
     }
