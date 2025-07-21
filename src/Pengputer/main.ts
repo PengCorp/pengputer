@@ -35,6 +35,7 @@ import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
+import { PlisInterpreter } from "./Plis";
 
 const PATH_SEPARATOR = "/";
 
@@ -138,6 +139,11 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "psh.exe",
       createInstance: () => new PengerShell(this.pc),
+    });
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "plis.exe",
+      createInstance: () => new PlisInterpreter(this.pc),
     });
 
     const gamesDir = rootDir.mkdir("games");
