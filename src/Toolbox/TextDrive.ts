@@ -18,7 +18,8 @@ class TextDrive {
 
     this.actionInProgress = true;
     return new Promise<void>((resolve, reject) => {
-      const downloadButton = document.createElement("button");
+      const downloadButton = document.createElement("div");
+      downloadButton.classList.add("button");
       downloadButton.textContent = "Download";
       downloadButton.onclick = () => {
         const blob = new Blob([text], { type: "text/plain" });
@@ -33,7 +34,8 @@ class TextDrive {
       };
       this.container.appendChild(downloadButton);
 
-      const closeButton = document.createElement("button");
+      const closeButton = document.createElement("div");
+      closeButton.classList.add("button");
       closeButton.textContent = "Cancel";
       closeButton.onclick = () => {
         reject();
@@ -52,7 +54,8 @@ class TextDrive {
 
     this.actionInProgress = true;
     return new Promise<{ text: string; name: string }>((resolve, reject) => {
-      const uploadButton = document.createElement("button");
+      const uploadButton = document.createElement("div");
+      uploadButton.classList.add("button");
       uploadButton.textContent = "Upload";
       uploadButton.onclick = () => {
         const input = document.createElement("input");
@@ -70,7 +73,8 @@ class TextDrive {
       };
       this.container.appendChild(uploadButton);
 
-      const closeButton = document.createElement("button");
+      const closeButton = document.createElement("div");
+      closeButton.classList.add("button");
       closeButton.textContent = "Cancel";
       closeButton.onclick = () => {
         reject();

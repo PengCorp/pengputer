@@ -240,7 +240,19 @@ header a {
   flex-direction: column;
   align-items: stretch;
 
-  button {
-    padding: 8px 0;
+  .button {
+    display: inline-block;
+    text-align: center;
+    padding: 5px;
+    font-family: sans-serif;
+    background: #bbb;
+    border: 4px outset #aaa;
+    box-sizing: border-box;
+    user-select: none;
+  }
+
+  .button:active {
+    background: #aaa;
+    border: 4px solid #666;
   }
 }
