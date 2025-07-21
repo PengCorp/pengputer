@@ -42,26 +42,43 @@ class PaintCtx {
       buffer.push(row);
     }
     this.buffer = buffer;
+
+    this.imageHeight = height;
+    this.imageWidth = width;
   }
 }
 
 class Paint extends State {
   private pc: PC;
   private std: Std;
-  private p: PaintCtx;
+  private ctx: PaintCtx;
 
   private isDirty: boolean = false;
 
-  constructor(pc: PC, p: PaintCtx) {
+  constructor(pc: PC, ctx: PaintCtx) {
     super();
 
     this.pc = pc;
     this.std = pc.std;
-    this.p = p;
+    this.ctx = ctx;
   }
 
   private drawStatusLine() {
     printStatusLine(this.std, " F1 - menu │ ESC - quit │");
+  }
+
+  private drawBuffer() {
+    const { std, ctx } = this;
+
+    const consoleSize = this.std.getConsoleSize();
+    consoleSize.h - 1; // for status line
+
+    for (let y = 0; y < ctx.imageHeight && y < consoleSize.h; y += 1) {
+      for (let x = 0; x < ctx.imageWidth && x < consoleSize.w; x += 1) {
+        std.setConsoleCursorPosition({ x, y });
+        std.writeConsole(ctx.buffer[y][x]);
+      }
+    }
   }
 
   override update(dt: number) {
@@ -70,17 +87,11 @@ class Paint extends State {
     std.resetConsoleAttributes();
     std.clearConsole();
 
-    std.setConsoleCursorPosition({ x: this.p.cursorX, y: this.p.cursorY });
-    std.writeConsole("X");
-    std.setConsoleCursorPosition({ x: this.p.cursorX, y: this.p.cursorY });
-    std.updateConsoleAttributes({
-      blink: true,
-      underline: true,
-      bgColor: classicColors["red"],
-    });
-    std.writeConsoleAttributes();
+    this.drawBuffer();
 
     this.drawStatusLine();
+
+    std.setConsoleCursorPosition({ x: this.ctx.cursorX, y: this.ctx.cursorY });
   }
 }
 
@@ -120,7 +131,6 @@ export class PengPaint implements Executable {
 
     std.resetConsole();
     std.clearConsole();
-    std.setIsConsoleCursorVisible(false);
 
     this.paintCtx.setImageSize(5, 5);
 
