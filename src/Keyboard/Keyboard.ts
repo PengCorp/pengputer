@@ -26,6 +26,12 @@ export class Keyboard {
 
   private _isCapsOn: boolean = false;
 
+  public forceShift: boolean = false;
+  public forceControl: boolean = false;
+  public forceAlt: boolean = false;
+  public forceMeta: boolean = false;
+  public forceCaps: boolean = false;
+
   constructor() {
     this._pressed = new Set();
     this._layout = ANSI_LAYOUT;
@@ -43,13 +49,22 @@ export class Keyboard {
   private _getModifiersState() {
     return {
       isShiftDown:
-        this._pressed.has("ShiftLeft") || this._pressed.has("ShiftRight"),
+        this.forceShift ||
+        this._pressed.has("ShiftLeft") ||
+        this._pressed.has("ShiftRight"),
       isControlDown:
-        this._pressed.has("ControlLeft") || this._pressed.has("ControlRight"),
-      isAltDown: this._pressed.has("AltLeft") || this._pressed.has("AltRight"),
+        this.forceControl ||
+        this._pressed.has("ControlLeft") ||
+        this._pressed.has("ControlRight"),
+      isAltDown:
+        this.forceAlt ||
+        this._pressed.has("AltLeft") ||
+        this._pressed.has("AltRight"),
       isMetaDown:
-        this._pressed.has("MetaLeft") || this._pressed.has("MetaRight"),
-      isCapsOn: this._isCapsOn,
+        this.forceMeta ||
+        this._pressed.has("MetaLeft") ||
+        this._pressed.has("MetaRight"),
+      isCapsOn: this.forceCaps || this._isCapsOn,
     };
   }
 
@@ -77,7 +92,13 @@ export class Keyboard {
     return ev;
   }
 
-  public handleEvent(ev: PengKeyboardEvent) {
+  public handleKeyCode(kc: KeyCode, pressed: boolean) {
+    const ev = this._getEventFromCode(kc);
+    ev.pressed = pressed;
+    this._handleEvent(ev);
+  }
+
+  private _handleEvent(ev: PengKeyboardEvent) {
     // if char not provided attempt to fill it in
     if (!ev.char) {
       ev.char = this._getCharFromLayout(ev) ?? null;
@@ -102,7 +123,7 @@ export class Keyboard {
 
     const pengEvent = this._getPengKeyboardEventFromKeyboardEvent(e, true);
 
-    this.handleEvent(pengEvent);
+    this._handleEvent(pengEvent);
   }
 
   private _onKeyUp(e: KeyboardEvent) {
@@ -111,7 +132,7 @@ export class Keyboard {
 
     const pengEvent = this._getPengKeyboardEventFromKeyboardEvent(e, false);
 
-    this.handleEvent(pengEvent);
+    this._handleEvent(pengEvent);
   }
 
   private _resetAutorepeat() {

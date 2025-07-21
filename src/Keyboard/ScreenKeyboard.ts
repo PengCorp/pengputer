@@ -73,31 +73,25 @@ export class ScreenKeyboard {
     if (code === "CapsLock") {
       this.isCapsOn = !this.isCapsOn;
       this.setScreenKeyDown(this.keysCapsLocks, this.isCapsOn);
+      this.keyboard.forceCaps = this.isCapsOn;
     } else if (code === "ShiftLeft" || code === "ShiftRight") {
       this.isShiftDown = !this.isShiftDown;
       this.setScreenKeyDown(this.keysShifts, this.isShiftDown);
+      this.keyboard.forceShift = this.isShiftDown;
     } else if (code === "ControlLeft" || code === "ControlRight") {
       this.isCtrlDown = !this.isCtrlDown;
       this.setScreenKeyDown(this.keysControls, this.isCtrlDown);
+      this.keyboard.forceControl = this.isCtrlDown;
     } else if (code === "AltLeft" || code === "AltRight") {
       this.isAltDown = !this.isAltDown;
       this.setScreenKeyDown(this.keysAlts, this.isAltDown);
+      this.keyboard.forceAlt = this.isAltDown;
     } else if (code === "MetaLeft" || code === "MetaRight") {
       this.isMetaDown = !this.isMetaDown;
       this.setScreenKeyDown(this.keysMeta, this.isMetaDown);
+      this.keyboard.forceMeta = this.isMetaDown;
     } else if (code) {
-      this.keyboard.handleEvent({
-        code,
-        pressed: true,
-        isShiftDown: this.isShiftDown,
-        isControlDown: this.isCtrlDown,
-        isAltDown: this.isAltDown,
-        isCapsOn: this.isCapsOn,
-        isMetaDown: this.isMetaDown,
-        isAutoRepeat: false,
-        char: null,
-        isModifier: getIsModifierKey(code),
-      });
+      this.keyboard.handleKeyCode(code, true);
     }
   }
 
@@ -111,18 +105,7 @@ export class ScreenKeyboard {
       } else if (code === "AltLeft" || code === "AltRight") {
       } else if (code === "MetaLeft" || code === "MetaRight") {
       } else if (code) {
-        this.keyboard.handleEvent({
-          code,
-          pressed: false,
-          isShiftDown: this.isShiftDown,
-          isControlDown: this.isCtrlDown,
-          isAltDown: this.isAltDown,
-          isCapsOn: this.isCapsOn,
-          isMetaDown: this.isMetaDown,
-          isAutoRepeat: false,
-          char: null,
-          isModifier: getIsModifierKey(code),
-        });
+        this.keyboard.handleKeyCode(code, false);
       }
     }
   }
