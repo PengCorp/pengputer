@@ -76,18 +76,24 @@ export const loadFont9x16 = async () => {
     cp437legacyCharacterValueMap,
     2,
   );
+
+
+
+
+
+  
   await font9x16.loadAtlas("cp437custom", cp437custom, [
     [
       "penger00",
       "penger01",
       "penger02",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
+      "pengDollar",
+      "floppy0",
+      "floppy1",
+      "floppyDrive0",
+      "floppyDrive1",
+      "hardDrive0",
+      "hardDrive1",
       "",
       "",
       "",

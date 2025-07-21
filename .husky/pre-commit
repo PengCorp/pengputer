@@ -1,3 +1,6 @@
 set -e
 
-npx prettier --write --log-level warn . && git add .
+if ! npx prettier --write --log-level warn .; then
+    echo Formatted files. Stage changes and try again.
+    exit $?
+fi
