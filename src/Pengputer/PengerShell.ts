@@ -734,25 +734,14 @@ export class PengerShell implements Executable {
         return;
       }
 
-      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-      const floppy = _.find(floppyData, (d) => d.name === name);
-      if (!floppy) {
-        std.writeConsole(`No floppy with that name\n`);
-        return;
+      try {
+        this.pc.fileSystem.insertFloppy(label, name);
+        std.writeConsole(
+          `Floppy '${name}' is now available through ${label}:/\n`,
+        );
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
       }
-
-      if (!this.pc.fileSystem.tryInsertFloppy(label, floppy.data)) {
-        std.writeConsole(`Failed to insert floppy; it might be corrupt\n`);
-        return;
-      }
-
-      floppy.drive = label;
-      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-      std.writeConsole(
-        `Floppy '${name}' is now available through ${label}:/\n`,
-      );
 
       return;
     }
@@ -770,22 +759,14 @@ export class PengerShell implements Executable {
         return;
       }
 
-      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-      const floppy = _.find(floppyData, (d) => d.drive === label);
-      if (!floppy) {
-        std.writeConsole(`No floppy mounted to that drive\n`);
-        return;
+      try {
+        this.pc.fileSystem.ejectFloppy(label);
+        std.writeConsole(
+          `Drive ${label}:/ no longer contains a floppy\n`,
+        );
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
       }
-
-      this.pc.fileSystem.unmount(label);
-
-      floppy.drive = null;
-      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-      std.writeConsole(
-        `Floppy '${floppy.name}' is no longer available through ${label}:/\n`,
-      );
 
       return;
     }

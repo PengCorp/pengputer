@@ -465,7 +465,10 @@ export class FileSystem {
 
     for (let floppy of floppyData) {
       if (floppy.drive === null) continue;
-      this.tryInsertFloppy(floppy.drive, floppy.data);
+      try {
+        this.insertFloppy(floppy.drive, floppy.data);
+      } catch (e) {
+      }
     }
   }
 
@@ -496,20 +499,44 @@ export class FileSystem {
     localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
   }
 
-  tryInsertFloppy(label: DriveLabel, floppyString: string): boolean {
-    try {
-      const floppyContents = JSON.parse(floppyString) as FloppySerialized;
-      const drive = FloppyFileSystemDrive.fromSerialized(floppyContents);
-      if (drive === null) {
-        console.error("Failed to deserialize drive; can't mount it");
-        return false;
-      }
+  insertFloppy(label: DriveLabel, floppyName: string) {
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
 
-      return this.mount(label, drive);
-    } catch (e) {
-      console.error(e);
-      return false;
+    const floppy = _.find(floppyData, (d) => d.name === floppyName);
+    if (!floppy) {
+      throw new Error("No floppy with that name");
     }
+
+    const floppyContents = JSON.parse(floppy.data) as FloppySerialized;
+    const drive = FloppyFileSystemDrive.fromSerialized(floppyContents);
+    if (drive === null) {
+      throw new Error("Failed to deserialize drive; can't mount it");
+    }
+
+    if (!this.mount(label, drive)) {
+      throw new Error("Failed to insert floppy; it might be corrupt");
+    }
+
+    floppy.drive = label;
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+  }
+
+  ejectFloppy(label: DriveLabel) {
+    if (!this.drives[label]) return;
+
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+    const floppy = _.find(floppyData, (d) => d.drive === label);
+    if (!floppy) {
+      throw new Error("No floppy mounted to that drive");
+    }
+
+    this.unmount(label);
+
+    floppy.drive = null;
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
   }
 
   trySerializeFloppy(label: DriveLabel): string | null {
