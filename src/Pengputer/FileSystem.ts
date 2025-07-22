@@ -208,7 +208,7 @@ export class FileInfoDirectory {
   }
 
   addItem(info: Exclude<FileInfo, FileInfoDirectory>) {
-    if (_.find(this.#entries, e => e.name === info.name)) {
+    if (_.find(this.#entries, (e) => e.name === info.name)) {
       throw new Error(`${info.name} already exists`);
     }
 
@@ -217,7 +217,7 @@ export class FileInfoDirectory {
   }
 
   mkdir(name: string): FileInfoDirectory {
-    if (_.find(this.#entries, e => e.name === name)) {
+    if (_.find(this.#entries, (e) => e.name === name)) {
       throw new Error(`${name} already exists`);
     }
 
@@ -228,7 +228,7 @@ export class FileInfoDirectory {
 
   rmdir(name: string, force: boolean = false) {
     const entries = this.#entries;
-    const dir = _.find(entries, e => e.name === name);
+    const dir = _.find(entries, (e) => e.name === name);
     if (!dir) {
       throw new Error(`${name} does not exist`);
     }
@@ -241,7 +241,7 @@ export class FileInfoDirectory {
       throw new Error(`${name} is not empty`);
     }
 
-    _.remove(entries, e => e.name === name);
+    _.remove(entries, (e) => e.name === name);
   }
 }
 
@@ -573,9 +573,7 @@ export class FileSystem {
       const nextDirEntry = this.getFileInfo(nextDirPath);
 
       if (nextDirEntry === null) {
-        const prevDirEntry = this.getFileInfo(
-          nextDirPath.parentDirectory(),
-        )!;
+        const prevDirEntry = this.getFileInfo(nextDirPath.parentDirectory())!;
         if (
           prevDirEntry !== null &&
           prevDirEntry.type === FileSystemObjectType.Directory
@@ -583,9 +581,7 @@ export class FileSystem {
           prevDirEntry.mkdir(pieces[pathIndex]);
         }
       } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-        throw new Error(
-          `Path ${nextDirPath.toString()} is not a directory`,
-        );
+        throw new Error(`Path ${nextDirPath.toString()} is not a directory`);
       }
     }
   }
