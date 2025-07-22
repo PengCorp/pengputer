@@ -300,7 +300,7 @@ export class Blackjack implements Executable {
     }
   }
 
-  private printHands() {
+  private printHands(printEvaluation: boolean = false) {
     const { std } = this.pc;
 
     for (const p of [this.dealer, ...this.players]) {
@@ -310,7 +310,7 @@ export class Blackjack implements Executable {
         } else {
           std.writeConsole(`${_.padEnd("", NAME_FIELD_WIDTH)}  `);
         }
-        this.printHand(p.hands[i]);
+        this.printHand(p.hands[i], printEvaluation);
         std.writeConsole("\n");
       }
     }
@@ -360,7 +360,7 @@ export class Blackjack implements Executable {
     }
   }
 
-  private printHand(hand: Hand) {
+  private printHand(hand: Hand, printEvaluation = false) {
     const { std } = this.pc;
 
     const cards = hand.cards;
@@ -372,8 +372,11 @@ export class Blackjack implements Executable {
     std.writeConsole(
       `(${[
         String(hand.getSum().sum),
-        hand.getIsBlackjack() && hand.getIsRevealed() && " - blackjack!",
-        hand.getIsBusted() && " - busted",
+        printEvaluation &&
+          hand.getIsBlackjack() &&
+          hand.getIsRevealed() &&
+          " - blackjack!",
+        printEvaluation && hand.getIsBusted() && " - busted",
       ]
         .filter(Boolean)
         .join("")})`,
@@ -516,11 +519,12 @@ export class Blackjack implements Executable {
       this.dealInitialCards();
       const dealerHand = this.dealer.hands[0];
 
+      // handle insurance
+
       if (dealerHand.cards[0].value === "A") {
         std.writeConsole("The dealer has an ace.\n");
         std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
         this.printHand(this.dealer.hands[0]);
-        std.writeConsole("\n");
         for (
           let playerIndex = 0;
           playerIndex < this.players.length;
@@ -544,13 +548,13 @@ export class Blackjack implements Executable {
             }
           }
         }
-        // handle insurances
+        std.writeConsole("\n");
       }
 
       if (dealerHand.getIsBlackjack()) {
         std.writeConsole("Dealer has a blackjack!\n\n");
         dealerHand.reveal();
-        this.printHands();
+        this.printHands(true);
       } else {
         if (this.players.length > 1) {
           this.printHands();
@@ -583,7 +587,7 @@ export class Blackjack implements Executable {
           this.hitHand(this.dealer, dealerHand);
         }
 
-        this.printHands();
+        this.printHands(true);
       }
 
       // pay out
