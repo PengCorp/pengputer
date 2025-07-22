@@ -7,6 +7,8 @@ import {
   BinaryFile,
 } from "./fileTypes";
 
+import _ from "lodash";
+
 export const PATH_SEPARATOR = "/";
 export const LSKEY_FLOPPIES = "floppies";
 
@@ -137,6 +139,26 @@ export class FilePath {
     return !this.#isAbsolute;
   }
 
+  equals(other: FilePath): boolean {
+    if (this.drive !== other.drive) {
+      return false;
+    }
+
+    const thisPieces = this.#pieces;
+    const otherPieces = other.#pieces;
+    if (thisPieces.length !== otherPieces.length) {
+      return false;
+    }
+
+    for (let i = 0; i < thisPieces.length; i++) {
+      if (thisPieces[i] !== otherPieces[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   combine(other: FilePath) {
     if (other.isAbsolute()) return this;
     return new FilePath(
@@ -186,14 +208,40 @@ export class FileInfoDirectory {
   }
 
   addItem(info: Exclude<FileInfo, FileInfoDirectory>) {
+    if (_.find(this.#entries, e => e.name === info.name)) {
+      throw new Error(`${info.name} already exists`);
+    }
+
     this.#entries.push(info);
     return info;
   }
 
   mkdir(name: string): FileInfoDirectory {
+    if (_.find(this.#entries, e => e.name === name)) {
+      throw new Error(`${name} already exists`);
+    }
+
     const dir = new FileInfoDirectory(name, []);
     this.#entries.push(dir);
     return dir;
+  }
+
+  rmdir(name: string, force: boolean = false) {
+    const entries = this.#entries;
+    const dir = _.find(entries, e => e.name === name);
+    if (!dir) {
+      throw new Error(`${name} does not exist`);
+    }
+
+    if (dir.type !== FileSystemObjectType.Directory) {
+      throw new Error(`${name} is not a directory`);
+    }
+
+    if (dir.entries.length !== 0 && !force) {
+      throw new Error(`${name} is not empty`);
+    }
+
+    _.remove(entries, e => e.name === name);
   }
 }
 
@@ -514,5 +562,50 @@ export class FileSystem {
 
     const entries = cur.entries;
     return entries.find((e) => e.name === pathName) ?? null;
+  }
+
+  createDirectory(path: FilePath, wholePath: boolean = false) {
+    const pieces = path.pieces;
+    for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
+      const nextDirPath = FilePath.tryParse(
+        `${path.drive}:/${pieces.slice(0, pathIndex + 1).join("/")}`,
+      )!;
+      const nextDirEntry = this.getFileInfo(nextDirPath);
+
+      if (nextDirEntry === null) {
+        const prevDirEntry = this.getFileInfo(
+          nextDirPath.parentDirectory(),
+        )!;
+        if (
+          prevDirEntry !== null &&
+          prevDirEntry.type === FileSystemObjectType.Directory
+        ) {
+          prevDirEntry.mkdir(pieces[pathIndex]);
+        }
+      } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
+        throw new Error(
+          `Path ${nextDirPath.toString()} is not a directory`,
+        );
+      }
+    }
+  }
+
+  removeDirectory(path: FilePath, force: boolean = false) {
+    const parentPath = path.parentDirectory();
+    const parentDir = this.getFileInfo(parentPath);
+    if (parentDir === null) {
+      throw new Error(`${parentPath.toString()} does not exist`);
+    }
+
+    if (parentDir.type !== FileSystemObjectType.Directory) {
+      throw new Error(`${parentPath.toString()} is not a directory`);
+    }
+
+    if (path.equals(parentPath)) {
+      return; // root always exists, and we were given root.
+    }
+
+    const pieces = path.pieces;
+    return parentDir.rmdir(pieces[pieces.length - 1], force);
   }
 }

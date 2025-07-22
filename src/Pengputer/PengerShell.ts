@@ -93,6 +93,7 @@ export class PengerShell implements Executable {
       go: this.commandGo.bind(this),
       up: this.commandUp.bind(this),
       makedir: this.commandMakeDir.bind(this),
+      burndir: this.commandBurnDir.bind(this),
       run: this.commandRun.bind(this),
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),
@@ -341,36 +342,38 @@ export class PengerShell implements Executable {
     for (let i = 0; i < args.length; i++) {
       const newDirPath = this.getCanonicalPath(this.workingDirectory, args[i]);
       if (newDirPath === null) {
-        std.writeConsole(`Can't find ${args[i]}\n\n`);
+        std.writeConsole(`Invalid path ${args[i]}\n`);
         continue;
       }
 
-      const pieces = newDirPath.pieces;
-      for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
-        const nextDirPath = FilePath.tryParse(
-          `${newDirPath.drive}:/${pieces.slice(0, pathIndex + 1).join("/")}`,
-        )!;
-        const nextDirEntry = fileSystem.getFileInfo(nextDirPath);
+      try {
+        fileSystem.createDirectory(newDirPath, true);
+        std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+    }
+  }
 
-        if (nextDirEntry === null) {
-          const prevDirEntry = fileSystem.getFileInfo(
-            nextDirPath.parentDirectory(),
-          )!;
-          if (
-            prevDirEntry !== null &&
-            prevDirEntry.type === FileSystemObjectType.Directory
-          ) {
-            prevDirEntry.mkdir(pieces[pathIndex]);
-          }
-        } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-          std.writeConsole(
-            `Path ${nextDirPath.toString()} is not a directory\n`,
-          );
-          continue;
-        }
+  private commandBurnDir(args: string[]) {
+    const { fileSystem, std } = this.pc;
+    if (args.length === 0) {
+      std.writeConsole("Must provide a name\n");
+    }
+
+    for (let i = 0; i < args.length; i++) {
+      const path = this.getCanonicalPath(this.workingDirectory, args[i]);
+      if (path === null) {
+        std.writeConsole(`Invalid path ${args[i]}\n`);
+        continue;
       }
 
-      std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
+      try {
+        fileSystem.removeDirectory(path, false);
+        std.writeConsole(`Directory ${path.toString()} removed\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
     }
   }
 
