@@ -1,7 +1,9 @@
 import { classicColors } from "../Color/ansi";
 import { Std } from "../Std";
+import { Signal } from "../Toolbox/Signal";
 import { State, StateManager } from "../Toolbox/StateManager";
 import { Vector } from "../Toolbox/Vector";
+import { Rect, Size } from "../types";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 
@@ -18,17 +20,21 @@ const printStatusLine = (std: Std, string: string) => {
     fgColor: classicColors["black"],
   });
   std.setConsoleCursorPosition({ x: 0, y: 24 });
-  std.writeConsole(" F1 - menu │ ESC - quit │");
+  std.writeConsole(string);
   std.resetConsoleAttributes();
 };
 
 class PaintCtx {
   public buffer: string[][] = [[]];
 
-  public cursorX: number = 0;
-  public cursorY: number = 0;
-  public imageWidth: number = 0;
-  public imageHeight: number = 0;
+  public screenRect: Rect = { x: 0, y: 0, w: 5, h: 5 };
+
+  public windowOrigin: Vector = { x: 0, y: 0 };
+
+  /* in image */
+  public cursorPosition: Vector = { x: 0, y: 0 };
+
+  public imageSize: Size = { w: 0, h: 0 };
 
   constructor() {}
 
@@ -43,8 +49,8 @@ class PaintCtx {
     }
     this.buffer = buffer;
 
-    this.imageHeight = height;
-    this.imageWidth = width;
+    this.imageSize.w = width;
+    this.imageSize.h = height;
   }
 }
 
@@ -54,6 +60,8 @@ class Paint extends State {
   private ctx: PaintCtx;
 
   private isDirty: boolean = false;
+
+  public signal: Signal<"quit"> = new Signal();
 
   constructor(pc: PC, ctx: PaintCtx) {
     super();
@@ -73,8 +81,8 @@ class Paint extends State {
     const consoleSize = this.std.getConsoleSize();
     consoleSize.h - 1; // for status line
 
-    for (let y = 0; y < ctx.imageHeight && y < consoleSize.h; y += 1) {
-      for (let x = 0; x < ctx.imageWidth && x < consoleSize.w; x += 1) {
+    for (let y = 0; y < ctx.imageSize.h && y < consoleSize.h; y += 1) {
+      for (let x = 0; x < ctx.imageSize.w && x < consoleSize.w; x += 1) {
         std.setConsoleCursorPosition({ x, y });
         std.writeConsole(ctx.buffer[y][x]);
       }
@@ -82,7 +90,37 @@ class Paint extends State {
   }
 
   override update(dt: number) {
-    const std = this.std;
+    const { std, ctx } = this;
+
+    // input
+
+    if (this.getIsFocused()) {
+      while (true) {
+        const ev = std.getNextKeyboardEvent();
+        if (!ev) break;
+
+        if (!ev.pressed) continue;
+
+        if (ev.code === "ArrowLeft") {
+          ctx.cursorPosition.x -= 1;
+        }
+        if (ev.code === "ArrowRight") {
+          ctx.cursorPosition.x += 1;
+        }
+        if (ev.code === "ArrowUp") {
+          ctx.cursorPosition.y -= 1;
+        }
+        if (ev.code === "ArrowDown") {
+          ctx.cursorPosition.y += 1;
+        }
+
+        if (ev.code === "Escape") {
+          this.signal.emit("quit");
+        }
+      }
+    }
+
+    // render
 
     std.resetConsoleAttributes();
     std.clearConsole();
@@ -91,7 +129,10 @@ class Paint extends State {
 
     this.drawStatusLine();
 
-    std.setConsoleCursorPosition({ x: this.ctx.cursorX, y: this.ctx.cursorY });
+    std.setConsoleCursorPosition({
+      x: ctx.cursorPosition.x,
+      y: ctx.cursorPosition.y,
+    });
   }
 }
 
@@ -112,6 +153,11 @@ export class PengPaint implements Executable {
     switch (newStateKey) {
       case GameStateKey.Paint:
         newState = new Paint(this.pc, this.paintCtx);
+        newState.signal.listen((s) => {
+          if (s === "quit") {
+            this.stateManager.popState();
+          }
+        });
         break;
     }
 
