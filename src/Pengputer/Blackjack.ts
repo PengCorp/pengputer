@@ -537,6 +537,7 @@ export class Blackjack implements Executable {
 
             if (response[0].toLowerCase() === "y") {
               this.insurePlayer(player);
+              break;
             }
             if (response[0].toLowerCase() === "n") {
               break;
