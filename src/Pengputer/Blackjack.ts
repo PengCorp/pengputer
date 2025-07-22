@@ -525,6 +525,7 @@ export class Blackjack implements Executable {
         std.writeConsole("The dealer has an ace.\n");
         std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
         this.printHand(this.dealer.hands[0]);
+        std.writeConsole("\n");
         for (
           let playerIndex = 0;
           playerIndex < this.players.length;
@@ -628,6 +629,10 @@ export class Blackjack implements Executable {
             player.cash += player.insurance * 2;
             std.writeConsole(
               `${player.name}'s insurance wins $${player.insurance}).\n`,
+            );
+          } else {
+            std.writeConsole(
+              `${player.name} lost the insurance of $${player.insurance}).\n`,
             );
           }
         }
