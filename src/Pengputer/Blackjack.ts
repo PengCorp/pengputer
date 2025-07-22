@@ -274,7 +274,7 @@ export class Blackjack implements Executable {
       hand.bet = 0;
       while (hand.bet === 0 || hand.bet > player.cash || hand.bet < 0) {
         std.writeConsole(
-          `Player ${p + 1}, currently you have: $${player.cash}. Your bet? `,
+          `${player.name}, currently you have: $${player.cash}. Your bet? `,
         );
         const betString = await this.readLine();
         if (this.isQuitting) return;
