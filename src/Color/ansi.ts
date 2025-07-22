@@ -1,6 +1,6 @@
 import { CGA_PALETTE_DICT } from "./cgaPalette";
 import { Color, ColorType } from "./Color";
-import { CgaColors } from "./types";
+import { CgaColors, ColorName } from "./types";
 import tc from "tinycolor2";
 
 export const classicColorRgbValues = new Array(32).fill(
@@ -43,49 +43,52 @@ classicColorRgbValues[0x1d] = CGA_PALETTE_DICT[CgaColors.LightRose];
 classicColorRgbValues[0x1e] = CGA_PALETTE_DICT[CgaColors.Black];
 classicColorRgbValues[0x1f] = CGA_PALETTE_DICT[CgaColors.Black];
 
-const classicColors: Record<string, Color> = {};
+const _classicColors: Record<string, Color> = {};
 
 for (let i = 0; i < 0x20; i += 1) {
-  classicColors[i] = { type: ColorType.Classic, index: i };
+  _classicColors[i] = { type: ColorType.Classic, index: i };
 }
 
-classicColors["black"] = { type: ColorType.Classic, index: 0x00 };
-classicColors["red"] = { type: ColorType.Classic, index: 0x01 };
-classicColors["green"] = { type: ColorType.Classic, index: 0x02 };
-classicColors["yellow"] = { type: ColorType.Classic, index: 0x03 };
-classicColors["blue"] = { type: ColorType.Classic, index: 0x04 };
-classicColors["magenta"] = { type: ColorType.Classic, index: 0x05 };
-classicColors["cyan"] = { type: ColorType.Classic, index: 0x06 };
-classicColors["lightGray"] = { type: ColorType.Classic, index: 0x07 };
+_classicColors["black"] = { type: ColorType.Classic, index: 0x00 };
+_classicColors["red"] = { type: ColorType.Classic, index: 0x01 };
+_classicColors["green"] = { type: ColorType.Classic, index: 0x02 };
+_classicColors["yellow"] = { type: ColorType.Classic, index: 0x03 };
+_classicColors["blue"] = { type: ColorType.Classic, index: 0x04 };
+_classicColors["magenta"] = { type: ColorType.Classic, index: 0x05 };
+_classicColors["cyan"] = { type: ColorType.Classic, index: 0x06 };
+_classicColors["lightGray"] = { type: ColorType.Classic, index: 0x07 };
 
-classicColors["darkGray"] = { type: ColorType.Classic, index: 0x08 };
-classicColors["lightRed"] = { type: ColorType.Classic, index: 0x09 };
-classicColors["lightGreen"] = { type: ColorType.Classic, index: 0x0a };
-classicColors["lightYellow"] = { type: ColorType.Classic, index: 0x0b };
-classicColors["lightBlue"] = { type: ColorType.Classic, index: 0x0c };
-classicColors["lightMagenta"] = { type: ColorType.Classic, index: 0x0d };
-classicColors["lightCyan"] = { type: ColorType.Classic, index: 0x0e };
-classicColors["white"] = { type: ColorType.Classic, index: 0x0f };
+_classicColors["darkGray"] = { type: ColorType.Classic, index: 0x08 };
+_classicColors["lightRed"] = { type: ColorType.Classic, index: 0x09 };
+_classicColors["lightGreen"] = { type: ColorType.Classic, index: 0x0a };
+_classicColors["lightYellow"] = { type: ColorType.Classic, index: 0x0b };
+_classicColors["lightBlue"] = { type: ColorType.Classic, index: 0x0c };
+_classicColors["lightMagenta"] = { type: ColorType.Classic, index: 0x0d };
+_classicColors["lightCyan"] = { type: ColorType.Classic, index: 0x0e };
+_classicColors["white"] = { type: ColorType.Classic, index: 0x0f };
 
-classicColors["orange"] = { type: ColorType.Classic, index: 0x10 };
-classicColors["chartreuse"] = { type: ColorType.Classic, index: 0x11 };
-classicColors["springGreen"] = { type: ColorType.Classic, index: 0x12 };
-classicColors["azure"] = { type: ColorType.Classic, index: 0x13 };
-classicColors["violet"] = { type: ColorType.Classic, index: 0x14 };
-classicColors["rose"] = { type: ColorType.Classic, index: 0x15 };
-classicColors["black"] = { type: ColorType.Classic, index: 0x16 };
-classicColors["black"] = { type: ColorType.Classic, index: 0x17 };
+_classicColors["orange"] = { type: ColorType.Classic, index: 0x10 };
+_classicColors["chartreuse"] = { type: ColorType.Classic, index: 0x11 };
+_classicColors["springGreen"] = { type: ColorType.Classic, index: 0x12 };
+_classicColors["azure"] = { type: ColorType.Classic, index: 0x13 };
+_classicColors["violet"] = { type: ColorType.Classic, index: 0x14 };
+_classicColors["rose"] = { type: ColorType.Classic, index: 0x15 };
+_classicColors["black"] = { type: ColorType.Classic, index: 0x16 };
+_classicColors["black"] = { type: ColorType.Classic, index: 0x17 };
 
-classicColors["lightOrange"] = { type: ColorType.Classic, index: 0x18 };
-classicColors["lightChartreuse"] = { type: ColorType.Classic, index: 0x19 };
-classicColors["lightSpringGreen"] = { type: ColorType.Classic, index: 0x1a };
-classicColors["lightAzure"] = { type: ColorType.Classic, index: 0x1b };
-classicColors["lightViolet"] = { type: ColorType.Classic, index: 0x1c };
-classicColors["lightRose"] = { type: ColorType.Classic, index: 0x1d };
-classicColors["black"] = { type: ColorType.Classic, index: 0x1e };
-classicColors["black"] = { type: ColorType.Classic, index: 0x1f };
+_classicColors["lightOrange"] = { type: ColorType.Classic, index: 0x18 };
+_classicColors["lightChartreuse"] = { type: ColorType.Classic, index: 0x19 };
+_classicColors["lightSpringGreen"] = { type: ColorType.Classic, index: 0x1a };
+_classicColors["lightAzure"] = { type: ColorType.Classic, index: 0x1b };
+_classicColors["lightViolet"] = { type: ColorType.Classic, index: 0x1c };
+_classicColors["lightRose"] = { type: ColorType.Classic, index: 0x1d };
+_classicColors["black"] = { type: ColorType.Classic, index: 0x1e };
+_classicColors["black"] = { type: ColorType.Classic, index: 0x1f };
 
-export { classicColors };
+export const classicColors = _classicColors as Record<
+  number | ColorName,
+  Color
+>;
 
 export const getBoldClassicIndex = (index: number) => {
   if (Math.floor(index / 8) % 2 === 0) {
@@ -199,3 +202,10 @@ export const getBoldColorIndex = (color: string) => {
 
   return namedColors[index];
 };
+
+export const uniqueColors = {
+  strawberry: { type: ColorType.Direct, r: 250, g: 80, b: 83 },
+  pengerYellow: { type: ColorType.Direct, r: 251, g: 199, b: 54 },
+  pengerLightGray: { type: ColorType.Direct, r: 192, g: 192, b: 192 },
+  pengerDarkGray: { type: ColorType.Direct, r: 56, g: 56, b: 56 },
+} as const;

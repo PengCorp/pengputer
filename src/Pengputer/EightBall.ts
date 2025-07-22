@@ -1,6 +1,6 @@
 /**
- * Author: worstprgr@github / strace@tsoding-discord / movrdxrax@discord
- * Extended version: Strawberry
+ * Author: Strace (worstprgr@github / strace@tsoding-discord / movrdxrax@discord)
+ * Extended version: Strawberry (Strawberry@discord)
  * Description: Implementing the 8Ball functionality from MrBotka/Hypernerd
  */
 import _ from "lodash";

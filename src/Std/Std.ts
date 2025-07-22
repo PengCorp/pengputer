@@ -3,7 +3,16 @@ import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { ClickListener } from "../Screen/Screen";
-import { CellAttributes, TextBuffer } from "../TextBuffer";
+import {
+  BOXED,
+  BOXED_BOTTOM,
+  BOXED_LEFT,
+  BOXED_NO_BOX,
+  BOXED_RIGHT,
+  BOXED_TOP,
+  CellAttributes,
+  TextBuffer,
+} from "../TextBuffer";
 import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
 import { readKey, readLine } from "./readLine";
@@ -192,6 +201,33 @@ export class Std {
   /** Writes the provided number of cells with current console attributes without changing underlying rune. */
   writeConsoleAttributes(length: number = 1) {
     this.textBuffer.printAttributes(length);
+  }
+
+  writeConsoleBox(length: number = 1) {
+    if (length === 1) {
+      this.textBuffer.updateCurrentAttributes({ boxed: BOXED });
+      this.textBuffer.printAttributes(1);
+      this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
+      return;
+    }
+
+    this.textBuffer.updateCurrentAttributes({
+      boxed: BOXED_TOP | BOXED_LEFT | BOXED_BOTTOM,
+    });
+    this.textBuffer.printAttributes(1);
+
+    for (let i = 1; i < length - 1; i += 1) {
+      this.textBuffer.updateCurrentAttributes({
+        boxed: BOXED_TOP | BOXED_BOTTOM,
+      });
+      this.textBuffer.printAttributes(1);
+    }
+
+    this.textBuffer.updateCurrentAttributes({
+      boxed: BOXED_TOP | BOXED_RIGHT | BOXED_BOTTOM,
+    });
+    this.textBuffer.printAttributes(1);
+    this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
   }
 
   /* ===================== CONSOLE SCROLLING ========================= */

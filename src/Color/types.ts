@@ -29,3 +29,33 @@ export enum CgaColors {
   LightRose = "lightRose",
   White = "white",
 }
+
+export type ColorName =
+  | "black"
+  | "red"
+  | "green"
+  | "yellow"
+  | "blue"
+  | "magenta"
+  | "cyan"
+  | "lightGray"
+  | "darkGray"
+  | "lightRed"
+  | "lightGreen"
+  | "lightYellow"
+  | "lightBlue"
+  | "lightMagenta"
+  | "lightCyan"
+  | "white"
+  | "orange"
+  | "chartreuse"
+  | "springGreen"
+  | "azure"
+  | "violet"
+  | "rose"
+  | "lightOrange"
+  | "lightChartreuse"
+  | "lightSpringGreen"
+  | "lightAzure"
+  | "lightViolet"
+  | "lightRose";

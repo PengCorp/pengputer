@@ -1,5 +1,10 @@
 import _ from "lodash";
-import { classicColors, indexedColors, namedColors } from "../Color/ansi";
+import {
+  classicColors,
+  indexedColors,
+  namedColors,
+  uniqueColors,
+} from "../Color/ansi";
 import { Color, ColorType } from "../Color/Color";
 import { ClickListener } from "../Screen/Screen";
 import { Signal } from "../Toolbox/Signal";
@@ -649,7 +654,7 @@ class MainMenu extends State {
     std.writeConsole(" to exit.", { reset: true });
     std.writeConsole("\n\n");
     std.writeConsole("Programming: ");
-    std.writeConsole("Strawberry\n", { fgColor: classicColors["lightRed"] });
+    std.writeConsole("Strawberry\n", { fgColor: uniqueColors["strawberry"] });
     std.resetConsoleAttributes();
     std.writeConsole("Inspired by: ");
     std.writeConsole("Alexey Kutepov\n", {
