@@ -176,6 +176,7 @@ export class TextBuffer {
   private pageSize: Size;
   public isDirty: boolean;
   public bellRequested: boolean = false;
+  private scrollbackLength: number;
 
   constructor({
     pageSize,
@@ -184,11 +185,12 @@ export class TextBuffer {
     pageSize: Size;
     scrollbackLength?: number;
   }) {
-    this.buffer = new RingBuffer<Line>(pageSize.h + scrollbackLength);
+    this.currentAttributes = cloneCellAttributes(DEFAULT_ATTRIBUTES);
+    this.scrollbackLength = scrollbackLength;
+
+    this.buffer = new RingBuffer<Line>(pageSize.h + this.scrollbackLength);
     this.pageSize = pageSize;
     this.isDirty = true;
-
-    this.currentAttributes = cloneCellAttributes(DEFAULT_ATTRIBUTES);
 
     for (let i = 0; i < pageSize.h; i += 1) {
       this.buffer.push(new Line(pageSize.w, this.currentAttributes));
@@ -200,6 +202,19 @@ export class TextBuffer {
 
   public getPageSize(): Size {
     return this.pageSize;
+  }
+
+  public setPageSize(pageSize: Size) {
+    this.buffer = new RingBuffer<Line>(pageSize.h + this.scrollbackLength);
+    this.pageSize = pageSize;
+    this.isDirty = true;
+
+    for (let i = 0; i < pageSize.h; i += 1) {
+      this.buffer.push(new Line(pageSize.w, this.currentAttributes));
+    }
+
+    this.cursor = new Cursor();
+    this.topLine = 0;
   }
 
   public getPage(offset: number): Page {

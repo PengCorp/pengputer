@@ -4,6 +4,7 @@ import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
+import { font9x8 } from "./font9x8";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
 import { cloneScreenBufferCharacter, ScreenBufferCharacter } from "./types";
 import {
@@ -14,13 +15,13 @@ import {
   BOXED_TOP,
   TextBuffer,
 } from "../TextBuffer";
+import { Font } from "./Font";
+import { RENDER_SCALE } from "./constants";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
   mouseButton: number;
 }) => void;
-
-const RENDER_SCALE = 2;
 
 export class Screen {
   private widthInCharacters: number;
@@ -79,13 +80,17 @@ export class Screen {
 
   public isDirty: boolean = false;
 
+  private font: Font;
+
   constructor() {
+    this.font = font9x16;
     this.widthInCharacters = 80;
     this.heightInCharacters = 25;
     this.totalCharacters = this.widthInCharacters * this.heightInCharacters;
 
-    this.characterWidth = 9;
-    this.characterHeight = 16;
+    const characterSize = this.font.getCharacterSize();
+    this.characterWidth = characterSize.w;
+    this.characterHeight = characterSize.h;
 
     this.widthInPixels = this.widthInCharacters * this.characterWidth;
     this.heightInPixels = this.heightInCharacters * this.characterHeight;
@@ -97,8 +102,8 @@ export class Screen {
     this.curBlinkState = true;
     this.curBlinkDuration = 600;
     this.curBlinkCounter = this.curBlinkDuration;
-    this.curStart = 14;
-    this.curEnd = 15;
+    this.curStart = this.characterHeight - 2;
+    this.curEnd = this.characterHeight - 1;
 
     this.charBlinkState = true;
     this.charBlinkDuration = 600;
@@ -174,13 +179,11 @@ export class Screen {
     this.canvas = canvas;
 
     canvas.setAttribute("id", "screen");
-    canvas.setAttribute("width", String(this.widthInPixels * this.canvasScale));
-    canvas.setAttribute(
-      "height",
-      String(this.heightInPixels * this.canvasScale),
-    );
+    canvas.width = this.widthInPixels * this.canvasScale;
+    canvas.height = this.heightInPixels * this.canvasScale;
 
     this.ctx = canvas.getContext("2d")!;
+    this.ctx.imageSmoothingEnabled = false;
 
     const scanLines = document.createElement("div");
 
@@ -191,10 +194,68 @@ export class Screen {
     containerEl.replaceChildren(canvasBox);
   }
 
+  public setScreenMode(screenSize: Size, font: Font) {
+    this.font = font;
+    this.widthInCharacters = screenSize.w;
+    this.heightInCharacters = screenSize.h;
+
+    this.totalCharacters = this.widthInCharacters * this.heightInCharacters;
+
+    const characterSize = this.font.getCharacterSize();
+    this.characterWidth = characterSize.w;
+    this.characterHeight = characterSize.h;
+
+    this.widthInPixels = this.widthInCharacters * this.characterWidth;
+    this.heightInPixels = this.heightInCharacters * this.characterHeight;
+
+    this.curStart = this.characterHeight - 2;
+    this.curEnd = this.characterHeight - 1;
+
+    this.screenBuffer = new Array(this.totalCharacters);
+    for (let i = 0; i < this.totalCharacters; i += 1) {
+      this.screenBuffer[i] = {
+        character: " ",
+        attributes: {
+          bgColor: namedColors[namedColors.Black],
+          fgColor: namedColors[namedColors.LightGray],
+          blink: false,
+          bold: false,
+          reverseVideo: false,
+          underline: false,
+          halfBright: false,
+          boxed: BOXED_NO_BOX,
+        },
+      };
+    }
+
+    this.canvas.width = this.widthInPixels * this.canvasScale;
+    this.canvas.height = this.heightInPixels * this.canvasScale;
+
+    this.bufferCanvas.width = this.widthInPixels * this.bufferScale;
+    this.bufferCanvas.height = this.heightInPixels * this.bufferScale;
+
+    this.bgCanvas.width = this.widthInPixels * this.bgScale;
+    this.bgCanvas.height = this.heightInPixels * this.bgScale;
+
+    this.charCanvas.width = this.widthInPixels * this.charScale;
+    this.charCanvas.height = this.heightInPixels * this.charScale;
+
+    this.attributeCanvas.width = this.widthInPixels * this.attributeScale;
+    this.attributeCanvas.height = this.heightInPixels * this.attributeScale;
+
+    this.graphicsCanvas.width = this.widthInPixels * this.graphicsScale;
+    this.graphicsCanvas.height = this.heightInPixels * this.graphicsScale;
+
+    this.tempCanvas.width = this.widthInPixels * this.tempScale;
+    this.tempCanvas.height = this.heightInPixels * this.tempScale;
+
+    this.isDirty = true;
+  }
+
   /** Resets screen attributes and parameters to sensible defaults. */
   public reset() {
     this.showCursor();
-    this.setCursorSize(14, 15);
+    this.setCursorSize(this.characterHeight - 2, this.characterHeight - 1);
   }
 
   draw(dt: number) {
@@ -318,7 +379,6 @@ export class Screen {
     );
 
     // commit characters
-    this.ctx.imageSmoothingEnabled = true;
     this.ctx.drawImage(
       this.bufferCanvas,
       0,
@@ -343,7 +403,6 @@ export class Screen {
       this.canvas.width,
       this.canvas.height,
     );
-    this.ctx.imageSmoothingEnabled = false;
   }
 
   /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
@@ -445,7 +504,7 @@ export class Screen {
       this.characterWidth * this.charScale,
       this.characterHeight * this.charScale,
     );
-    const atlasRegion = font9x16.getCharacter(bufferCharacter.character, x);
+    const atlasRegion = this.font.getCharacter(bufferCharacter.character, x);
     if (atlasRegion) {
       const { canvas, x: cx, y: cy, w: cw, h: ch } = atlasRegion;
 
@@ -549,7 +608,7 @@ export class Screen {
 
   private redrawUnstable() {
     const screenSize = this.getSizeInCharacters();
-    const unstableCharacters = font9x16.getUnstableCharacters();
+    const unstableCharacters = this.font.getUnstableCharacters();
     for (let y = 0; y < screenSize.h; y += 1) {
       for (let x = 0; x < screenSize.w; x += 1) {
         const char = this.screenBuffer[this._getScreenBufferIndex(x, y)];
