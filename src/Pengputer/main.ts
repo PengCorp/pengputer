@@ -35,6 +35,7 @@ import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
+import { loadFont9x8 } from "../Screen/font9x8";
 
 const PATH_SEPARATOR = "/";
 
@@ -275,6 +276,7 @@ class PengOS {
 
 (async () => {
   await loadFont9x16();
+  await loadFont9x8();
 
   const screen = new Screen();
   await screen.init(document.getElementById("screen-container")!);

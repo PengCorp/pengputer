@@ -2,6 +2,8 @@ import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
+import { font9x16 } from "../Screen/font9x16";
+import { font9x8 } from "../Screen/font9x8";
 import { ClickListener } from "../Screen/Screen";
 import {
   BOXED,
@@ -15,6 +17,7 @@ import {
 } from "../TextBuffer";
 import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
+import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
@@ -29,7 +32,10 @@ export class Std {
 
   private textBuffer: TextBuffer;
 
+  private screenMode: ScreenMode;
+
   constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+    this.screenMode = ScreenMode.mode80x25_9x16;
     this.textBuffer = textBuffer;
     this.screen = screen;
     this.keyboard = keyboard;
@@ -60,6 +66,31 @@ export class Std {
 
   getConsoleCharacterSize() {
     return this.screen.getCharacterSize();
+  }
+
+  getConsoleScreenMode() {
+    return this.screenMode;
+  }
+
+  setConsoleScreenMode(screenMode: ScreenMode) {
+    switch (screenMode) {
+      case ScreenMode.mode80x25_9x16:
+        {
+          const size = { w: 80, h: 25 };
+          this.screen.setScreenMode(size, font9x16);
+          this.textBuffer.setPageSize(size);
+        }
+        break;
+      case ScreenMode.mode80x50_9x8:
+        {
+          const size = { w: 80, h: 50 };
+          this.screen.setScreenMode(size, font9x8);
+          this.textBuffer.setPageSize(size);
+        }
+        break;
+      default:
+        throw new Error("ScreenMode not defined.");
+    }
   }
 
   /* ===================== CONSOLE CURSOR CONTROL ========================= */
