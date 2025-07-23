@@ -55,8 +55,6 @@ export const cp437plusCharacterValueMap: charArray[] = [
   "☼♀︎♂︎♠︎♣︎♥︎♦︎♪♫✓ﬁﬂ�",
 ].map((l) => splitStringIntoCharacters(l));
 
-console.log(cp437plusCharacterValueMap);
-
 export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
   (l) => splitStringIntoCharacters(l),
 );
