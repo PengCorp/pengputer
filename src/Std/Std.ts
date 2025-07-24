@@ -264,11 +264,11 @@ export class Std {
   }
 
   writeConsoleError(e: any) {
-    this.writeConsole("\n\n");
-    const pageWidth = this.getConsoleSize().w - 4;
+    this.writeConsole("\n\n", { reset: true });
+    const messageFieldWidth = this.getConsoleSize().w - 4;
     const errorMessage = e?.message || "Unknown error";
     this.writeConsole(
-      `  ${_.padEnd("Software failure. Restarting...", pageWidth)}  \n  ${_.padEnd(`Penger Meditation: ${errorMessage}`, pageWidth)}  `,
+      `  ${_.padEnd("Software failure. Restarting...", messageFieldWidth)}  \n  ${_.padEnd(`Penger Meditation: ${errorMessage}`, messageFieldWidth)}  `,
       {
         bgColor: classicColors["red"],
         fgColor: classicColors["black"],
