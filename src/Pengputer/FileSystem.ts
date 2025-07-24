@@ -466,10 +466,13 @@ export class FileSystem {
     for (let floppy of floppyData) {
       if (floppy.drive === null) continue;
       try {
-        this.insertFloppy(floppy.drive, floppy.data);
+        this.#insertFloppyInternal(floppy.drive, floppy);
       } catch (e) {
+        console.log(e);
       }
     }
+
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
   }
 
   mount(label: DriveLabel, drive: FileSystemDrive): boolean {
@@ -499,16 +502,86 @@ export class FileSystem {
     localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
   }
 
-  insertFloppy(label: DriveLabel, floppyName: string) {
+  getFloppyInfos(): readonly { drive: DriveLabel | null; name: string }[] {
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES);
+    if (!floppyDataString) {
+      return [];
+    }
+
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+    floppyData.sort((a, b) => {
+      const stringCompare = (l: string, r: string) => {
+        if (l === r) return 0;
+        if (l < r) return -1;
+        return 1;
+      };
+
+      if (a.drive !== null && b.drive !== null) {
+        return stringCompare(a.drive, b.drive);
+      }
+
+      if (a.drive !== null) return -1;
+      if (b.drive !== null) return 1;
+
+      return stringCompare(a.name, b.name);
+    });
+
+    return floppyData.map((d) => {
+      return { drive: d.drive, name: d.name };
+    });
+  }
+
+  spawnFloppy(name: string) {
+    if (!name.match(/^[a-zA-Z0-9_]+$/)) {
+      throw new Error("Invalid floppy name\n");
+    }
+
     const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
     const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
 
-    const floppy = _.find(floppyData, (d) => d.name === floppyName);
-    if (!floppy) {
+    const existing = _.find(floppyData, (d) => d.name === name);
+    if (existing) {
+      throw new Error(`Floppy '${name}' already exists\n`);
+    }
+
+    const floppyContents: FloppySerialized = {
+      root: {
+        type: FileSystemObjectType.Directory,
+        name: "/",
+        entries: [],
+      },
+    };
+
+    floppyData.push({
+      name: name,
+      drive: null,
+      data: JSON.stringify(floppyContents),
+    });
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+  }
+
+  burnFloppy(name: string) {
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+    const floppyCount = floppyData.length;
+    const floppies = _.remove(floppyData, (d) => d.name === name);
+
+    if (floppies.length === 0) {
       throw new Error("No floppy with that name");
     }
 
+    const [floppy] = floppies;
+    if (floppy.drive !== null) {
+      this.unmount(floppy.drive);
+    }
+
+    localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+  }
+
+  #insertFloppyInternal(label: DriveLabel, floppy: FloppyStorage) {
     const floppyContents = JSON.parse(floppy.data) as FloppySerialized;
+
     const drive = FloppyFileSystemDrive.fromSerialized(floppyContents);
     if (drive === null) {
       throw new Error("Failed to deserialize drive; can't mount it");
@@ -519,6 +592,18 @@ export class FileSystem {
     }
 
     floppy.drive = label;
+  }
+
+  insertFloppy(label: DriveLabel, floppyName: string) {
+    const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
+    const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+
+    const floppy = _.find(floppyData, (d) => d.name === floppyName);
+    if (!floppy) {
+      throw new Error("No floppy with that name");
+    }
+
+    this.#insertFloppyInternal(label, floppy);
     localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
   }
 
@@ -537,6 +622,9 @@ export class FileSystem {
 
     floppy.drive = null;
     localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+
+    console.dir(floppy);
+    console.dir(floppyData);
   }
 
   trySerializeFloppy(label: DriveLabel): string | null {

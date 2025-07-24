@@ -619,25 +619,13 @@ export class PengerShell implements Executable {
     }
 
     if (command === "list") {
-      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES);
-      if (!floppyDataString) {
+      const floppies = this.pc.fileSystem.getFloppyInfos();
+      if (floppies.length === 0) {
         std.writeConsole("You have no floppies\n");
         return;
       }
 
-      console.log(floppyDataString);
-      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-      floppyData.sort((a, b) => {
-        if (a.name === b.name) {
-          return 0;
-        }
-        if (b.name > a.name) {
-          return -1;
-        }
-        return 1;
-      });
-
-      for (const floppy of floppyData) {
+      for (const floppy of floppies) {
         if (floppy.drive) {
           std.writeConsole(`${floppy.drive}: `);
         } else std.writeConsole("   ");
@@ -656,34 +644,13 @@ export class PengerShell implements Executable {
         return;
       }
 
-      if (!name.match(/^[a-zA-Z0-9_]+$/)) {
-        std.writeConsole("Invalid floppy name\n");
-        return;
+      try {
+        this.pc.fileSystem.spawnFloppy(name);
+        std.writeConsole(`Floppy '${name}' has materialized\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
       }
 
-      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-      const existing = _.find(floppyData, (d) => d.name === name);
-      if (existing) {
-        std.writeConsole(`Floppy '${name}' already exists\n`);
-        return;
-      }
-
-      const floppyContents: FloppySerialized = {
-        root: {
-          type: FileSystemObjectType.Directory,
-          name: "/",
-          entries: [],
-        },
-      };
-
-      floppyData.push({
-        name: name,
-        drive: null,
-        data: JSON.stringify(floppyContents),
-      });
-      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
       return;
     }
 
@@ -702,16 +669,12 @@ export class PengerShell implements Executable {
         return;
       }
 
-      const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-      const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-      const floppyCount = floppyData.length;
-      _.remove(floppyData, (d) => d.name === name);
-      localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-
-      if (floppyCount === floppyData.length) {
-        std.writeConsole(`No floppy with that name\n`);
-      } else std.writeConsole(`Floppy '${name}' is now a pile of ash\n`);
+      try {
+        this.pc.fileSystem.burnFloppy(name);
+        std.writeConsole(`Floppy '${name}' is now a pile of ash\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
 
       return;
     }
@@ -761,9 +724,11 @@ export class PengerShell implements Executable {
 
       try {
         this.pc.fileSystem.ejectFloppy(label);
-        std.writeConsole(
-          `Drive ${label}:/ no longer contains a floppy\n`,
-        );
+        std.writeConsole(`Drive ${label}:/ no longer contains a floppy\n`);
+
+        if (label === this.workingDirectory.drive) {
+          this.currentDrive = "C";
+        }
       } catch (e) {
         std.writeConsole(`${(<Error>e).message}\n`);
       }
