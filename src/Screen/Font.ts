@@ -1,6 +1,6 @@
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Vector } from "../Toolbox/Vector";
-import { charArray } from "../types";
+import { charArray, Size } from "../types";
 import { dataURLToImageBitmap } from "../util";
 
 interface Atlas {
@@ -30,6 +30,10 @@ export class Font {
     this.unstableCharacters = splitStringIntoCharacters(unstableCharacters);
 
     this.atlases = {};
+  }
+
+  public getCharacterSize(): Size {
+    return { w: this.characterWidth, h: this.characterHeight };
   }
 
   /**
@@ -64,6 +68,7 @@ export class Font {
     canvas.height = bitmap.height;
 
     const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
 
     if (!ctx) {
       throw new Error("Failed to initialize 2d context.");
@@ -76,10 +81,12 @@ export class Font {
     const characterLocations: Record<string, Vector> = {};
     for (let y = 0; y < valueMap.length; y += 1) {
       for (let x = 0; x < valueMap[y].length; x += 1) {
-        characterLocations[valueMap[y][x]] = {
-          x: x * this.characterWidth * scale,
-          y: y * this.characterHeight * scale,
-        };
+        if (!characterLocations[valueMap[y][x]]) {
+          characterLocations[valueMap[y][x]] = {
+            x: x * this.characterWidth * scale,
+            y: y * this.characterHeight * scale,
+          };
+        }
       }
     }
 
@@ -100,7 +107,9 @@ export class Font {
       const characterLocation = atlas.characterLocations[char];
       if (characterLocation) {
         const variantOffset =
-          this.characterWidth * (screenX % atlas.patternRunLength);
+          this.characterWidth *
+          atlas.scale *
+          (screenX % atlas.patternRunLength);
         return {
           canvas: atlas.canvas,
           x: characterLocation.x + variantOffset,

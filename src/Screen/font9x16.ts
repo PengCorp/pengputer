@@ -1,10 +1,10 @@
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { Font } from "./Font";
-import cp437 from "./cp437_9x16.png";
-import cp437plus from "./cp437plus_9x16.png";
+import cp437 from "./cp437_9x16_2x.png";
+import cp437plus from "./cp437plus_9x16_2x.png";
 import cp437legacy from "./cp437legacy_9x16_2x.png";
-import cp437patterns from "./cp437patterns_9x16.png";
-import cp437custom from "./cp437custom_9x16.png";
+import cp437patterns from "./cp437patterns_9x16_2x.png";
+import cp437custom from "./cp437custom_9x16_2x.png";
 import { charArray } from "../types";
 
 // 32 characters wide, 8 characters high
@@ -61,15 +61,20 @@ export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"]
 export const font9x16 = new Font(9, 16, "░▒▓");
 
 export const loadFont9x16 = async () => {
+  // await font9x16.loadAtlas(
+  //   "cp437patterns",
+  //   cp437patterns,
+  //   cp437patternsCharacterValueMap,
+  //   2,
+  //   4,
+  // );
+  await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap, 2);
   await font9x16.loadAtlas(
-    "cp437patterns",
-    cp437patterns,
-    cp437patternsCharacterValueMap,
-    1,
-    4,
+    "cp437plus",
+    cp437plus,
+    cp437plusCharacterValueMap,
+    2,
   );
-  await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap);
-  await font9x16.loadAtlas("cp437plus", cp437plus, cp437plusCharacterValueMap);
   await font9x16.loadAtlas(
     "cp437legacy",
     cp437legacy,

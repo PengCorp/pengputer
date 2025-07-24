@@ -2,10 +2,22 @@ import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
+import { font9x16 } from "../Screen/font9x16";
+import { font9x8 } from "../Screen/font9x8";
 import { ClickListener } from "../Screen/Screen";
-import { CellAttributes, TextBuffer } from "../TextBuffer";
+import {
+  BOXED,
+  BOXED_BOTTOM,
+  BOXED_LEFT,
+  BOXED_NO_BOX,
+  BOXED_RIGHT,
+  BOXED_TOP,
+  CellAttributes,
+  TextBuffer,
+} from "../TextBuffer";
 import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
+import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
@@ -20,7 +32,10 @@ export class Std {
 
   private textBuffer: TextBuffer;
 
+  private screenMode: ScreenMode;
+
   constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+    this.screenMode = ScreenMode.mode80x25_9x16;
     this.textBuffer = textBuffer;
     this.screen = screen;
     this.keyboard = keyboard;
@@ -51,6 +66,31 @@ export class Std {
 
   getConsoleCharacterSize() {
     return this.screen.getCharacterSize();
+  }
+
+  getConsoleScreenMode() {
+    return this.screenMode;
+  }
+
+  setConsoleScreenMode(screenMode: ScreenMode) {
+    switch (screenMode) {
+      case ScreenMode.mode80x25_9x16:
+        {
+          const size = { w: 80, h: 25 };
+          this.screen.setScreenMode(size, font9x16);
+          this.textBuffer.setPageSize(size);
+        }
+        break;
+      case ScreenMode.mode80x50_9x8:
+        {
+          const size = { w: 80, h: 50 };
+          this.screen.setScreenMode(size, font9x8);
+          this.textBuffer.setPageSize(size);
+        }
+        break;
+      default:
+        throw new Error("ScreenMode not defined.");
+    }
   }
 
   /* ===================== CONSOLE CURSOR CONTROL ========================= */
@@ -192,6 +232,33 @@ export class Std {
   /** Writes the provided number of cells with current console attributes without changing underlying rune. */
   writeConsoleAttributes(length: number = 1) {
     this.textBuffer.printAttributes(length);
+  }
+
+  writeConsoleBox(length: number = 1) {
+    if (length === 1) {
+      this.textBuffer.updateCurrentAttributes({ boxed: BOXED });
+      this.textBuffer.printAttributes(1);
+      this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
+      return;
+    }
+
+    this.textBuffer.updateCurrentAttributes({
+      boxed: BOXED_TOP | BOXED_LEFT | BOXED_BOTTOM,
+    });
+    this.textBuffer.printAttributes(1);
+
+    for (let i = 1; i < length - 1; i += 1) {
+      this.textBuffer.updateCurrentAttributes({
+        boxed: BOXED_TOP | BOXED_BOTTOM,
+      });
+      this.textBuffer.printAttributes(1);
+    }
+
+    this.textBuffer.updateCurrentAttributes({
+      boxed: BOXED_TOP | BOXED_RIGHT | BOXED_BOTTOM,
+    });
+    this.textBuffer.printAttributes(1);
+    this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
   }
 
   /* ===================== CONSOLE SCROLLING ========================= */

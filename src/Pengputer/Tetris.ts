@@ -8,7 +8,7 @@ Sources:
 */
 
 import _ from "lodash";
-import { classicColors, namedColors } from "../Color/ansi";
+import { classicColors, namedColors, uniqueColors } from "../Color/ansi";
 import { Color, ColorType } from "../Color/Color";
 import { wrapMax } from "../Toolbox/Math";
 import { Signal } from "../Toolbox/Signal";
@@ -1437,7 +1437,7 @@ class MainMenu implements GameState {
       y: start + 12,
     });
     std.writeConsole("Programming: ");
-    std.writeConsole("Strawberry", { fgColor: classicColors["lightRed"] });
+    std.writeConsole("Strawberry", { fgColor: uniqueColors["strawberry"] });
 
     std.setConsoleCursorPosition({
       x: Math.floor(

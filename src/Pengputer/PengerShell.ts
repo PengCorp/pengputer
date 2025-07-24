@@ -1,6 +1,6 @@
 /**
- * Author: Strawberry / nashiora@github / echoephile@github
- * Description: Implements the
+ * Author: Jack (jack-jjm@github), Strawberry (Strawberry@discord), Nashiora (nashiora@discord / echoephile@github)
+ * Description: Implements the PengerShell environment.
  */
 
 import { Executable } from "./FileSystem";
@@ -69,12 +69,17 @@ export class PengerShell implements Executable {
   }
 
   private shiftAutorunCommand() {
+    const { std } = this.pc;
     if (this.autorun.length > 1) {
-      return `go ${this.autorun.shift()}`;
+      const command = `go ${this.autorun.shift()}`;
+      std.writeConsole(`${command}\n`);
+      return command;
     }
 
     if (this.autorun.length === 1) {
-      return `run ${this.autorun.shift()}`;
+      const command = `run ${this.autorun.shift()}`;
+      std.writeConsole(`${command}\n`);
+      return command;
     }
 
     return undefined;

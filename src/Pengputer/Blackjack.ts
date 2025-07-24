@@ -1,5 +1,12 @@
+/**
+ * Blackjack game by Strawberry (Strawberry@discord) 🍓
+ *
+ * To do:
+ *   - half/all in on bets
+ */
+
 import _ from "lodash";
-import { classicColors } from "../Color/ansi";
+import { classicColors, uniqueColors } from "../Color/ansi";
 import { Color } from "../Color/Color";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
@@ -47,10 +54,10 @@ const valueScore: Record<Value, number> = {
 };
 
 const suitDescriptors: Record<Suit, { fgColor: Color; symbol: string }> = {
-  hearts: { fgColor: classicColors["red"], symbol: "♥︎" },
-  diamonds: { fgColor: classicColors["red"], symbol: "♦︎" },
-  spades: { fgColor: classicColors["black"], symbol: "♣︎" },
-  clubs: { fgColor: classicColors["black"], symbol: "♠︎" },
+  hearts: { fgColor: classicColors["lightRed"], symbol: "♥︎" },
+  diamonds: { fgColor: classicColors["lightRed"], symbol: "♦︎" },
+  spades: { fgColor: classicColors["white"], symbol: "♣︎" },
+  clubs: { fgColor: classicColors["white"], symbol: "♠︎" },
 };
 
 interface Card {
@@ -180,6 +187,7 @@ class Player {
   public hands: Hand[];
   public isDealer: boolean;
   public name: string;
+  public insurance: number | null = null;
 
   constructor(name: string, isDealer: boolean) {
     this.cash = 0;
@@ -266,7 +274,7 @@ export class Blackjack implements Executable {
       hand.bet = 0;
       while (hand.bet === 0 || hand.bet > player.cash || hand.bet < 0) {
         std.writeConsole(
-          `Player ${p + 1}, currently you have: $${player.cash}. Your bet? `,
+          `${player.name}, currently you have: $${player.cash}. Your bet? `,
         );
         const betString = await this.readLine();
         if (this.isQuitting) return;
@@ -292,7 +300,7 @@ export class Blackjack implements Executable {
     }
   }
 
-  private printHands() {
+  private printHands(printEvaluation: boolean = false) {
     const { std } = this.pc;
 
     for (const p of [this.dealer, ...this.players]) {
@@ -302,11 +310,10 @@ export class Blackjack implements Executable {
         } else {
           std.writeConsole(`${_.padEnd("", NAME_FIELD_WIDTH)}  `);
         }
-        this.printHand(p.hands[i]);
+        this.printHand(p.hands[i], printEvaluation);
         std.writeConsole("\n");
       }
     }
-    std.writeConsole("\n");
   }
 
   private dealCard(hand: Hand, facingUp: boolean = true) {
@@ -339,23 +346,21 @@ export class Blackjack implements Executable {
     const { std } = this.pc;
 
     if (card.faceUp) {
-      const bgColor = classicColors["white"];
       const fgColor = suitDescriptors[card.suit].fgColor;
       const suitSymbol = suitDescriptors[card.suit].symbol;
-      const valueSymbol = _.padEnd(card.value, 2);
+      const valueSymbol = _.padStart(card.value, 2);
 
-      std.writeConsole(` ${valueSymbol}${suitSymbol} `, { bgColor, fgColor });
+      std.writeConsole(`${valueSymbol}${suitSymbol}`, { fgColor });
       std.resetConsoleAttributes();
     } else {
-      std.writeConsole(`☼☼☼☼☼`, {
-        bgColor: classicColors["red"],
+      std.writeConsole(` ☼☼`, {
         fgColor: classicColors["white"],
       });
       std.resetConsoleAttributes();
     }
   }
 
-  private printHand(hand: Hand) {
+  private printHand(hand: Hand, printEvaluation = false) {
     const { std } = this.pc;
 
     const cards = hand.cards;
@@ -367,8 +372,11 @@ export class Blackjack implements Executable {
     std.writeConsole(
       `(${[
         String(hand.getSum().sum),
-        hand.getIsBlackjack() && hand.getIsRevealed() && " - blackjack!",
-        hand.getIsBusted() && " - busted",
+        printEvaluation &&
+          hand.getIsBlackjack() &&
+          hand.getIsRevealed() &&
+          " - blackjack!",
+        printEvaluation && hand.getIsBusted() && " - busted",
       ]
         .filter(Boolean)
         .join("")})`,
@@ -417,6 +425,10 @@ export class Blackjack implements Executable {
     hand.isFinished = true;
   }
 
+  private insurePlayer(player: Player) {
+    player.insurance = player.hands[0].bet / 2;
+  }
+
   private async playHand(player: Player, handIndex: number) {
     const { std } = this.pc;
 
@@ -427,7 +439,7 @@ export class Blackjack implements Executable {
       this.printHand(this.dealer.hands[0]);
       std.writeConsole(`\n${_.padEnd(player.name, NAME_FIELD_WIDTH)}: `);
       this.printHand(hand);
-      std.writeConsole(`\n\n`);
+      std.writeConsole(`\n`);
 
       if (hand.getIsBlackjack()) {
         hand.isFinished = true;
@@ -445,7 +457,12 @@ export class Blackjack implements Executable {
       const canSplit = player.getCanSplit();
 
       std.writeConsole(
-        `${["[h]it", "[s]tay", canDouble && "[d]double", canSplit && "[/]split"]
+        `${[
+          "[h]it",
+          "[s]tand",
+          canDouble && "[d]double",
+          canSplit && "[/]split",
+        ]
           .filter(Boolean)
           .join(", ")}? `,
       );
@@ -502,12 +519,48 @@ export class Blackjack implements Executable {
       this.dealInitialCards();
       const dealerHand = this.dealer.hands[0];
 
+      // handle insurance
+
+      if (dealerHand.cards[0].value === "A") {
+        std.writeConsole("The dealer has an ace.\n");
+        std.writeConsole(`${_.padEnd(this.dealer.name, NAME_FIELD_WIDTH)}: `);
+        this.printHand(this.dealer.hands[0]);
+        std.writeConsole("\n");
+        for (
+          let playerIndex = 0;
+          playerIndex < this.players.length;
+          playerIndex += 1
+        ) {
+          const player = this.players[playerIndex];
+          std.writeConsole(
+            `${player.name}, would you like insurance (half of your bet) (y/n)? `,
+          );
+          while (true) {
+            const response = await std.readConsoleLine();
+
+            if (!response) continue;
+
+            if (response[0].toLowerCase() === "y") {
+              this.insurePlayer(player);
+              break;
+            }
+            if (response[0].toLowerCase() === "n") {
+              break;
+            }
+          }
+        }
+        std.writeConsole("\n");
+      }
+
       if (dealerHand.getIsBlackjack()) {
         std.writeConsole("Dealer has a blackjack!\n\n");
         dealerHand.reveal();
-        this.printHands();
+        this.printHands(true);
       } else {
-        std.writeConsole("Cards dealt, let's play!\n\n");
+        if (this.players.length > 1) {
+          this.printHands();
+          std.writeConsole("Cards dealt, let's play!\n\n");
+        }
 
         for (
           let playerIndex = 0;
@@ -535,10 +588,11 @@ export class Blackjack implements Executable {
           this.hitHand(this.dealer, dealerHand);
         }
 
-        this.printHands();
+        this.printHands(true);
       }
 
       // pay out
+
       for (
         let playerIndex = 0;
         playerIndex < this.players.length;
@@ -551,7 +605,9 @@ export class Blackjack implements Executable {
           handIndex += 1
         ) {
           const hand = player.hands[handIndex];
-          const compareResult = hand.compareWith(this.dealer.hands[0]);
+          const dealerHand = this.dealer.hands[0];
+
+          const compareResult = hand.compareWith(dealerHand);
           if (compareResult === GREATER) {
             if (hand.getIsBlackjack()) {
               player.cash += hand.bet + hand.bet * 1.5;
@@ -565,6 +621,19 @@ export class Blackjack implements Executable {
             std.writeConsole(`${player.name} pushed.\n`);
           } else {
             std.writeConsole(`${player.name} lost $${hand.bet}.\n`);
+          }
+        }
+
+        if (player.insurance !== null) {
+          if (dealerHand.getIsBlackjack()) {
+            player.cash += player.insurance * 2;
+            std.writeConsole(
+              `${player.name}'s insurance wins $${player.insurance}).\n`,
+            );
+          } else {
+            std.writeConsole(
+              `${player.name} lost the insurance of $${player.insurance}).\n`,
+            );
           }
         }
 
@@ -596,7 +665,7 @@ export class Blackjack implements Executable {
 
     std.writeConsoleSequence([
       "By: ",
-      { fgColor: classicColors["lightRed"] },
+      { fgColor: uniqueColors["strawberry"] },
       "Strawberry",
       { reset: true },
       "\n\n",
