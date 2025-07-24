@@ -295,7 +295,9 @@ class Pengsweeper extends State {
     this.needsRedraw = true;
   }
 
-  update(dt: number) {
+  override update(dt: number) {
+    super.update(dt);
+
     const { std } = this.pc;
     if (this.getIsFocused()) {
       while (true) {

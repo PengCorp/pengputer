@@ -5,6 +5,7 @@ import {
   namedColors,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
+import { ColorName } from "../Color/types";
 import {
   BOXED,
   BOXED_BOTTOM,
@@ -238,7 +239,7 @@ export class Colors implements Executable {
       "violet",
       "magenta",
       "rose",
-    ]) {
+    ] satisfies ColorName[]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });
@@ -259,7 +260,7 @@ export class Colors implements Executable {
       "lightViolet",
       "lightMagenta",
       "lightRose",
-    ]) {
+    ] satisfies ColorName[]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
       });
