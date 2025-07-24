@@ -346,39 +346,51 @@ class CommandParser {
         };
       }
       case "l": {
-        let fromLine: number = 0;
-        let toLine: number = 0;
+        let fromLine = lineNumbers[0];
+        let toLine = lineNumbers[1];
 
-        if (lineNumbers.length > 2) {
-          throw new Error("Too many arguments.");
-        } else if (lineNumbers.length === 0) {
-          fromLine = 0;
-          toLine = this.totalLines - 1;
-        } else if (lineNumbers.length === 1) {
-          if (lineNumbers[0] === null) {
-            fromLine = this.currentLine;
-          } else {
-            fromLine = lineNumbers[0];
-          }
-          toLine = this.totalLines - 1;
-        } else if (lineNumbers.length === 2) {
-          if (lineNumbers[0] === null) {
-            fromLine = 0;
-          } else {
-            fromLine = lineNumbers[0];
-          }
-          if (lineNumbers[1] === null) {
-            toLine = this.totalLines - 1;
-          } else {
-            toLine = lineNumbers[1];
-          }
+        if (!isNil(fromLine) && fromLine >= this.totalLines) {
+          return {
+            type: CommandType.NoOp,
+          };
         }
 
-        return {
-          type: CommandType.List,
-          fromLine,
-          toLine,
-        };
+        if (isNil(fromLine) && isNil(toLine)) {
+          let windowHeight = this.screenHeight - 1;
+          let pivot = (windowHeight - 1) / 2;
+          let linesAbove = Math.min(this.currentLine, Math.floor(pivot));
+          let linesBelow = Math.min(
+            windowHeight - linesAbove - 1,
+            this.totalLines - this.currentLine - 1,
+          );
+          return {
+            type: CommandType.List,
+            fromLine: this.currentLine - linesAbove,
+            toLine: this.currentLine + linesBelow,
+          };
+        }
+
+        if (!isNil(fromLine) && isNil(toLine)) {
+          let windowHeight = this.screenHeight - 1;
+          return {
+            type: CommandType.List,
+            fromLine: fromLine,
+            toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
+          };
+        }
+
+        if (!isNil(fromLine) && !isNil(toLine)) {
+          if (toLine < fromLine) {
+            throw new Error("Entry error");
+          }
+          return {
+            type: CommandType.List,
+            fromLine: fromLine,
+            toLine: Math.min(toLine, this.totalLines - 1),
+          };
+        }
+
+        throw new Error("Unreachable");
       }
       case "p": {
         let fromLine = lineNumbers[0];
@@ -406,7 +418,7 @@ class CommandParser {
         }
 
         if (isNil(fromLine) && !isNil(toLine)) {
-          throw new Error("Entry error.");
+          throw new Error("Entry error");
         }
 
         if (!isNil(fromLine) && isNil(toLine)) {
