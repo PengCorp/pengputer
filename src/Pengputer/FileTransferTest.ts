@@ -15,6 +15,9 @@ export class FileTransferTest implements Executable {
     await std.readConsoleLine();
     try {
       const { name, text } = await FileTransferManager.askForUpload();
+      std.writeConsole(
+        `File ${name} uploaded successfully.\nContents follow:\n`,
+      );
       std.writeConsole(text);
       std.writeConsole("\n");
     } catch (e) {

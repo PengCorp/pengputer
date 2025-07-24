@@ -468,7 +468,7 @@ export class FileSystem {
       try {
         this.#insertFloppyInternal(floppy.drive, floppy);
       } catch (e) {
-        console.log(e);
+        throw e;
       }
     }
 

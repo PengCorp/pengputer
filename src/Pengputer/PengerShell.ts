@@ -660,10 +660,12 @@ export class PengerShell implements Executable {
     }
 
     if (command === "import") {
+      throw new Error("Not yet implemented!");
       return;
     }
 
     if (command === "export") {
+      throw new Error("Not yet implemented!");
       return;
     }
 

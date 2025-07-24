@@ -204,8 +204,14 @@ class PengOS {
 
     await this.runStartupAnimation();
     do {
-      await this.runShell();
-      await this.runStartupAnimation();
+      const { std } = this.pc;
+
+      try {
+        await this.runShell();
+        await this.runStartupAnimation();
+      } catch (e) {
+        std.writeConsoleError(e);
+      }
     } while (true);
   }
 
