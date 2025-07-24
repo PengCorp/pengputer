@@ -1,0 +1,503 @@
+import { Std } from "../Std";
+import { clamp } from "../Toolbox/Math";
+import { splitStringIntoCharacters } from "../Toolbox/String";
+import { isNil } from "../Toolbox/typescript";
+import { Executable } from "./FileSystem";
+import { PC } from "./PC";
+import _ from "lodash";
+
+const SEPARATOR = ",";
+
+// Tokenizer
+
+enum TokenType {
+  LineNumber,
+  Separator,
+  Command,
+  String,
+}
+
+type Token =
+  | {
+      type: TokenType.String;
+      value: string;
+    }
+  | {
+      type: TokenType.LineNumber;
+      value: string;
+    }
+  | {
+      type: TokenType.Separator;
+    }
+  | {
+      type: TokenType.Command;
+      value: string;
+    };
+
+const getStringFromToken = (token: Token) => {
+  switch (token.type) {
+    case TokenType.Command:
+      return `command(${token.value})`;
+    case TokenType.Separator:
+      return `separator`;
+    case TokenType.LineNumber:
+      return `lineNumber(${token.value})`;
+    case TokenType.String:
+      return `string("${token.value}")`;
+  }
+  return "unknown";
+};
+
+const isNumeric = (char: string) => {
+  return char >= "0" && char <= "9";
+};
+
+class CommandTokenizer {
+  private input: string[];
+
+  constructor(input: string) {
+    this.input = splitStringIntoCharacters(input);
+  }
+
+  tokenize(): Token[] {
+    const result: Token[] = [];
+
+    while (this.getHasCharacters()) {
+      this.skipWhitespace();
+
+      if (!this.getHasCharacters()) {
+        break;
+      }
+
+      const nextChar = this.peekCharacter();
+
+      if (isNumeric(nextChar)) {
+        const number = this.takeNumber();
+        if (number === null) {
+          throw new Error("Invalid number.");
+        }
+        result.push({
+          type: TokenType.LineNumber,
+          value: number,
+        });
+        continue;
+      } else if (nextChar === ".") {
+        this.takeCurrentLine();
+        result.push({
+          type: TokenType.LineNumber,
+          value: "current",
+        });
+      } else if (nextChar === SEPARATOR) {
+        this.takeSeparator();
+        result.push({
+          type: TokenType.Separator,
+        });
+      } else if (nextChar === '"') {
+        const string = this.takeString();
+        if (string === null) {
+          throw new Error("Invalid string.");
+        }
+        result.push({
+          type: TokenType.String,
+          value: string,
+        });
+      } else {
+        const command = this.takeCommand();
+        if (command === null) {
+          throw new Error("Invalid command.");
+        }
+        result.push({
+          type: TokenType.Command,
+          value: command,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  private shiftCharacter() {
+    return this.input.shift();
+  }
+
+  private peekCharacter() {
+    return this.input[0];
+  }
+
+  private getHasCharacters() {
+    return this.input.length > 0;
+  }
+
+  private skipWhitespace() {
+    while (this.getHasCharacters() && this.peekCharacter() === " ") {
+      this.input.shift();
+    }
+  }
+
+  private takeNumber(): string | null {
+    const result: string[] = [];
+
+    while (this.getHasCharacters() && isNumeric(this.peekCharacter())) {
+      result.push(this.shiftCharacter()!);
+    }
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return result.join("");
+  }
+
+  private takeString(): string | null {
+    const result: string[] = [];
+
+    if (this.peekCharacter() !== '"') {
+      return null;
+    }
+
+    this.shiftCharacter();
+
+    let isEscape = false;
+
+    while (this.getHasCharacters()) {
+      const nextChar = this.peekCharacter();
+
+      if (nextChar === "\\") {
+        this.shiftCharacter();
+        isEscape = true;
+        continue;
+      }
+
+      if (nextChar === '"') {
+        if (isEscape) {
+          result.push(this.shiftCharacter()!);
+          isEscape = false;
+          continue;
+        }
+
+        this.shiftCharacter()!;
+        break;
+      }
+
+      result.push(this.shiftCharacter()!);
+    }
+
+    return result.join("");
+  }
+
+  private takeCommand(): string | null {
+    const nextChar = this.peekCharacter();
+    if (
+      (nextChar >= "a" && nextChar <= "z") ||
+      (nextChar >= "A" && nextChar <= "Z") ||
+      nextChar === "?"
+    ) {
+      return this.shiftCharacter()!;
+    }
+    return null;
+  }
+
+  private takeSeparator(): string | null {
+    const nextChar = this.peekCharacter();
+    if (nextChar === SEPARATOR) {
+      return this.shiftCharacter()!;
+    }
+    return null;
+  }
+
+  private takeCurrentLine(): string | null {
+    const nextChar = this.peekCharacter();
+    if (nextChar === ".") {
+      return this.shiftCharacter()!;
+    }
+    return null;
+  }
+}
+
+enum CommandType {
+  Help,
+  Insert,
+  List,
+}
+
+type Command =
+  | {
+      type: CommandType.Help;
+    }
+  | {
+      type: CommandType.Insert;
+      atLine: number;
+    }
+  | {
+      type: CommandType.List;
+      fromLine: number;
+      toLine: number;
+    };
+
+class CommandParser {
+  totalLines: number = 0;
+  currentLine: number = 0;
+
+  constructor() {}
+
+  private lineNumberToIndex(lineNumber: string) {
+    if (lineNumber === "current") {
+      return this.currentLine;
+    }
+
+    return Number(lineNumber) - 1;
+  }
+
+  /** Returns next command or throws. Modifies the passed in tokens array. */
+  getNextCommand(tokens: Token[]): Command | null {
+    const lineNumbers: (number | null)[] = [];
+
+    let numberAdded = false;
+    let lastIsSeparator = false;
+    while (tokens.length > 0) {
+      const nextToken = tokens[0];
+      if (nextToken.type === TokenType.LineNumber) {
+        let value = this.lineNumberToIndex(nextToken.value);
+        lastIsSeparator = false;
+        lineNumbers.push(value);
+        numberAdded = true;
+        tokens.shift();
+        continue;
+      } else if (nextToken.type === TokenType.Separator) {
+        lastIsSeparator = true;
+        if (!numberAdded) {
+          lineNumbers.push(null);
+        }
+        numberAdded = false;
+        tokens.shift();
+        continue;
+      }
+      break;
+    }
+    if (lastIsSeparator) {
+      lineNumbers.push(null);
+    }
+
+    const commandToken = tokens[0];
+    if (!commandToken) {
+      throw new Error("No command provided");
+    }
+    if (commandToken.type !== TokenType.Command) {
+      throw new Error(`Unexpected token: ${getStringFromToken(tokens[0])}`);
+    }
+    tokens.shift();
+    const command = commandToken.value.toLowerCase();
+
+    switch (command) {
+      case "?": {
+        return { type: CommandType.Help };
+      }
+      case "i": {
+        let atLine = 0;
+        if (lineNumbers.length > 1) {
+          throw new Error("Too many arguments.");
+        } else if (lineNumbers.length === 0) {
+          atLine = this.currentLine;
+        } else {
+          if (lineNumbers[0] === null) {
+            atLine = this.currentLine;
+          } else {
+            atLine = lineNumbers[0];
+          }
+        }
+
+        return {
+          type: CommandType.Insert,
+          atLine,
+        };
+      }
+      case "l": {
+        let fromLine: number = 0;
+        let toLine: number = 0;
+
+        if (lineNumbers.length > 2) {
+          throw new Error("Too many arguments.");
+        } else if (lineNumbers.length === 0) {
+          fromLine = 0;
+          toLine = this.totalLines - 1;
+        } else if (lineNumbers.length === 1) {
+          if (lineNumbers[0] === null) {
+            fromLine = this.currentLine;
+          } else {
+            fromLine = lineNumbers[0];
+          }
+          toLine = this.totalLines - 1;
+        } else if (lineNumbers.length === 2) {
+          if (lineNumbers[0] === null) {
+            fromLine = 0;
+          } else {
+            fromLine = lineNumbers[0];
+          }
+          if (lineNumbers[1] === null) {
+            toLine = this.totalLines - 1;
+          } else {
+            toLine = lineNumbers[1];
+          }
+        }
+
+        return {
+          type: CommandType.List,
+          fromLine,
+          toLine,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  updateContext({
+    totalLines,
+    currentLine,
+  }: {
+    totalLines: number;
+    currentLine: number;
+  }) {
+    this.totalLines = totalLines;
+    this.currentLine = currentLine;
+  }
+}
+
+export class Pedlin implements Executable {
+  private pc: PC;
+  private std: Std;
+
+  private lines: string[];
+  private currentLine: number;
+
+  constructor(pc: PC) {
+    this.pc = pc;
+    this.std = pc.std;
+
+    this.lines = [];
+    this.currentLine = 0;
+  }
+
+  async run(args: string[]) {
+    const { std } = this;
+
+    this.pc.std.writeConsole("New file\n");
+    while (true) {
+      try {
+        await this.readCommand();
+      } catch (e: any) {
+        std.writeConsole(e.message);
+        std.writeConsole("\n");
+      }
+    }
+  }
+
+  private printLineNumber(number: number) {
+    const { std } = this;
+
+    let indicator = " ";
+    if (number === this.currentLine) {
+      indicator = "*";
+    }
+    std.writeConsole(`${_.padStart(String(number + 1), 8)}:${indicator}`);
+  }
+
+  private async insert() {
+    const { std } = this;
+    if (this.currentLine < this.lines.length) {
+      this.printLineNumber(this.currentLine);
+      std.writeConsole(`${this.lines[this.currentLine] ?? ""}\n`);
+    }
+
+    while (true) {
+      this.printLineNumber(this.currentLine);
+      const newLine = await std.readConsoleLine();
+      if (newLine === null) {
+        std.writeConsole("\n\n");
+        break;
+      }
+      this.lines.splice(this.currentLine, 0, newLine);
+      this.currentLine += 1;
+    }
+  }
+
+  /** List lines at indexes, inclusive. */
+  private async list(start: number, end: number) {
+    const { std } = this;
+
+    if (start < 0 || start > end) {
+      throw new Error("Invalid range provided.");
+    }
+
+    for (let i = start; i <= this.lines.length - 1 && i <= end; i += 1) {
+      this.printLineNumber(i);
+
+      std.writeConsole(this.lines[i]);
+      std.writeConsole("\n");
+    }
+  }
+
+  private writeHelp() {
+    const { std } = this;
+
+    const entries = [
+      ["Edit line", "line#"],
+      ["Append", "[#lines]A"],
+      ["Copy", "[startline],[endline],toline[,times]C"],
+      ["Delete", "[startline][,endline]D"],
+      ["End (save file)", "E"],
+      ["Insert", "[line]I"],
+      ["List", "[startline][,endline]L"],
+      ["Move", "[startline],[endline],tolineM"],
+      ["Page", "[startline][,endline]P"],
+      ["Quit (throw away changes)", "Q"],
+      ["Replace", '[startline][,endline][?]R["oldtext"]["newtext"]'],
+      ["Search", '[startline][,endline][?]S"text"'],
+      ["Write", "[#lines]W"],
+    ];
+
+    const maxNameLength = entries.reduce(
+      (acc, e) => (acc = Math.max(acc, e[0].length)),
+      0,
+    );
+
+    for (const entry of entries) {
+      std.writeConsole(_.padEnd(entry[0], maxNameLength));
+      std.writeConsole("   ");
+      std.writeConsole(entry[1]);
+      std.writeConsole("\n");
+    }
+  }
+
+  async readCommand() {
+    const { std } = this;
+
+    std.writeConsole("*");
+    const input = await std.readConsoleLine();
+    if (input) {
+      const t = new CommandTokenizer(input);
+      const tokens = t.tokenize();
+
+      const p = new CommandParser();
+      while (tokens.length) {
+        p.updateContext({
+          totalLines: this.lines.length,
+          currentLine: this.currentLine,
+        });
+        const command = p.getNextCommand(tokens);
+        switch (command?.type) {
+          case CommandType.List:
+            this.list(command.fromLine, command.toLine);
+            break;
+          case CommandType.Insert:
+            this.currentLine = command.atLine;
+            await this.insert();
+            break;
+          case CommandType.Help:
+            this.writeHelp();
+            break;
+        }
+      }
+    }
+  }
+}

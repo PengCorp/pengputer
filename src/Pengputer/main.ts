@@ -36,6 +36,7 @@ import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 import { loadFont9x8 } from "../Screen/font9x8";
+import { Pedlin } from "./Pedlin";
 
 const PATH_SEPARATOR = "/";
 
@@ -139,6 +140,11 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "psh.exe",
       createInstance: () => new PengerShell(this.pc),
+    });
+    softwareDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "pedlin.exe",
+      createInstance: () => new Pedlin(this.pc),
     });
 
     const gamesDir = rootDir.mkdir("games");
