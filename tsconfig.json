@@ -2,12 +2,24 @@
   "compilerOptions": {
     "target": "es2018",
     "module": "NodeNext",
-    "strict": true,
     "rootDir": "src",
     "outDir": "dist",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "useUnknownInCatchVariables": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
   },
   "include": ["src/**/*"]
 }
