@@ -35,6 +35,7 @@ import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
+import { FileTransferTest } from "./FileTransferTest";
 import { loadFont9x8 } from "../Screen/font9x8";
 
 const PATH_SEPARATOR = "/";
@@ -113,27 +114,34 @@ class PengOS {
       name: "PPL.TXT",
     });
 
-    const softwareDir = rootDir.mkdir("software");
-    softwareDir.addItem({
+    const testDir = rootDir.mkdir("test");
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "colors.exe",
+      createInstance: () => new Colors(this.pc),
+    });
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "args.exe",
+      createInstance: () => new PrintArgs(this.pc),
+    });
+    testDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "hello.exe",
       createInstance: () => new HelloWorld(this.pc),
     });
+    testDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "transfer.exe",
+      createInstance: () => new FileTransferTest(this.pc),
+    });
+
+    const softwareDir = rootDir.mkdir("software");
 
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
       name: "8ball.exe",
       createInstance: () => new EightBall(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "args.exe",
-      createInstance: () => new PrintArgs(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "colors.exe",
-      createInstance: () => new Colors(this.pc),
     });
     softwareDir.addItem({
       type: FileSystemObjectType.Executable,
@@ -196,8 +204,14 @@ class PengOS {
 
     await this.runStartupAnimation();
     do {
-      await this.runShell();
-      await this.runStartupAnimation();
+      const { std } = this.pc;
+
+      try {
+        await this.runShell();
+        await this.runStartupAnimation();
+      } catch (e) {
+        std.writeConsoleError(e);
+      }
     } while (true);
   }
 

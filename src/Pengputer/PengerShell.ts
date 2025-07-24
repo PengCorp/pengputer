@@ -1,11 +1,17 @@
 /**
- * Author: Jack (jack-jjm@github), Strawberry (Strawberry@discord), Nashiora (nashiora@discord / echoephile@github)
- * Description: Implements the PengerShell environment.
+ * Author: Strawberry / nashiora@github / echoephile@github
+ * Description: Implements the
  */
 
 import { Executable } from "./FileSystem";
-import { FileSystem, FileSystemObjectType } from "./FileSystem";
-import { PATH_SEPARATOR, FilePath } from "./FileSystem";
+import {
+  DriveLabel,
+  isDriveLabel,
+  FileSystem,
+  FileSystemObjectType,
+} from "./FileSystem";
+import { FilePath, FloppyStorage, FloppySerialized } from "./FileSystem";
+import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
 import { PC } from "./PC";
 
 import { argparse } from "../Toolbox/argparse";
@@ -25,7 +31,7 @@ export class PengerShell implements Executable {
   private isRunning: boolean = false;
 
   private workingDirectories: { [id: string]: FilePath } = {};
-  private currentDrive: string = "C";
+  private currentDrive: DriveLabel = "C";
   private currentPath: string[] = [];
   private prompt: string = "%P>";
 
@@ -57,8 +63,9 @@ export class PengerShell implements Executable {
   }
 
   private set workingDirectory(wd: FilePath) {
-    const drive = wd.drive;
-    this.workingDirectories[!!drive ? drive : "C"] = wd;
+    const drive = wd.drive ?? "C";
+    this.currentDrive = drive;
+    this.workingDirectories[drive] = wd;
   }
 
   private shiftAutorunCommand() {
@@ -91,6 +98,7 @@ export class PengerShell implements Executable {
       go: this.commandGo.bind(this),
       up: this.commandUp.bind(this),
       makedir: this.commandMakeDir.bind(this),
+      burndir: this.commandBurnDir.bind(this),
       run: this.commandRun.bind(this),
       open: this.commandOpen.bind(this),
       clear: this.commandClear.bind(this),
@@ -98,7 +106,8 @@ export class PengerShell implements Executable {
       take: this.commandTake.bind(this),
       drop: this.commandDrop.bind(this),
       reboot: this.commandReboot.bind(this),
-      fullpath: this.commandFullpath.bind(this),
+      flp: this.commandFloppy.bind(this),
+      fscommit: (args) => this.pc.fileSystem.commit(),
     };
 
     this.isRunning = true;
@@ -303,11 +312,6 @@ export class PengerShell implements Executable {
       return;
     }
 
-    if (newPath.drive !== "C") {
-      std.writeConsole("Cannot leave drive C\n");
-      return;
-    }
-
     const fsEntry = fileSystem.getFileInfo(newPath);
     if (fsEntry) {
       if (fsEntry.type === FileSystemObjectType.Directory) {
@@ -343,41 +347,38 @@ export class PengerShell implements Executable {
     for (let i = 0; i < args.length; i++) {
       const newDirPath = this.getCanonicalPath(this.workingDirectory, args[i]);
       if (newDirPath === null) {
-        std.writeConsole(`Can't find ${args[i]}\n\n`);
+        std.writeConsole(`Invalid path ${args[i]}\n`);
         continue;
       }
 
-      if (newDirPath.drive !== "C") {
-        std.writeConsole("Cannot leave drive C\n");
+      try {
+        fileSystem.createDirectory(newDirPath, true);
+        std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+    }
+  }
+
+  private commandBurnDir(args: string[]) {
+    const { fileSystem, std } = this.pc;
+    if (args.length === 0) {
+      std.writeConsole("Must provide a name\n");
+    }
+
+    for (let i = 0; i < args.length; i++) {
+      const path = this.getCanonicalPath(this.workingDirectory, args[i]);
+      if (path === null) {
+        std.writeConsole(`Invalid path ${args[i]}\n`);
         continue;
       }
 
-      const pieces = newDirPath.pieces;
-      for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
-        const nextDirPath = FilePath.tryParse(
-          `${newDirPath.drive}:/${pieces.slice(0, pathIndex + 1).join("/")}`,
-        )!;
-        const nextDirEntry = fileSystem.getFileInfo(nextDirPath);
-
-        if (nextDirEntry === null) {
-          const prevDirEntry = fileSystem.getFileInfo(
-            nextDirPath.parentDirectory(),
-          )!;
-          if (
-            prevDirEntry !== null &&
-            prevDirEntry.type === FileSystemObjectType.Directory
-          ) {
-            prevDirEntry.mkdir(pieces[pathIndex]);
-          }
-        } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-          std.writeConsole(
-            `Path ${nextDirPath.toString()} is not a directory\n`,
-          );
-          continue;
-        }
+      try {
+        fileSystem.removeDirectory(path, false);
+        std.writeConsole(`Directory ${path.toString()} removed\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
       }
-
-      std.writeConsole(`Directory ${newDirPath.toString()} created\n`);
     }
   }
 
@@ -577,6 +578,7 @@ export class PengerShell implements Executable {
     printEntry("prompt", "Change your command prompt text\n");
     printEntry("take", "Add a program to the command list\n");
     printEntry("drop", "Remove a program from the command list\n");
+    printEntry("flp", "Manage floppy disks\n");
     printEntry("reboot", "Restart the system\n");
 
     if (this.takenPrograms.length > 0) {
@@ -587,13 +589,132 @@ export class PengerShell implements Executable {
     }
   }
 
-  private commandFullpath(args: string[]) {
+  private commandFloppy(args: string[]) {
     const { std } = this.pc;
-    const [input] = args;
-    const path = this.getCanonicalPath(
-      this.workingDirectory,
-      !!input ? input : "",
-    )!;
-    std.writeConsole(`${path.toString()}\n`);
+    const [command, ...rest] = args;
+
+    if (command === "list") {
+      const floppies = this.pc.fileSystem.getFloppyInfos();
+      if (floppies.length === 0) {
+        std.writeConsole("You have no floppies\n");
+        return;
+      }
+
+      for (const floppy of floppies) {
+        if (floppy.drive) {
+          std.writeConsole(`${floppy.drive}: `);
+        } else std.writeConsole("   ");
+        std.writeConsoleCharacter("floppy0");
+        std.writeConsoleCharacter("floppy1");
+        std.writeConsole(` ${floppy.name}\n`);
+      }
+    } else if (command === "spawn") {
+      const [name] = rest;
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      try {
+        this.pc.fileSystem.spawnFloppy(name);
+        std.writeConsole(`Floppy '${name}' has materialized\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+
+      return;
+    } else if (command === "import") {
+    } else if (command === "export") {
+    } else if (command === "burn") {
+      const [name] = rest;
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      try {
+        this.pc.fileSystem.burnFloppy(name);
+        std.writeConsole(`Floppy '${name}' is now a pile of ash\n`);
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+    } else if (command === "insert") {
+      const [label, name] = rest;
+
+      if (!label) {
+        std.writeConsole("Missing drive label\n");
+        return;
+      }
+
+      if (!isDriveLabel(label)) {
+        std.writeConsole("Invalid drive label\n");
+        return;
+      }
+
+      if (!name) {
+        std.writeConsole("Missing floppy name\n");
+        return;
+      }
+
+      try {
+        this.pc.fileSystem.insertFloppy(label, name);
+        std.writeConsole(
+          `Floppy '${name}' is now available through ${label}:/\n`,
+        );
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+    } else if (command === "eject") {
+      const [label] = rest;
+
+      if (!label) {
+        std.writeConsole("Missing drive label\n");
+        return;
+      }
+
+      if (!isDriveLabel(label)) {
+        std.writeConsole("Invalid drive label\n");
+        return;
+      }
+
+      try {
+        this.pc.fileSystem.ejectFloppy(label);
+        std.writeConsole(`Drive ${label}:/ no longer contains a floppy\n`);
+
+        if (label === this.workingDirectory.drive) {
+          this.currentDrive = "C";
+        }
+      } catch (e) {
+        std.writeConsole(`${(<Error>e).message}\n`);
+      }
+    } else {
+      const printEntry = (cmd: string, text: string) => {
+        const cmdFmt =
+          cmd.length < 10 ? _.padEnd(cmd, 10) + " " : cmd + "\n           ";
+        std.writeConsoleSequence([
+          { bold: true },
+          cmdFmt,
+          { reset: true },
+          text,
+        ]);
+      };
+
+      if (!command) {
+        std.writeConsole(`Missing a command\n\n`);
+      } else if (command !== "help") {
+        std.writeConsole(`Unknown floppy command "${command}"\n\n`);
+      }
+
+      printEntry("flp list", "List all mounted floppies\n");
+      printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
+      printEntry("flp import <name>", "Import data onto floppy '<name>'\n");
+      printEntry("flp export <name>", "Export data off of floppy '<name>'\n");
+      printEntry("flp burn <name>", "Completely destroy floppy '<name>'\n");
+      printEntry(
+        "flp insert <label> <name>",
+        "Insert floppy '<name>' into drive <label>\n",
+      );
+      printEntry("flp eject <label>", "Eject the floppy at drive <label>\n");
+    }
   }
 }
