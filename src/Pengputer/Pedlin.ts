@@ -8,7 +8,7 @@ import _ from "lodash";
 
 const SEPARATOR = ",";
 
-// Tokenizer
+// ========================= Tokenizer =========================
 
 enum TokenType {
   LineNumber,
@@ -214,10 +214,15 @@ class CommandTokenizer {
   }
 }
 
+// ========================= End tokenizer =========================
+
 enum CommandType {
   Help,
   Insert,
   List,
+  EditLine,
+  Page,
+  NoOp,
 }
 
 type Command =
@@ -232,11 +237,26 @@ type Command =
       type: CommandType.List;
       fromLine: number;
       toLine: number;
-    };
+    }
+  | { type: CommandType.EditLine; atLine: number; shouldAdvanceLine: boolean }
+  | {
+      type: CommandType.Page;
+      fromLine: number;
+      toLine: number;
+      newCurrentLine: number;
+    }
+  | { type: CommandType.NoOp };
+
+interface CommandParserContext {
+  totalLines: number;
+  currentLine: number;
+  screenHeight: number;
+}
 
 class CommandParser {
   totalLines: number = 0;
   currentLine: number = 0;
+  screenHeight: number = 0;
 
   constructor() {}
 
@@ -245,7 +265,13 @@ class CommandParser {
       return this.currentLine;
     }
 
-    return Number(lineNumber) - 1;
+    let result = Number(lineNumber) - 1;
+
+    if (result !== Math.floor(result) || result < 0) {
+      throw new Error("Invalid line number");
+    }
+
+    return result;
   }
 
   /** Returns next command or throws. Modifies the passed in tokens array. */
@@ -280,7 +306,15 @@ class CommandParser {
 
     const commandToken = tokens[0];
     if (!commandToken) {
-      throw new Error("No command provided");
+      if (lineNumbers.length > 1) {
+        throw new Error("Entry error.");
+      }
+
+      return {
+        type: CommandType.EditLine,
+        atLine: lineNumbers[0] ?? this.currentLine,
+        shouldAdvanceLine: isNil(lineNumbers[0]),
+      };
     }
     if (commandToken.type !== TokenType.Command) {
       throw new Error(`Unexpected token: ${getStringFromToken(tokens[0])}`);
@@ -346,6 +380,64 @@ class CommandParser {
           toLine,
         };
       }
+      case "p": {
+        let fromLine = lineNumbers[0];
+        let toLine = lineNumbers[1];
+
+        if (isNil(fromLine) && isNil(toLine)) {
+          if (this.currentLine >= this.totalLines - 1) {
+            return { type: CommandType.NoOp };
+          }
+
+          fromLine = this.currentLine === 0 ? 0 : this.currentLine + 1;
+
+          return {
+            type: CommandType.Page,
+            fromLine: fromLine,
+            toLine: Math.min(
+              fromLine + (this.screenHeight - 2 - 1),
+              this.totalLines - 1,
+            ),
+            newCurrentLine: Math.min(
+              fromLine + (this.screenHeight - 2 - 1),
+              this.totalLines - 1,
+            ),
+          };
+        }
+
+        if (isNil(fromLine) && !isNil(toLine)) {
+          throw new Error("Entry error.");
+        }
+
+        if (!isNil(fromLine) && isNil(toLine)) {
+          return {
+            type: CommandType.Page,
+            fromLine: fromLine,
+            toLine: Math.min(
+              fromLine + (this.screenHeight - 2 - 1),
+              this.totalLines - 1,
+            ),
+            newCurrentLine: Math.min(
+              fromLine + (this.screenHeight - 2 - 1),
+              this.totalLines - 1,
+            ),
+          };
+        }
+
+        if (!isNil(fromLine) && !isNil(toLine)) {
+          if (toLine < fromLine) {
+            throw new Error("Entry error");
+          }
+          return {
+            type: CommandType.Page,
+            fromLine: fromLine,
+            toLine: Math.min(toLine, this.totalLines - 1),
+            newCurrentLine: Math.min(toLine, this.totalLines - 1),
+          };
+        }
+
+        throw new Error("Unreachable.");
+      }
     }
 
     return null;
@@ -354,12 +446,11 @@ class CommandParser {
   updateContext({
     totalLines,
     currentLine,
-  }: {
-    totalLines: number;
-    currentLine: number;
-  }) {
+    screenHeight,
+  }: CommandParserContext) {
     this.totalLines = totalLines;
     this.currentLine = currentLine;
+    this.screenHeight = screenHeight;
   }
 }
 
@@ -374,7 +465,60 @@ export class Pedlin implements Executable {
     this.pc = pc;
     this.std = pc.std;
 
-    this.lines = [];
+    this.lines = [
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+      "g",
+      "h",
+      "i",
+      "j",
+      "k",
+      "l",
+      "m",
+      "n",
+      "o",
+      "p",
+      "q",
+      "r",
+      "s",
+      "t",
+      "u",
+      "v",
+      "w",
+      "x",
+      "y",
+      "z",
+      "a2",
+      "b2",
+      "c2",
+      "d2",
+      "e2",
+      "f2",
+      "g2",
+      "h2",
+      "i2",
+      "j2",
+      "k2",
+      "l2",
+      "m2",
+      "n2",
+      "o2",
+      "p2",
+      "q2",
+      "r2",
+      "s2",
+      "t2",
+      "u2",
+      "v2",
+      "w2",
+      "x2",
+      "y2",
+      "z2",
+    ];
     this.currentLine = 0;
   }
 
@@ -437,6 +581,47 @@ export class Pedlin implements Executable {
     }
   }
 
+  private async editLine(atLine: number, shouldAdvanceLine: boolean) {
+    const { std } = this;
+
+    this.currentLine = atLine;
+
+    if (shouldAdvanceLine) {
+      this.currentLine = Math.min(this.lines.length, this.currentLine + 1);
+      if (this.currentLine === this.lines.length) {
+        return;
+      }
+    }
+
+    if (atLine === this.lines.length) {
+      return;
+    }
+
+    this.printLineNumber(this.currentLine);
+    std.writeConsole(`${this.lines[this.currentLine] ?? ""}\n`);
+
+    this.printLineNumber(this.currentLine);
+    const newLine = await std.readConsoleLine();
+    if (newLine === null) {
+      std.writeConsole("\n\n");
+    } else {
+      if (newLine.length > 0) {
+        this.lines[this.currentLine] = newLine;
+      }
+    }
+  }
+
+  private page(fromLine: number, toLine: number) {
+    const { std } = this;
+
+    for (let i = fromLine; i <= this.lines.length - 1 && i <= toLine; i += 1) {
+      this.printLineNumber(i);
+
+      std.writeConsole(this.lines[i]);
+      std.writeConsole("\n");
+    }
+  }
+
   private writeHelp() {
     const { std } = this;
 
@@ -474,29 +659,43 @@ export class Pedlin implements Executable {
 
     std.writeConsole("*");
     const input = await std.readConsoleLine();
-    if (input) {
-      const t = new CommandTokenizer(input);
-      const tokens = t.tokenize();
+    if (isNil(input)) {
+      return;
+    }
 
-      const p = new CommandParser();
-      while (tokens.length) {
-        p.updateContext({
-          totalLines: this.lines.length,
-          currentLine: this.currentLine,
-        });
-        const command = p.getNextCommand(tokens);
-        switch (command?.type) {
-          case CommandType.List:
-            this.list(command.fromLine, command.toLine);
-            break;
-          case CommandType.Insert:
-            this.currentLine = command.atLine;
-            await this.insert();
-            break;
-          case CommandType.Help:
-            this.writeHelp();
-            break;
-        }
+    const t = new CommandTokenizer(input ?? "");
+    const tokens = t.tokenize();
+
+    const p = new CommandParser();
+    while (true) {
+      p.updateContext({
+        totalLines: this.lines.length,
+        currentLine: this.currentLine,
+        screenHeight: std.getConsoleSize().h,
+      });
+      const command = p.getNextCommand(tokens);
+      switch (command?.type) {
+        case CommandType.List:
+          this.list(command.fromLine, command.toLine);
+          break;
+        case CommandType.Insert:
+          this.currentLine = command.atLine;
+          await this.insert();
+          break;
+        case CommandType.Help:
+          this.writeHelp();
+          break;
+        case CommandType.EditLine:
+          await this.editLine(command.atLine, command.shouldAdvanceLine);
+          break;
+        case CommandType.Page:
+          this.currentLine = command.newCurrentLine;
+          this.page(command.fromLine, command.toLine);
+          break;
+      }
+
+      if (tokens.length === 0) {
+        break;
       }
     }
   }
