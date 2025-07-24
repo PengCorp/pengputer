@@ -1,6 +1,6 @@
 /**
- * Author: Jack (jack-jjm@github), Strawberry (Strawberry@discord), Nashiora (nashiora@discord / echoephile@github)
- * Description: Implements the PengerShell environment.
+ * Author: Strawberry / nashiora@github / echoephile@github
+ * Description: Implements the
  */
 
 import { Executable } from "./FileSystem";
@@ -69,17 +69,12 @@ export class PengerShell implements Executable {
   }
 
   private shiftAutorunCommand() {
-    const { std } = this.pc;
     if (this.autorun.length > 1) {
-      const command = `go ${this.autorun.shift()}`;
-      std.writeConsole(`${command}\n`);
-      return command;
+      return `go ${this.autorun.shift()}`;
     }
 
     if (this.autorun.length === 1) {
-      const command = `run ${this.autorun.shift()}`;
-      std.writeConsole(`${command}\n`);
-      return command;
+      return `run ${this.autorun.shift()}`;
     }
 
     return undefined;
@@ -593,35 +588,6 @@ export class PengerShell implements Executable {
     const { std } = this.pc;
     const [command, ...rest] = args;
 
-    if (command === "help" || !command) {
-      const printEntry = (cmd: string, text: string) => {
-        const cmdFmt =
-          cmd.length < 10 ? _.padEnd(cmd, 10) + " " : cmd + "\n           ";
-        std.writeConsoleSequence([
-          { bold: true },
-          cmdFmt,
-          { reset: true },
-          text,
-        ]);
-      };
-
-      if (!command) {
-        std.writeConsole(`Missing a command\n\n`);
-      }
-
-      printEntry("flp list", "List all mounted floppies\n");
-      printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
-      printEntry("flp import <name>", "Import data onto floppy '<name>'\n");
-      printEntry("flp export <name>", "Export data off of floppy '<name>'\n");
-      printEntry("flp burn <name>", "Completely destroy floppy '<name>'\n");
-      printEntry(
-        "flp insert <label> <name>",
-        "Insert floppy '<name>' into drive <label>\n",
-      );
-      printEntry("flp eject <label>", "Eject the floppy at drive <label>\n");
-      return;
-    }
-
     if (command === "list") {
       const floppies = this.pc.fileSystem.getFloppyInfos();
       if (floppies.length === 0) {
@@ -637,11 +603,7 @@ export class PengerShell implements Executable {
         std.writeConsoleCharacter("floppy1");
         std.writeConsole(` ${floppy.name}\n`);
       }
-
-      return;
-    }
-
-    if (command === "spawn") {
+    } else if (command === "spawn") {
       const [name] = rest;
       if (!name) {
         std.writeConsole("Missing floppy name\n");
@@ -656,17 +618,9 @@ export class PengerShell implements Executable {
       }
 
       return;
-    }
-
-    if (command === "import") {
-      return;
-    }
-
-    if (command === "export") {
-      return;
-    }
-
-    if (command === "burn") {
+    } else if (command === "import") {
+    } else if (command === "export") {
+    } else if (command === "burn") {
       const [name] = rest;
       if (!name) {
         std.writeConsole("Missing floppy name\n");
@@ -679,11 +633,7 @@ export class PengerShell implements Executable {
       } catch (e) {
         std.writeConsole(`${(<Error>e).message}\n`);
       }
-
-      return;
-    }
-
-    if (command === "insert") {
+    } else if (command === "insert") {
       const [label, name] = rest;
 
       if (!label) {
@@ -709,11 +659,7 @@ export class PengerShell implements Executable {
       } catch (e) {
         std.writeConsole(`${(<Error>e).message}\n`);
       }
-
-      return;
-    }
-
-    if (command === "eject") {
+    } else if (command === "eject") {
       const [label] = rest;
 
       if (!label) {
@@ -736,10 +682,34 @@ export class PengerShell implements Executable {
       } catch (e) {
         std.writeConsole(`${(<Error>e).message}\n`);
       }
+    } else {
+      const printEntry = (cmd: string, text: string) => {
+        const cmdFmt =
+          cmd.length < 10 ? _.padEnd(cmd, 10) + " " : cmd + "\n           ";
+        std.writeConsoleSequence([
+          { bold: true },
+          cmdFmt,
+          { reset: true },
+          text,
+        ]);
+      };
 
-      return;
+      if (!command) {
+        std.writeConsole(`Missing a command\n\n`);
+      } else if (command !== "help") {
+        std.writeConsole(`Unknown floppy command "${command}"\n\n`);
+      }
+
+      printEntry("flp list", "List all mounted floppies\n");
+      printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
+      printEntry("flp import <name>", "Import data onto floppy '<name>'\n");
+      printEntry("flp export <name>", "Export data off of floppy '<name>'\n");
+      printEntry("flp burn <name>", "Completely destroy floppy '<name>'\n");
+      printEntry(
+        "flp insert <label> <name>",
+        "Insert floppy '<name>' into drive <label>\n",
+      );
+      printEntry("flp eject <label>", "Eject the floppy at drive <label>\n");
     }
-
-    std.writeConsole(`Unknown floppy command "${command}"\n`);
   }
 }
