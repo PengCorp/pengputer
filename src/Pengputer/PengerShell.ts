@@ -593,12 +593,7 @@ export class PengerShell implements Executable {
     const { std } = this.pc;
     const [command, ...rest] = args;
 
-    if (!command) {
-      std.writeConsole(`Missing a command\n`);
-      return;
-    }
-
-    if (command === "help") {
+    if (command === "help" || !command) {
       const printEntry = (cmd: string, text: string) => {
         const cmdFmt =
           cmd.length < 10 ? _.padEnd(cmd, 10) + " " : cmd + "\n           ";
@@ -609,6 +604,10 @@ export class PengerShell implements Executable {
           text,
         ]);
       };
+
+      if (!command) {
+        std.writeConsole(`Missing a command\n\n`);
+      }
 
       printEntry("flp list", "List all mounted floppies\n");
       printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
