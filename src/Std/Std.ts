@@ -1,3 +1,4 @@
+import { classicColors } from "../Color/ansi";
 import { Keyboard } from "../Keyboard";
 import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
@@ -19,6 +20,7 @@ import { Vector, vectorAdd } from "../Toolbox/Vector";
 import { Rect } from "../types";
 import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
+import _ from "lodash";
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
   reset?: boolean;
@@ -259,6 +261,20 @@ export class Std {
     });
     this.textBuffer.printAttributes(1);
     this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
+  }
+
+  writeConsoleError(e: any) {
+    this.writeConsole("\n\n", { reset: true });
+    const messageFieldWidth = this.getConsoleSize().w - 4;
+    const errorMessage = e?.message || "Unknown error";
+    this.writeConsole(
+      `  ${_.padEnd("Software failure. Restarting...", messageFieldWidth)}  \n  ${_.padEnd(`Penger Meditation: ${errorMessage}`, messageFieldWidth)}  `,
+      {
+        bgColor: classicColors["red"],
+        fgColor: classicColors["black"],
+      },
+    );
+    this.writeConsole("\n\n", { reset: true });
   }
 
   /* ===================== CONSOLE SCROLLING ========================= */

@@ -14,15 +14,23 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2
   },
+  "[scss]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
   "cSpell.words": [
     "Alexey",
     "Autorepeat",
     "autorun",
     "Backquote",
     "bitfield",
+    "burndir",
     "dedup",
     "freesound",
+    "fscommit",
     "Kutepov",
+    "makedir",
     "Pajitnov",
     "PBIOS",
     "Pedlin",
