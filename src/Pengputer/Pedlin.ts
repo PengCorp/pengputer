@@ -307,9 +307,7 @@ class CommandParser {
 
     if (lineNumbers.length === 0) {
       atLine = this.currentLine;
-    }
-
-    if (lineNumbers.length === 1) {
+    } else if (lineNumbers.length === 1) {
       if (isNil(lineNumbers[0])) {
         atLine = this.currentLine;
       } else {
