@@ -216,6 +216,8 @@ class CommandTokenizer {
 
 // ========================= End tokenizer =========================
 
+// ========================= Command parser =========================
+
 enum CommandType {
   Help,
   Insert,
@@ -436,7 +438,7 @@ class CommandParser {
   }
 
   private parsePage(lineNumbers: (number | null)[]): CommandPage | CommandNoop {
-    let windowHeight = this.screenHeight - 2;
+    let windowHeight = this.screenHeight - 1;
 
     if (lineNumbers.length === 0) {
       if (this.currentLine >= this.totalLines - 1) {
@@ -478,48 +480,7 @@ class CommandParser {
       };
     }
 
-    let toLine = lineNumbers[1];
-
-    if (lineNumbers.length === 2) {
-      if (isNil(fromLine) && isNil(toLine)) {
-        return {
-          type: CommandType.Page,
-          fromLine: this.currentLine,
-          toLine: Math.min(
-            this.currentLine + windowHeight - 1,
-            this.totalLines - 1,
-          ),
-          newCurrentLine: Math.min(
-            this.currentLine + windowHeight - 1,
-            this.totalLines - 1,
-          ),
-        };
-      } else if (isNil(fromLine) && !isNil(toLine)) {
-        throw new Error("Entry error");
-      } else if (!isNil(fromLine) && isNil(toLine)) {
-        return {
-          type: CommandType.Page,
-          fromLine: fromLine,
-          toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
-          newCurrentLine: Math.min(
-            fromLine + (windowHeight - 1),
-            this.totalLines - 1,
-          ),
-        };
-      } else if (!isNil(fromLine) && !isNil(toLine)) {
-        if (toLine < fromLine) {
-          throw new Error("Entry error");
-        }
-        return {
-          type: CommandType.Page,
-          fromLine: fromLine,
-          toLine: Math.min(toLine, this.totalLines - 1),
-          newCurrentLine: Math.min(toLine, this.totalLines - 1),
-        };
-      }
-    }
-
-    if (lineNumbers.length > 2) {
+    if (lineNumbers.length > 1) {
       throw new Error("Entry error");
     }
 
@@ -655,6 +616,8 @@ class CommandParser {
   }
 }
 
+// ========================= End command parser =========================
+
 export class Pedlin implements Executable {
   private pc: PC;
   private std: Std;
@@ -757,6 +720,7 @@ export class Pedlin implements Executable {
     }
   }
 
+  /** List lines and move current line to end of range. */
   private page(fromLine: number, toLine: number) {
     const { std } = this;
 
@@ -824,6 +788,7 @@ export class Pedlin implements Executable {
         screenHeight: std.getConsoleSize().h,
       });
       const command = p.getNextCommand(tokens);
+
       switch (command?.type) {
         case CommandType.List:
           this.list(command.fromLine, command.toLine);
@@ -848,7 +813,7 @@ export class Pedlin implements Executable {
           break;
       }
 
-      if (tokens.length === 0) {
+      if (tokens.length === 0 || !command) {
         break;
       }
     }
