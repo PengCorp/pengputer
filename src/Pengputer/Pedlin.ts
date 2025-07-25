@@ -298,6 +298,29 @@ class CommandParser {
     return result;
   }
 
+  private getViewCenteredAround(lineNumber: number) {
+    let windowHeight = this.screenHeight - 1;
+
+    let pivot = (windowHeight - 1) / 2;
+
+    let linesAbove = Math.floor(pivot);
+    let linesBelow = Math.ceil(pivot);
+
+    let fromLine = lineNumber - linesAbove;
+    let toLine = lineNumber + linesBelow;
+
+    let startOverflow = Math.max(0, 0 - fromLine);
+    let endOverflow = Math.max(0, toLine - (this.totalLines - 1));
+
+    fromLine -= endOverflow;
+    toLine += startOverflow;
+
+    fromLine = Math.max(fromLine, 0);
+    toLine = Math.min(toLine, this.totalLines - 1);
+
+    return [fromLine, toLine];
+  }
+
   private parseHelp(): CommandHelp {
     return { type: CommandType.Help };
   }
@@ -329,17 +352,15 @@ class CommandParser {
     let windowHeight = this.screenHeight - 1;
 
     let pivot = (windowHeight - 1) / 2;
-    let linesAbove = Math.min(this.currentLine, Math.floor(pivot));
-    let linesBelow = Math.min(
-      windowHeight - linesAbove - 1,
-      this.totalLines - this.currentLine - 1,
-    );
+    let linesAbove = Math.floor(pivot);
+    let linesBelow = Math.ceil(pivot);
 
     if (lineNumbers.length === 0) {
+      const [from, to] = this.getViewCenteredAround(this.currentLine);
       return {
         type: CommandType.List,
-        fromLine: this.currentLine - linesAbove,
-        toLine: this.currentLine + linesBelow,
+        fromLine: from,
+        toLine: to,
       };
     }
 
@@ -356,10 +377,11 @@ class CommandParser {
         };
       }
 
+      const [from, to] = this.getViewCenteredAround(fromLine);
       return {
         type: CommandType.List,
-        fromLine: fromLine,
-        toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
+        fromLine: from,
+        toLine: to,
       };
     }
 
@@ -367,10 +389,11 @@ class CommandParser {
 
     if (lineNumbers.length === 2) {
       if (isNil(fromLine) && isNil(toLine)) {
+        const [from, to] = this.getViewCenteredAround(this.currentLine);
         return {
           type: CommandType.List,
-          fromLine: this.currentLine - linesAbove,
-          toLine: this.currentLine + linesBelow,
+          fromLine: from,
+          toLine: to,
         };
       } else if (isNil(fromLine) && !isNil(toLine)) {
         return {
@@ -388,7 +411,7 @@ class CommandParser {
         return {
           type: CommandType.List,
           fromLine: fromLine,
-          toLine: fromLine + windowHeight - 1,
+          toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
         };
       } else if (!isNil(fromLine) && !isNil(toLine)) {
         if (fromLine >= this.totalLines) {
