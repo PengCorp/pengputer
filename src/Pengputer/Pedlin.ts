@@ -303,11 +303,11 @@ class CommandParser {
 
     let pivot = (windowHeight - 1) / 2;
 
-    let linesAbove = Math.floor(pivot);
-    let linesBelow = Math.ceil(pivot);
+    let linesBefore = Math.floor(pivot);
+    let linesAfter = Math.ceil(pivot);
 
-    let fromLine = lineNumber - linesAbove;
-    let toLine = lineNumber + linesBelow;
+    let fromLine = lineNumber - linesBefore;
+    let toLine = lineNumber + linesAfter;
 
     let startOverflow = Math.max(0, 0 - fromLine);
     let endOverflow = Math.max(0, toLine - (this.totalLines - 1));
@@ -666,60 +666,7 @@ export class Pedlin implements Executable {
     this.pc = pc;
     this.std = pc.std;
 
-    this.lines = [
-      "a",
-      "b",
-      "c",
-      "d",
-      "e",
-      "f",
-      "g",
-      "h",
-      "i",
-      "j",
-      "k",
-      "l",
-      "m",
-      "n",
-      "o",
-      "p",
-      "q",
-      "r",
-      "s",
-      "t",
-      "u",
-      "v",
-      "w",
-      "x",
-      "y",
-      "z",
-      "a2",
-      "b2",
-      "c2",
-      "d2",
-      "e2",
-      "f2",
-      "g2",
-      "h2",
-      "i2",
-      "j2",
-      "k2",
-      "l2",
-      "m2",
-      "n2",
-      "o2",
-      "p2",
-      "q2",
-      "r2",
-      "s2",
-      "t2",
-      "u2",
-      "v2",
-      "w2",
-      "x2",
-      "y2",
-      "z2",
-    ];
+    this.lines = [];
     this.currentLine = 0;
   }
 
