@@ -351,10 +351,6 @@ class CommandParser {
   private parseList(lineNumbers: (number | null)[]): CommandList | CommandNoop {
     let windowHeight = this.screenHeight - 1;
 
-    let pivot = (windowHeight - 1) / 2;
-    let linesAbove = Math.floor(pivot);
-    let linesBelow = Math.ceil(pivot);
-
     if (lineNumbers.length === 0) {
       const [from, to] = this.getViewCenteredAround(this.currentLine);
       return {
