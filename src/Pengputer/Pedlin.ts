@@ -223,29 +223,53 @@ enum CommandType {
   EditLine,
   Page,
   NoOp,
+  Delete,
 }
 
+type CommandHelp = {
+  type: CommandType.Help;
+};
+
+type CommandInsert = {
+  type: CommandType.Insert;
+  atLine: number;
+};
+
+type CommandList = {
+  type: CommandType.List;
+  fromLine: number;
+  toLine: number;
+};
+
+type CommandEditLine = {
+  type: CommandType.EditLine;
+  atLine: number;
+  shouldAdvanceLine: boolean;
+};
+
+type CommandPage = {
+  type: CommandType.Page;
+  fromLine: number;
+  toLine: number;
+  newCurrentLine: number;
+};
+
+type CommandNoop = { type: CommandType.NoOp };
+
+type CommandDelete = {
+  type: CommandType.Delete;
+  fromLine: number;
+  toLine: number;
+};
+
 type Command =
-  | {
-      type: CommandType.Help;
-    }
-  | {
-      type: CommandType.Insert;
-      atLine: number;
-    }
-  | {
-      type: CommandType.List;
-      fromLine: number;
-      toLine: number;
-    }
-  | { type: CommandType.EditLine; atLine: number; shouldAdvanceLine: boolean }
-  | {
-      type: CommandType.Page;
-      fromLine: number;
-      toLine: number;
-      newCurrentLine: number;
-    }
-  | { type: CommandType.NoOp };
+  | CommandHelp
+  | CommandInsert
+  | CommandList
+  | CommandEditLine
+  | CommandPage
+  | CommandNoop
+  | CommandDelete;
 
 interface CommandParserContext {
   totalLines: number;
@@ -272,6 +296,266 @@ class CommandParser {
     }
 
     return result;
+  }
+
+  private parseHelp(): CommandHelp {
+    return { type: CommandType.Help };
+  }
+
+  private parseInsert(lineNumbers: (number | null)[]): CommandInsert {
+    let atLine = 0;
+
+    if (lineNumbers.length === 0) {
+      atLine = this.currentLine;
+    }
+
+    if (lineNumbers.length === 1) {
+      if (isNil(lineNumbers[0])) {
+        atLine = this.currentLine;
+      } else {
+        atLine = lineNumbers[0];
+      }
+    }
+
+    if (lineNumbers.length > 1) {
+      throw new Error("Too many arguments");
+    }
+
+    return {
+      type: CommandType.Insert,
+      atLine,
+    };
+  }
+
+  private parseList(lineNumbers: (number | null)[]): CommandList | CommandNoop {
+    let windowHeight = this.screenHeight - 1;
+
+    let pivot = (windowHeight - 1) / 2;
+    let linesAbove = Math.min(this.currentLine, Math.floor(pivot));
+    let linesBelow = Math.min(
+      windowHeight - linesAbove - 1,
+      this.totalLines - this.currentLine - 1,
+    );
+
+    if (lineNumbers.length === 0) {
+      return {
+        type: CommandType.List,
+        fromLine: this.currentLine - linesAbove,
+        toLine: this.currentLine + linesBelow,
+      };
+    }
+
+    let fromLine = lineNumbers[0];
+
+    if (lineNumbers.length === 1) {
+      if (isNil(fromLine)) {
+        throw new Error("Entry error");
+      }
+
+      if (fromLine >= this.totalLines) {
+        return {
+          type: CommandType.NoOp,
+        };
+      }
+
+      return {
+        type: CommandType.List,
+        fromLine: fromLine,
+        toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
+      };
+    }
+
+    let toLine = lineNumbers[1];
+
+    if (lineNumbers.length === 2) {
+      if (isNil(fromLine) && isNil(toLine)) {
+        return {
+          type: CommandType.List,
+          fromLine: this.currentLine - linesAbove,
+          toLine: this.currentLine + linesBelow,
+        };
+      } else if (isNil(fromLine) && !isNil(toLine)) {
+        return {
+          type: CommandType.List,
+          fromLine: 0,
+          toLine: toLine,
+        };
+      } else if (!isNil(fromLine) && isNil(toLine)) {
+        if (fromLine >= this.totalLines) {
+          return {
+            type: CommandType.NoOp,
+          };
+        }
+
+        return {
+          type: CommandType.List,
+          fromLine: fromLine,
+          toLine: fromLine + windowHeight - 1,
+        };
+      } else if (!isNil(fromLine) && !isNil(toLine)) {
+        if (fromLine >= this.totalLines) {
+          return {
+            type: CommandType.NoOp,
+          };
+        }
+
+        if (toLine < fromLine) {
+          throw new Error("Entry error");
+        }
+
+        return {
+          type: CommandType.List,
+          fromLine: fromLine,
+          toLine: Math.min(toLine, this.totalLines - 1),
+        };
+      }
+    }
+
+    if (lineNumbers.length > 2) {
+      throw new Error("Too many arguments");
+    }
+
+    throw new Error("Unreachable");
+  }
+
+  private parsePage(lineNumbers: (number | null)[]): CommandPage | CommandNoop {
+    let windowHeight = this.screenHeight - 2;
+
+    if (lineNumbers.length === 0) {
+      if (this.currentLine >= this.totalLines - 1) {
+        return { type: CommandType.NoOp };
+      }
+
+      let fromLine = this.currentLine === 0 ? 0 : this.currentLine + 1;
+
+      return {
+        type: CommandType.Page,
+        fromLine: fromLine,
+        toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
+        newCurrentLine: Math.min(
+          fromLine + (windowHeight - 1),
+          this.totalLines - 1,
+        ),
+      };
+    }
+
+    let fromLine = lineNumbers[0];
+
+    if (lineNumbers.length === 1) {
+      if (isNil(fromLine)) {
+        throw new Error("Entry error");
+      }
+
+      if (fromLine >= this.totalLines) {
+        return { type: CommandType.NoOp };
+      }
+
+      return {
+        type: CommandType.Page,
+        fromLine: fromLine,
+        toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
+        newCurrentLine: Math.min(
+          fromLine + (windowHeight - 1),
+          this.totalLines - 1,
+        ),
+      };
+    }
+
+    let toLine = lineNumbers[1];
+
+    if (lineNumbers.length === 2) {
+      if (isNil(fromLine) && isNil(toLine)) {
+        return {
+          type: CommandType.Page,
+          fromLine: this.currentLine,
+          toLine: Math.min(
+            this.currentLine + windowHeight - 1,
+            this.totalLines - 1,
+          ),
+          newCurrentLine: Math.min(
+            this.currentLine + windowHeight - 1,
+            this.totalLines - 1,
+          ),
+        };
+      } else if (isNil(fromLine) && !isNil(toLine)) {
+        throw new Error("Entry error");
+      } else if (!isNil(fromLine) && isNil(toLine)) {
+        return {
+          type: CommandType.Page,
+          fromLine: fromLine,
+          toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
+          newCurrentLine: Math.min(
+            fromLine + (windowHeight - 1),
+            this.totalLines - 1,
+          ),
+        };
+      } else if (!isNil(fromLine) && !isNil(toLine)) {
+        if (toLine < fromLine) {
+          throw new Error("Entry error");
+        }
+        return {
+          type: CommandType.Page,
+          fromLine: fromLine,
+          toLine: Math.min(toLine, this.totalLines - 1),
+          newCurrentLine: Math.min(toLine, this.totalLines - 1),
+        };
+      }
+    }
+
+    if (lineNumbers.length > 2) {
+      throw new Error("Entry error");
+    }
+
+    throw new Error("Unreachable");
+  }
+
+  private parseDelete(
+    lineNumbers: (number | null)[],
+  ): CommandDelete | CommandNoop {
+    if (lineNumbers.length === 0) {
+      return {
+        type: CommandType.Delete,
+        fromLine: this.currentLine,
+        toLine: this.currentLine,
+      };
+    }
+
+    let fromLine = lineNumbers[0];
+
+    if (lineNumbers.length === 1) {
+      if (isNil(fromLine)) {
+        throw new Error("Entry error");
+      }
+
+      return {
+        type: CommandType.Delete,
+        fromLine: fromLine,
+        toLine: fromLine,
+      };
+    }
+
+    let toLine = lineNumbers[1];
+
+    if (lineNumbers.length === 2) {
+      fromLine = fromLine ?? 0;
+      toLine = toLine ?? this.totalLines - 1;
+
+      if (toLine < fromLine) {
+        throw new Error("Entry error");
+      }
+
+      return {
+        type: CommandType.Delete,
+        fromLine,
+        toLine,
+      };
+    }
+
+    if (lineNumbers.length > 2) {
+      throw new Error("Entry error");
+    }
+
+    throw new Error("Unreachable");
   }
 
   /** Returns next command or throws. Modifies the passed in tokens array. */
@@ -312,7 +596,7 @@ class CommandParser {
 
       return {
         type: CommandType.EditLine,
-        atLine: lineNumbers[0] ?? this.currentLine,
+        atLine: Math.min(lineNumbers[0] ?? this.currentLine, this.totalLines),
         shouldAdvanceLine: isNil(lineNumbers[0]),
       };
     }
@@ -324,131 +608,19 @@ class CommandParser {
 
     switch (command) {
       case "?": {
-        return { type: CommandType.Help };
+        return this.parseHelp();
       }
       case "i": {
-        let atLine = 0;
-        if (lineNumbers.length > 1) {
-          throw new Error("Too many arguments.");
-        } else if (lineNumbers.length === 0) {
-          atLine = this.currentLine;
-        } else {
-          if (lineNumbers[0] === null) {
-            atLine = this.currentLine;
-          } else {
-            atLine = lineNumbers[0];
-          }
-        }
-
-        return {
-          type: CommandType.Insert,
-          atLine,
-        };
+        return this.parseInsert(lineNumbers);
       }
       case "l": {
-        let fromLine = lineNumbers[0];
-        let toLine = lineNumbers[1];
-
-        if (!isNil(fromLine) && fromLine >= this.totalLines) {
-          return {
-            type: CommandType.NoOp,
-          };
-        }
-
-        if (isNil(fromLine) && isNil(toLine)) {
-          let windowHeight = this.screenHeight - 1;
-          let pivot = (windowHeight - 1) / 2;
-          let linesAbove = Math.min(this.currentLine, Math.floor(pivot));
-          let linesBelow = Math.min(
-            windowHeight - linesAbove - 1,
-            this.totalLines - this.currentLine - 1,
-          );
-          return {
-            type: CommandType.List,
-            fromLine: this.currentLine - linesAbove,
-            toLine: this.currentLine + linesBelow,
-          };
-        }
-
-        if (!isNil(fromLine) && isNil(toLine)) {
-          let windowHeight = this.screenHeight - 1;
-          return {
-            type: CommandType.List,
-            fromLine: fromLine,
-            toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
-          };
-        }
-
-        if (!isNil(fromLine) && !isNil(toLine)) {
-          if (toLine < fromLine) {
-            throw new Error("Entry error");
-          }
-          return {
-            type: CommandType.List,
-            fromLine: fromLine,
-            toLine: Math.min(toLine, this.totalLines - 1),
-          };
-        }
-
-        throw new Error("Unreachable");
+        return this.parseList(lineNumbers);
       }
       case "p": {
-        let fromLine = lineNumbers[0];
-        let toLine = lineNumbers[1];
-
-        if (isNil(fromLine) && isNil(toLine)) {
-          if (this.currentLine >= this.totalLines - 1) {
-            return { type: CommandType.NoOp };
-          }
-
-          fromLine = this.currentLine === 0 ? 0 : this.currentLine + 1;
-
-          return {
-            type: CommandType.Page,
-            fromLine: fromLine,
-            toLine: Math.min(
-              fromLine + (this.screenHeight - 2 - 1),
-              this.totalLines - 1,
-            ),
-            newCurrentLine: Math.min(
-              fromLine + (this.screenHeight - 2 - 1),
-              this.totalLines - 1,
-            ),
-          };
-        }
-
-        if (isNil(fromLine) && !isNil(toLine)) {
-          throw new Error("Entry error");
-        }
-
-        if (!isNil(fromLine) && isNil(toLine)) {
-          return {
-            type: CommandType.Page,
-            fromLine: fromLine,
-            toLine: Math.min(
-              fromLine + (this.screenHeight - 2 - 1),
-              this.totalLines - 1,
-            ),
-            newCurrentLine: Math.min(
-              fromLine + (this.screenHeight - 2 - 1),
-              this.totalLines - 1,
-            ),
-          };
-        }
-
-        if (!isNil(fromLine) && !isNil(toLine)) {
-          if (toLine < fromLine) {
-            throw new Error("Entry error");
-          }
-          return {
-            type: CommandType.Page,
-            fromLine: fromLine,
-            toLine: Math.min(toLine, this.totalLines - 1),
-            newCurrentLine: Math.min(toLine, this.totalLines - 1),
-          };
-        }
-
-        throw new Error("Unreachable.");
+        return this.parsePage(lineNumbers);
+      }
+      case "d": {
+        return this.parseDelete(lineNumbers);
       }
     }
 
@@ -560,6 +732,7 @@ export class Pedlin implements Executable {
 
   private async insert() {
     const { std } = this;
+
     if (this.currentLine < this.lines.length) {
       this.printLineNumber(this.currentLine);
       std.writeConsole(`${this.lines[this.currentLine] ?? ""}\n`);
@@ -600,12 +773,9 @@ export class Pedlin implements Executable {
 
     if (shouldAdvanceLine) {
       this.currentLine = Math.min(this.lines.length, this.currentLine + 1);
-      if (this.currentLine === this.lines.length) {
-        return;
-      }
     }
 
-    if (atLine === this.lines.length) {
+    if (this.currentLine === this.lines.length) {
       return;
     }
 
@@ -632,6 +802,10 @@ export class Pedlin implements Executable {
       std.writeConsole(this.lines[i]);
       std.writeConsole("\n");
     }
+  }
+
+  private deleteLines(fromLine: number, toLine: number) {
+    this.lines.splice(fromLine, toLine - fromLine + 1);
   }
 
   private writeHelp() {
@@ -703,6 +877,10 @@ export class Pedlin implements Executable {
         case CommandType.Page:
           this.currentLine = command.newCurrentLine;
           this.page(command.fromLine, command.toLine);
+          break;
+        case CommandType.Delete:
+          this.currentLine = command.fromLine;
+          this.deleteLines(command.fromLine, command.toLine);
           break;
       }
 
