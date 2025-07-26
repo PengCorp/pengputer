@@ -8,7 +8,7 @@ import _ from "lodash";
 
 const SEPARATOR = ",";
 
-// ========================= Tokenizer =========================
+// ========================================= Tokenizer ========================================
 
 enum TokenType {
   LineNumber,
@@ -214,9 +214,9 @@ class CommandTokenizer {
   }
 }
 
-// ========================= End tokenizer =========================
+// ========================================= End tokenizer =========================================
 
-// ========================= Command parser =========================
+// ========================================= Command parser ========================================
 
 enum CommandType {
   Help,
@@ -333,11 +333,7 @@ class CommandParser {
     if (lineNumbers.length === 0) {
       atLine = this.currentLine;
     } else if (lineNumbers.length === 1) {
-      if (isNil(lineNumbers[0])) {
-        atLine = this.currentLine;
-      } else {
-        atLine = lineNumbers[0];
-      }
+      atLine = lineNumbers[0] ?? this.currentLine;
     }
 
     if (lineNumbers.length > 1) {
@@ -515,8 +511,8 @@ class CommandParser {
     let toLine = lineNumbers[1];
 
     if (lineNumbers.length === 2) {
-      fromLine = fromLine ?? 0;
-      toLine = toLine ?? this.totalLines - 1;
+      fromLine = Math.max(fromLine ?? 0, 0);
+      toLine = Math.min(toLine ?? this.totalLines - 1, this.totalLines - 1);
 
       if (toLine < fromLine) {
         throw new Error("Entry error");
@@ -616,7 +612,7 @@ class CommandParser {
   }
 }
 
-// ========================= End command parser =========================
+// ========================================= End command parser ========================================
 
 export class Pedlin implements Executable {
   private pc: PC;
