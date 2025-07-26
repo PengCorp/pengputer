@@ -674,14 +674,14 @@ export class Screen {
 
         const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
-        const newCharacter = cloneScreenBufferCharacter(currentCharacter);
 
         const cellAttr = cell.getAttributes();
 
-        newCharacter.attributes =
-          getScreenCharacterAttributesFromTermCellAttributes(cellAttr);
-
-        newCharacter.character = cell.rune;
+        const newCharacter: ScreenBufferCharacter = {
+          attributes:
+            getScreenCharacterAttributesFromTermCellAttributes(cellAttr),
+          character: cell.rune,
+        };
 
         if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
           this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
