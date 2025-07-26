@@ -467,6 +467,8 @@ export class Screen {
 
   private redrawCharacter(x: number, y: number) {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
+    const isCharacterVisible = bufferCharacter.character !== " ";
+
     const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
 
     let fgColor = bufferCharacter.attributes.fgColor;
@@ -507,23 +509,26 @@ export class Screen {
       this.characterWidth * this.charScale,
       this.characterHeight * this.charScale,
     );
-    const atlasRegion = this.font.getCharacter(bufferCharacter.character, x);
-    if (atlasRegion) {
-      const { canvas, x: cx, y: cy, w: cw, h: ch } = atlasRegion;
 
-      // fill character
-      charCtx.globalCompositeOperation = "source-over";
-      charCtx.drawImage(
-        canvas,
-        cx,
-        cy,
-        cw,
-        ch,
-        x * this.characterWidth * this.charScale,
-        y * this.characterHeight * this.charScale,
-        this.characterWidth * this.charScale,
-        this.characterHeight * this.charScale,
-      );
+    if (isCharacterVisible) {
+      const atlasRegion = this.font.getCharacter(bufferCharacter.character, x);
+      if (atlasRegion) {
+        const { canvas, x: cx, y: cy, w: cw, h: ch } = atlasRegion;
+
+        // fill character
+        charCtx.globalCompositeOperation = "source-over";
+        charCtx.drawImage(
+          canvas,
+          cx,
+          cy,
+          cw,
+          ch,
+          x * this.characterWidth * this.charScale,
+          y * this.characterHeight * this.charScale,
+          this.characterWidth * this.charScale,
+          this.characterHeight * this.charScale,
+        );
+      }
     }
 
     if (bufferCharacter.attributes.boxed) {
@@ -599,14 +604,23 @@ export class Screen {
     }
 
     // fill attribute
-    attributeCtx.globalCompositeOperation = "source-over";
-    attributeCtx.fillStyle = fgColor;
-    attributeCtx.fillRect(
-      x * this.characterWidth * this.attributeScale,
-      y * this.characterHeight * this.attributeScale,
-      this.characterWidth * this.attributeScale,
-      this.characterHeight * this.attributeScale,
-    );
+    if (isCharacterVisible) {
+      attributeCtx.globalCompositeOperation = "source-over";
+      attributeCtx.fillStyle = fgColor;
+      attributeCtx.fillRect(
+        x * this.characterWidth * this.attributeScale,
+        y * this.characterHeight * this.attributeScale,
+        this.characterWidth * this.attributeScale,
+        this.characterHeight * this.attributeScale,
+      );
+    } else {
+      attributeCtx.clearRect(
+        x * this.characterWidth * this.attributeScale,
+        y * this.characterHeight * this.attributeScale,
+        this.characterWidth * this.attributeScale,
+        this.characterHeight * this.attributeScale,
+      );
+    }
   }
 
   private redrawUnstable() {
