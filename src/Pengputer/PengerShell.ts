@@ -82,7 +82,7 @@ export interface ShellFunction {
   kind: ShellCommandKind.Function;
   name: string;
   parameterAliases: string[];
-  body: ShellCompoundCommand;
+  body: ShellGroupCommand;
   // TODO(local): redirections?
 }
 
@@ -286,14 +286,14 @@ export function readShellTokens(commandText: string): ShellToken[] {
 export function parseShellCommand(
   tokens: ShellToken[],
   index: number,
-): { nextIndex: number; command: ShellCommand; } {
+): { nextIndex: number; command: ShellCommand | null } {
   if (index < 0 || index >= tokens.length) {
-    return null;
+    return { nextIndex: index, command: null };
   }
 
   const atEnd = () => {
     return index >= tokens.length;
-  }
+  };
 
   const peekToken = (ahead: number): ShellToken | null => {
     if (ahead < 0 || ahead + index >= tokens.length) {
@@ -301,28 +301,32 @@ export function parseShellCommand(
     }
 
     return tokens[index + ahead];
-  }
+  };
 
   const eatToken = (): ShellToken => {
     if (index < 0 || index >= tokens.length) {
-      throw new Error("Should never call eatToken if you haven't checked one exists first.");
+      throw new Error(
+        "Should never call eatToken if you haven't checked one exists first.",
+      );
     }
 
     const token = tokens[index];
     index += 1;
     return token;
-  }
+  };
 
   const checkOperator = (ahead: number, text: string): boolean => {
     const token = peekToken(ahead);
-    return token !== null &&
+    return (
+      token !== null &&
       token.kind === ShellTokenKind.Operator &&
-      token.text === text;
+      token.text === text
+    );
   };
 
   const parseSimpleCommand = (): ShellSimpleCommand | null => {
     let words: string[] = [];
-    while (!atEnd() && peekToken(0).kind === ShellTokenKind.Word) {
+    while (!atEnd() && peekToken(0)!.kind === ShellTokenKind.Word) {
       words.push(eatToken().text);
     }
 
@@ -497,6 +501,11 @@ export class PengerShell implements Executable {
       const tokens = readShellTokens(commandString);
       const { nextIndex, command } = parseShellCommand(tokens, 0);
 
+      if (command === null) {
+        std.writeConsole("Unable to parse a command, try something simpler\n");
+        continue;
+      }
+
       if (nextIndex < tokens.length) {
         std.writeConsole("Extra tokens at the end of the command\n");
         continue;
@@ -526,7 +535,9 @@ export class PengerShell implements Executable {
           std.writeConsole('Try "help" or "h" to see available commands\n');
         }
       } else {
-        std.writeConsole("Unimplemented command type, try something simpler for now please\n");
+        std.writeConsole(
+          "Unimplemented command type, try something simpler for now please\n",
+        );
       }
     }
   }
