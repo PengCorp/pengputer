@@ -317,8 +317,8 @@ class CommandParser {
     fromLine -= endOverflow;
     toLine += startOverflow;
 
-    fromLine = Math.max(fromLine, 0);
-    toLine = Math.min(toLine, this.totalLines - 1);
+    fromLine = clamp(fromLine, 0, this.totalLines - 1);
+    toLine = clamp(toLine, 0, this.totalLines - 1);
 
     return [fromLine, toLine];
   }
@@ -333,7 +333,7 @@ class CommandParser {
     if (lineNumbers.length === 0) {
       atLine = this.currentLine;
     } else if (lineNumbers.length === 1) {
-      atLine = lineNumbers[0] ?? this.currentLine;
+      atLine = clamp(lineNumbers[0] ?? this.currentLine, 0, this.totalLines);
     }
 
     if (lineNumbers.length > 1) {
@@ -393,7 +393,7 @@ class CommandParser {
         return {
           type: CommandType.List,
           fromLine: 0,
-          toLine: toLine,
+          toLine: clamp(toLine, 0, this.totalLines - 1),
         };
       } else if (!isNil(fromLine) && isNil(toLine)) {
         if (fromLine >= this.totalLines) {
@@ -405,7 +405,7 @@ class CommandParser {
         return {
           type: CommandType.List,
           fromLine: fromLine,
-          toLine: Math.min(fromLine + windowHeight - 1, this.totalLines - 1),
+          toLine: clamp(fromLine + windowHeight - 1, 0, this.totalLines - 1),
         };
       } else if (!isNil(fromLine) && !isNil(toLine)) {
         if (fromLine >= this.totalLines) {
@@ -421,7 +421,7 @@ class CommandParser {
         return {
           type: CommandType.List,
           fromLine: fromLine,
-          toLine: Math.min(toLine, this.totalLines - 1),
+          toLine: clamp(toLine, 0, this.totalLines - 1),
         };
       }
     }
@@ -445,10 +445,11 @@ class CommandParser {
 
       return {
         type: CommandType.Page,
-        fromLine: fromLine,
-        toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
-        newCurrentLine: Math.min(
+        fromLine: clamp(fromLine, 0, this.totalLines - 1),
+        toLine: clamp(fromLine + (windowHeight - 1), 0, this.totalLines - 1),
+        newCurrentLine: clamp(
           fromLine + (windowHeight - 1),
+          0,
           this.totalLines - 1,
         ),
       };
@@ -468,9 +469,10 @@ class CommandParser {
       return {
         type: CommandType.Page,
         fromLine: fromLine,
-        toLine: Math.min(fromLine + (windowHeight - 1), this.totalLines - 1),
-        newCurrentLine: Math.min(
+        toLine: clamp(fromLine + (windowHeight - 1), 0, this.totalLines - 1),
+        newCurrentLine: clamp(
           fromLine + (windowHeight - 1),
+          0,
           this.totalLines - 1,
         ),
       };
@@ -503,16 +505,16 @@ class CommandParser {
 
       return {
         type: CommandType.Delete,
-        fromLine: fromLine,
-        toLine: fromLine,
+        fromLine: clamp(fromLine, 0, this.totalLines - 1),
+        toLine: clamp(fromLine, 0, this.totalLines - 1),
       };
     }
 
     let toLine = lineNumbers[1];
 
     if (lineNumbers.length === 2) {
-      fromLine = Math.max(fromLine ?? 0, 0);
-      toLine = Math.min(toLine ?? this.totalLines - 1, this.totalLines - 1);
+      fromLine = clamp(fromLine ?? 0, 0, this.totalLines - 1);
+      toLine = clamp(toLine ?? this.totalLines - 1, 0, this.totalLines - 1);
 
       if (toLine < fromLine) {
         throw new Error("Entry error");
@@ -563,14 +565,17 @@ class CommandParser {
     }
 
     const commandToken = tokens[0];
+
     if (!commandToken) {
       if (lineNumbers.length > 1) {
         throw new Error("Entry error.");
       }
 
+      let at = lineNumbers[0] ?? this.currentLine;
+
       return {
         type: CommandType.EditLine,
-        atLine: Math.min(lineNumbers[0] ?? this.currentLine, this.totalLines),
+        atLine: clamp(at, 0, this.totalLines),
         shouldAdvanceLine: isNil(lineNumbers[0]),
       };
     }
