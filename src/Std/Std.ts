@@ -277,6 +277,12 @@ export class Std {
     this.writeConsole("\n\n", { reset: true });
   }
 
+  /* ===================== GRAPHICS ========================= */
+
+  setIsGraphicsEnabled(areGraphicsEnabled: boolean) {
+    this.screen.areGraphicsEnabled = areGraphicsEnabled;
+  }
+
   /* ===================== CONSOLE SCROLLING ========================= */
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */

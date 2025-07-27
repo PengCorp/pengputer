@@ -5,11 +5,7 @@ import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
-import {
-  cloneScreenBufferCharacter,
-  compareScreenBufferCharacter,
-  ScreenBufferCharacter,
-} from "./types";
+import { compareScreenBufferCharacter, ScreenBufferCharacter } from "./types";
 import {
   BOXED_BOTTOM,
   BOXED_LEFT,
@@ -19,7 +15,8 @@ import {
   TextBuffer,
 } from "../TextBuffer";
 import { Font } from "./Font";
-import { RENDER_SCALE } from "./constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, RENDER_SCALE } from "./constants";
+import { Graphics } from "./Graphics";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -39,7 +36,10 @@ export class Screen {
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
-  private canvasScale: number = 1;
+
+  private textCanvas!: HTMLCanvasElement;
+  private textCtx!: CanvasRenderingContext2D;
+  private textScale: number = 1;
 
   private bufferCanvas!: HTMLCanvasElement;
   private bufferCtx!: CanvasRenderingContext2D;
@@ -57,13 +57,16 @@ export class Screen {
   private attributeCtx!: CanvasRenderingContext2D;
   private attributeScale: number = 1;
 
-  private graphicsCanvas!: HTMLCanvasElement;
-  private graphicsCtx!: CanvasRenderingContext2D;
-  private graphicsScale: number = 1;
+  private imagesCanvas!: HTMLCanvasElement;
+  private imagesCtx!: CanvasRenderingContext2D;
+  private imagesScale: number = 1;
 
   private tempCanvas!: HTMLCanvasElement;
   private tempCtx!: CanvasRenderingContext2D;
   private tempScale: number = RENDER_SCALE;
+
+  public areGraphicsEnabled: boolean = false;
+  private graphics: Graphics;
 
   private cursor: Cursor;
   private curDisplay: boolean;
@@ -128,10 +131,17 @@ export class Screen {
         },
       };
     }
+
+    this.graphics = new Graphics();
   }
 
   async init(containerEl: HTMLElement) {
     this.initCanvas(containerEl);
+
+    this.textCanvas = document.createElement("canvas");
+    this.textCanvas.width = this.widthInPixels * this.textScale;
+    this.textCanvas.height = this.heightInPixels * this.textScale;
+    this.textCtx = this.textCanvas.getContext("2d")!;
 
     this.bufferCanvas = document.createElement("canvas");
     this.bufferCanvas.width = this.widthInPixels * this.bufferScale;
@@ -161,11 +171,11 @@ export class Screen {
     this.attributeCtx.fillStyle = "red";
     this.attributeCtx.fillRect(0, 0, this.widthInPixels, this.heightInPixels);
 
-    this.graphicsCanvas = document.createElement("canvas");
-    this.graphicsCanvas.width = this.widthInPixels * this.graphicsScale;
-    this.graphicsCanvas.height = this.heightInPixels * this.graphicsScale;
-    this.graphicsCtx = this.graphicsCanvas.getContext("2d")!;
-    this.graphicsCtx.imageSmoothingEnabled = false;
+    this.imagesCanvas = document.createElement("canvas");
+    this.imagesCanvas.width = this.widthInPixels * this.imagesScale;
+    this.imagesCanvas.height = this.heightInPixels * this.imagesScale;
+    this.imagesCtx = this.imagesCanvas.getContext("2d")!;
+    this.imagesCtx.imageSmoothingEnabled = false;
 
     this.tempCanvas = document.createElement("canvas");
     this.tempCanvas.width = this.widthInPixels * this.tempScale;
@@ -182,11 +192,10 @@ export class Screen {
     this.canvas = canvas;
 
     canvas.setAttribute("id", "screen");
-    canvas.width = this.widthInPixels * this.canvasScale;
-    canvas.height = this.heightInPixels * this.canvasScale;
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
 
     this.ctx = canvas.getContext("2d")!;
-    this.ctx.imageSmoothingEnabled = false;
 
     const scanLines = document.createElement("div");
 
@@ -231,8 +240,8 @@ export class Screen {
       };
     }
 
-    this.canvas.width = this.widthInPixels * this.canvasScale;
-    this.canvas.height = this.heightInPixels * this.canvasScale;
+    this.textCanvas.width = this.widthInPixels * this.textScale;
+    this.textCanvas.height = this.heightInPixels * this.textScale;
 
     this.bufferCanvas.width = this.widthInPixels * this.bufferScale;
     this.bufferCanvas.height = this.heightInPixels * this.bufferScale;
@@ -246,8 +255,8 @@ export class Screen {
     this.attributeCanvas.width = this.widthInPixels * this.attributeScale;
     this.attributeCanvas.height = this.heightInPixels * this.attributeScale;
 
-    this.graphicsCanvas.width = this.widthInPixels * this.graphicsScale;
-    this.graphicsCanvas.height = this.heightInPixels * this.graphicsScale;
+    this.imagesCanvas.width = this.widthInPixels * this.imagesScale;
+    this.imagesCanvas.height = this.heightInPixels * this.imagesScale;
 
     this.tempCanvas.width = this.widthInPixels * this.tempScale;
     this.tempCanvas.height = this.heightInPixels * this.tempScale;
@@ -274,9 +283,31 @@ export class Screen {
       this.charBlinkState = !this.charBlinkState;
     }
 
+    // display graphics
+    if (this.areGraphicsEnabled) {
+      const graphicsCanvas = this.graphics.getCanvas();
+      this.ctx.imageSmoothingEnabled = false;
+      this.ctx.drawImage(
+        graphicsCanvas,
+        0,
+        0,
+        graphicsCanvas.width,
+        graphicsCanvas.height,
+        0,
+        0,
+        this.canvas.width,
+        this.canvas.height,
+      );
+      this.ctx.imageSmoothingEnabled = true;
+      return;
+    }
+
     // clear screen
     this.ctx.globalCompositeOperation = "source-over";
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.textCtx.globalCompositeOperation = "source-over";
+    this.textCtx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);
 
     // draw background
     this.bufferCtx.globalCompositeOperation = "copy";
@@ -298,7 +329,7 @@ export class Screen {
       this.bufferCanvas.width,
       this.bufferCanvas.height,
     );
-    this.ctx.drawImage(
+    this.textCtx.drawImage(
       this.bufferCanvas,
       0,
       0,
@@ -306,8 +337,8 @@ export class Screen {
       this.bufferCanvas.height,
       0,
       0,
-      this.canvas.width,
-      this.canvas.height,
+      this.textCanvas.width,
+      this.textCanvas.height,
     );
 
     // draw character layer
@@ -363,6 +394,10 @@ export class Screen {
           (cursorPosition.y * this.characterHeight + this.curStart) *
           this.bufferScale;
         this.bufferCtx.globalCompositeOperation = "xor";
+        this.bufferCtx.fillStyle =
+          this.screenBuffer[
+            this._getScreenBufferIndex(cursorPosition.x, cursorPosition.y)
+          ].attributes.fgColor;
         this.bufferCtx.fillRect(curX, curY, curW, curH);
       }
     }
@@ -382,7 +417,7 @@ export class Screen {
     );
 
     // commit characters
-    this.ctx.drawImage(
+    this.textCtx.drawImage(
       this.bufferCanvas,
       0,
       0,
@@ -390,17 +425,30 @@ export class Screen {
       this.bufferCanvas.height,
       0,
       0,
-      this.canvas.width,
-      this.canvas.height,
+      this.textCanvas.width,
+      this.textCanvas.height,
     );
 
-    // display graphics
+    // display images
+    this.textCtx.drawImage(
+      this.imagesCanvas,
+      0,
+      0,
+      this.imagesCanvas.width,
+      this.imagesCanvas.height,
+      0,
+      0,
+      this.textCanvas.width,
+      this.textCanvas.height,
+    );
+
+    // display text layer
     this.ctx.drawImage(
-      this.graphicsCanvas,
+      this.textCanvas,
       0,
       0,
-      this.graphicsCanvas.width,
-      this.graphicsCanvas.height,
+      this.textCanvas.width,
+      this.textCanvas.height,
       0,
       0,
       this.canvas.width,
@@ -410,7 +458,7 @@ export class Screen {
 
   /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
   clear() {
-    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
+    const { bgCtx, charCtx, attributeCtx, imagesCtx } = this;
 
     bgCtx.globalCompositeOperation = "source-over";
     bgCtx.fillStyle = "black";
@@ -428,11 +476,11 @@ export class Screen {
       this.attributeCanvas.height,
     );
 
-    graphicsCtx.clearRect(
+    imagesCtx.clearRect(
       0,
       0,
-      this.graphicsCanvas.width,
-      this.graphicsCanvas.height,
+      this.imagesCanvas.width,
+      this.imagesCanvas.height,
     );
 
     this.isDirty = true;
@@ -469,7 +517,7 @@ export class Screen {
     const bufferCharacter = this.screenBuffer[this._getScreenBufferIndex(x, y)];
     const isCharacterVisible = bufferCharacter.character !== " ";
 
-    const { bgCtx, charCtx, attributeCtx, graphicsCtx } = this;
+    const { bgCtx, charCtx, attributeCtx } = this;
 
     let fgColor = bufferCharacter.attributes.fgColor;
     if (bufferCharacter.attributes.bold) {
@@ -697,7 +745,10 @@ export class Screen {
           character: cell.rune,
         };
 
-        if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
+        if (
+          !compareScreenBufferCharacter(currentCharacter, newCharacter) ||
+          buffer.isDirty
+        ) {
           this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
           this.redrawCharacter(x, y);
           screenChanged = true;
@@ -725,10 +776,10 @@ export class Screen {
       dy += this.heightInPixels;
     }
 
-    this.graphicsCtx.drawImage(
+    this.imagesCtx.drawImage(
       image,
-      dx * this.graphicsScale,
-      dy * this.graphicsScale,
+      dx * this.imagesScale,
+      dy * this.imagesScale,
     );
   }
 
