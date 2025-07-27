@@ -4,9 +4,12 @@ import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
-import { font9x8 } from "./font9x8";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
-import { cloneScreenBufferCharacter, ScreenBufferCharacter } from "./types";
+import {
+  cloneScreenBufferCharacter,
+  compareScreenBufferCharacter,
+  ScreenBufferCharacter,
+} from "./types";
 import {
   BOXED_BOTTOM,
   BOXED_LEFT,
@@ -671,18 +674,20 @@ export class Screen {
 
         const currentCharacter =
           this.screenBuffer[this._getScreenBufferIndex(x, y)];
-        const newCharacter = cloneScreenBufferCharacter(currentCharacter);
 
         const cellAttr = cell.getAttributes();
 
-        newCharacter.attributes =
-          getScreenCharacterAttributesFromTermCellAttributes(cellAttr);
+        const newCharacter: ScreenBufferCharacter = {
+          attributes:
+            getScreenCharacterAttributesFromTermCellAttributes(cellAttr),
+          character: cell.rune,
+        };
 
-        newCharacter.character = cell.rune;
-
-        this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
-        this.redrawCharacter(x, y);
-        screenChanged = true;
+        if (!compareScreenBufferCharacter(currentCharacter, newCharacter)) {
+          this.screenBuffer[this._getScreenBufferIndex(x, y)] = newCharacter;
+          this.redrawCharacter(x, y);
+          screenChanged = true;
+        }
 
         cell.isDirty = false;
       }
