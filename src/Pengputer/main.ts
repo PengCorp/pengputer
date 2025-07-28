@@ -313,8 +313,11 @@ class PengOS {
   const cb = () => {
     const dt = performance.now() - lastTime;
     lastTime = performance.now();
+    // const start = performance.now();
     screen.updateFromBuffer(textBuffer);
     screen.draw(dt);
+    // const end = performance.now();
+    // window.took = end - start;
     keyboard.update(dt);
     requestAnimationFrame(cb);
   };
