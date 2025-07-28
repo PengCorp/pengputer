@@ -65,7 +65,7 @@ export class Screen {
   private tempCtx!: CanvasRenderingContext2D;
   private tempScale: number = RENDER_SCALE;
 
-  public areGraphicsEnabled: boolean = true;
+  public areGraphicsEnabled: boolean = false;
   private graphics: Graphics;
 
   private cursor: Cursor;
@@ -298,7 +298,6 @@ export class Screen {
         this.canvas.width,
         this.canvas.height,
       );
-      this.ctx.imageSmoothingEnabled = true;
       return;
     }
 
