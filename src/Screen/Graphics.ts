@@ -4,7 +4,7 @@ import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
 import { PathBuffer } from "./Graphics.PathBuffer";
 
-export type fillStyle = string | CanvasGradient | CanvasPattern;
+export type fillStyle = string;
 export class Graphics {
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
@@ -62,12 +62,37 @@ export class Graphics {
       this.path.clear();
     }
 
+    this.path.moveTo(310, 10);
+    this.path.lineTo(330, 40);
+    this.path.lineTo(310, 70);
+    this.path.lineTo(300, 70);
+    this.path.lineTo(300, 10);
+    this.path.lineTo(310, 10);
+    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightMagenta]);
+    this.path.floodFill(
+      this.ctx,
+      305,
+      15,
+      CGA_PALETTE_DICT[CgaColors.LightCyan],
+    );
+    this.path.clear();
+
     this.setFillStyle(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
     this.fillRect(40, 40, 10, 10);
     this.setFillStyle(CGA_PALETTE_DICT[CgaColors.LightCyan]);
     this.fillRect(45, 45, 10, 10);
     this.setFillStyle(CGA_PALETTE_DICT[CgaColors.White]);
     this.fillRect(50, 50, 10, 10);
+
+    this.path.ellipseAt(150, 100, 10, 10);
+    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightCyan]);
+    this.path.floodFill(this.ctx, 150, 100, CGA_PALETTE_DICT[CgaColors.White]);
+    this.path.clear();
+
+    this.path.ellipseAt(150, 100, 15, 5);
+    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightMagenta]);
+    this.path.floodFill(this.ctx, 150, 100, CGA_PALETTE_DICT[CgaColors.White]);
+    this.path.clear();
   }
 
   setStrokeStyle(style: fillStyle) {
