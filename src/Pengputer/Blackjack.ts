@@ -635,13 +635,12 @@ export class Blackjack implements Executable {
               `${player.name} lost the insurance of $${player.insurance}.\n`,
             );
           }
+          player.insurance = null;
         }
 
         if (player.cash === 0) {
           std.writeConsole(`${player.name} is felted!\n`);
         }
-
-        player.insurance = 0;
       }
 
       std.writeConsole("\n");
