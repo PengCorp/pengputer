@@ -632,7 +632,7 @@ export class Blackjack implements Executable {
             );
           } else {
             std.writeConsole(
-              `${player.name} lost the insurance of $${player.insurance}).\n`,
+              `${player.name} lost the insurance of $${player.insurance}.\n`,
             );
           }
         }
@@ -640,6 +640,8 @@ export class Blackjack implements Executable {
         if (player.cash === 0) {
           std.writeConsole(`${player.name} is felted!\n`);
         }
+
+        player.insurance = 0;
       }
 
       std.writeConsole("\n");
