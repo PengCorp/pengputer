@@ -286,7 +286,7 @@ export class Screen {
     // display graphics
     if (this.areGraphicsEnabled) {
       const graphicsCanvas = this.graphics.getCanvas();
-      this.ctx.imageSmoothingEnabled = false;
+      this.ctx.imageSmoothingEnabled = true;
       this.ctx.drawImage(
         graphicsCanvas,
         0,

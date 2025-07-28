@@ -1,10 +1,15 @@
 import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
+import tc from "tinycolor2";
 
-export type FillStyle = string | CanvasGradient | CanvasPattern;
-export class PathBuffer {
+export type FillStyle = string;
+
+export class BitmapBuffer {
   private width = GRAPHICS_WIDTH;
   private height = GRAPHICS_HEIGHT;
+
+  private imageDataObj: ImageData | null = null;
+  private imageData: ImageData["data"] | null = null;
 
   private penPosition: Vector = { x: 0, y: 0 };
   private bitmap: number[];
@@ -12,11 +17,30 @@ export class PathBuffer {
   constructor() {
     this.bitmap = new Array(this.width * this.height).fill(0);
 
-    this.clear();
+    this.reset();
   }
 
-  clear() {
+  start(ctx: CanvasRenderingContext2D) {
+    if (this.imageData) throw new Error("Bitmap operations already started.");
+
+    this.imageDataObj = ctx.getImageData(0, 0, GRAPHICS_WIDTH, GRAPHICS_HEIGHT);
+    this.imageData = this.imageDataObj.data;
+  }
+
+  end(ctx: CanvasRenderingContext2D) {
+    if (!this.imageData)
+      throw new Error("Bitmap operations haven't been started, unable to end.");
+
+    const imageDataObj = this.imageDataObj;
+    if (imageDataObj) {
+      ctx.putImageData(imageDataObj, 0, 0);
+    }
+  }
+
+  reset() {
     this.bitmap = this.bitmap.fill(0);
+    this.penPosition.x = 0;
+    this.penPosition.y = 0;
   }
 
   moveTo(x: number, y: number) {
@@ -37,7 +61,7 @@ export class PathBuffer {
 
     for (;;) {
       /* loop */
-      this.putPixel(x0, y0);
+      this.putPathPixel(x0, y0);
       if (x0 == x1 && y0 == y1) break;
       e2 = 2 * err;
       if (e2 >= dy) {
@@ -54,29 +78,27 @@ export class PathBuffer {
     this.penPosition.y = y1;
   }
 
-  strokePath(ctx: CanvasRenderingContext2D, strokeStyle: FillStyle) {
-    const originalFillStyle = ctx.fillStyle;
-    ctx.fillStyle = strokeStyle;
+  strokePath(strokeStyle: FillStyle) {
+    if (!this.imageData) throw new Error("Image data not loaded.");
+
+    const color = tc(strokeStyle).toRgb();
 
     for (let y = 0; y < this.height; y += 1) {
       for (let x = 0; x < this.width; x += 1) {
-        if (this.bitmap[y * this.width + x] > 0) {
-          ctx.fillRect(x, y, 1, 1);
+        let i = y * this.width + x;
+        if (this.bitmap[i] > 0) {
+          this.imageData[i * 4 + 0] = color.r;
+          this.imageData[i * 4 + 1] = color.g;
+          this.imageData[i * 4 + 2] = color.b;
         }
       }
     }
-
-    ctx.fillStyle = originalFillStyle;
   }
 
-  floodFill(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    strokeStyle: FillStyle,
-  ) {
-    const originalFillStyle = ctx.fillStyle;
-    ctx.fillStyle = strokeStyle;
+  floodFill(x: number, y: number, strokeStyle: FillStyle) {
+    if (!this.imageData) throw new Error("Image data not loaded.");
+
+    const color = tc(strokeStyle).toRgb();
 
     const queue = [[x, y]];
     const filled = new Array(this.width * this.height).fill(0);
@@ -95,20 +117,28 @@ export class PathBuffer {
           filled[idx] === 0
         ) {
           filled[idx] = 1;
-          ctx.fillRect(x, y, 1, 1);
+          this.imageData[idx * 4 + 0] = color.r;
+          this.imageData[idx * 4 + 1] = color.g;
+          this.imageData[idx * 4 + 2] = color.b;
 
           queue.push([x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]);
         }
       }
     }
-
-    ctx.fillStyle = originalFillStyle;
   }
 
-  private putPixel(x: number, y: number) {
+  private putPathPixel(x: number, y: number) {
     if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
       this.bitmap[y * this.width + x] = 1;
     }
+  }
+
+  private putColorPixel(i: number, rgb: tc.ColorFormats.RGB) {
+    if (!this.imageData) throw new Error("Bitmap buffer not initialized.");
+
+    this.imageData[i * 4 + 0] = rgb.r;
+    this.imageData[i * 4 + 1] = rgb.g;
+    this.imageData[i * 4 + 2] = rgb.b;
   }
 
   ellipseAt(xc: number, yc: number, rx: number, ry: number) {
@@ -125,10 +155,10 @@ export class PathBuffer {
 
     let p = Math.round(ry2 - rx2 * ry + 0.25 * rx2);
 
-    this.putPixel(xc + x, yc + y);
-    this.putPixel(xc - x, yc + y);
-    this.putPixel(xc + x, yc - y);
-    this.putPixel(xc - x, yc - y);
+    this.putPathPixel(xc + x, yc + y);
+    this.putPathPixel(xc - x, yc + y);
+    this.putPathPixel(xc + x, yc - y);
+    this.putPathPixel(xc - x, yc - y);
 
     while (px < py) {
       x++;
@@ -140,10 +170,10 @@ export class PathBuffer {
         py -= two_rx2;
         p += px - py + ry2;
       }
-      this.putPixel(xc + x, yc + y);
-      this.putPixel(xc - x, yc + y);
-      this.putPixel(xc + x, yc - y);
-      this.putPixel(xc - x, yc - y);
+      this.putPathPixel(xc + x, yc + y);
+      this.putPathPixel(xc - x, yc + y);
+      this.putPathPixel(xc + x, yc - y);
+      this.putPathPixel(xc - x, yc - y);
     }
 
     p = Math.round(
@@ -161,10 +191,20 @@ export class PathBuffer {
         px += two_ry2;
         p += rx2 - py + px;
       }
-      this.putPixel(xc + x, yc + y);
-      this.putPixel(xc - x, yc + y);
-      this.putPixel(xc + x, yc - y);
-      this.putPixel(xc - x, yc - y);
+      this.putPathPixel(xc + x, yc + y);
+      this.putPathPixel(xc - x, yc + y);
+      this.putPathPixel(xc + x, yc - y);
+      this.putPathPixel(xc - x, yc - y);
+    }
+  }
+
+  fillRect(x: number, y: number, w: number, h: number, fill: FillStyle) {
+    const color = tc(fill).toRgb();
+
+    for (let x0 = x; x0 < x + w && x0 >= 0 && x0 < this.width; x0 += 1) {
+      for (let y0 = y; y0 < y + h && y0 >= 0 && y0 < this.height; y0 += 1) {
+        this.putColorPixel(y0 * this.width + x0, color);
+      }
     }
   }
 }

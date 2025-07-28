@@ -2,7 +2,7 @@ import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
 import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
-import { PathBuffer } from "./Graphics.PathBuffer";
+import { BitmapBuffer } from "./Graphics.BitmapBuffer";
 
 export type fillStyle = string;
 export class Graphics {
@@ -11,17 +11,16 @@ export class Graphics {
   private strokeStyle: fillStyle = "red";
   private fillStyle: fillStyle = "blue";
 
-  private penPosition: Vector = { x: 0, y: 0 };
-  private path: PathBuffer;
+  private bitmap: BitmapBuffer;
 
   constructor() {
     this.canvas = document.createElement("canvas");
     this.canvas.width = GRAPHICS_WIDTH;
     this.canvas.height = GRAPHICS_HEIGHT;
-    this.ctx = this.canvas.getContext("2d")!;
+    this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
     this.ctx.imageSmoothingEnabled = false;
 
-    this.path = new PathBuffer();
+    this.bitmap = new BitmapBuffer();
 
     this.clear();
 
@@ -38,44 +37,43 @@ export class Graphics {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    this.path.clear();
+    this.bitmap.reset();
   }
 
   drawTest() {
+    this.bitmap.start(this.ctx);
+
     for (const offset of [0, 30, 60, 90, 120, 150]) {
       this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-      this.path.moveTo(0, 0 + offset);
-      this.path.lineTo(20, 20 + offset);
-      this.path.strokePath(this.ctx, this.strokeStyle);
-      this.path.clear();
+      this.bitmap.moveTo(0, 0 + offset);
+      this.bitmap.lineTo(20, 20 + offset);
+      this.bitmap.strokePath(this.strokeStyle);
+      this.bitmap.reset();
 
       this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.LightCyan]);
-      this.path.lineTo(0, 0 + offset + 10);
-      this.path.lineTo(20, 20 + offset + 10);
-      this.path.strokePath(this.ctx, this.strokeStyle);
-      this.path.clear();
+      this.bitmap.moveTo(20, 20 + offset);
+      this.bitmap.lineTo(0, 0 + offset + 10);
+      this.bitmap.lineTo(20, 20 + offset + 10);
+      this.bitmap.strokePath(this.strokeStyle);
+      this.bitmap.reset();
 
       this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.White]);
-      this.path.lineTo(0, 0 + offset + 20);
-      this.path.lineTo(20, 20 + offset + 20);
-      this.path.strokePath(this.ctx, this.strokeStyle);
-      this.path.clear();
+      this.bitmap.moveTo(20, 20 + offset + 10);
+      this.bitmap.lineTo(0, 0 + offset + 20);
+      this.bitmap.lineTo(20, 20 + offset + 20);
+      this.bitmap.strokePath(this.strokeStyle);
+      this.bitmap.reset();
     }
 
-    this.path.moveTo(310, 10);
-    this.path.lineTo(330, 40);
-    this.path.lineTo(310, 70);
-    this.path.lineTo(300, 70);
-    this.path.lineTo(300, 10);
-    this.path.lineTo(310, 10);
-    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-    this.path.floodFill(
-      this.ctx,
-      305,
-      15,
-      CGA_PALETTE_DICT[CgaColors.LightCyan],
-    );
-    this.path.clear();
+    this.bitmap.moveTo(310, 10);
+    this.bitmap.lineTo(330, 40);
+    this.bitmap.lineTo(310, 70);
+    this.bitmap.lineTo(300, 70);
+    this.bitmap.lineTo(300, 10);
+    this.bitmap.lineTo(310, 10);
+    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
+    this.bitmap.floodFill(305, 15, CGA_PALETTE_DICT[CgaColors.LightCyan]);
+    this.bitmap.reset();
 
     this.setFillStyle(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
     this.fillRect(40, 40, 10, 10);
@@ -84,15 +82,27 @@ export class Graphics {
     this.setFillStyle(CGA_PALETTE_DICT[CgaColors.White]);
     this.fillRect(50, 50, 10, 10);
 
-    this.path.ellipseAt(150, 100, 10, 10);
-    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightCyan]);
-    this.path.floodFill(this.ctx, 150, 100, CGA_PALETTE_DICT[CgaColors.White]);
-    this.path.clear();
+    this.bitmap.ellipseAt(150, 100, 10, 10);
+    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightCyan]);
+    this.bitmap.floodFill(150, 100, CGA_PALETTE_DICT[CgaColors.White]);
+    this.bitmap.reset();
 
-    this.path.ellipseAt(150, 100, 15, 5);
-    this.path.strokePath(this.ctx, CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-    this.path.floodFill(this.ctx, 150, 100, CGA_PALETTE_DICT[CgaColors.White]);
-    this.path.clear();
+    this.bitmap.ellipseAt(150, 100, 15, 5);
+    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
+    this.bitmap.floodFill(150, 100, CGA_PALETTE_DICT[CgaColors.White]);
+    this.bitmap.reset();
+
+    this.bitmap.fillRect(
+      200,
+      200,
+      10,
+      10,
+      CGA_PALETTE_DICT[CgaColors.LightMagenta],
+    );
+
+    this.bitmap.fillRect(202, 202, 6, 6, CGA_PALETTE_DICT[CgaColors.White]);
+
+    this.bitmap.end(this.ctx);
   }
 
   setStrokeStyle(style: fillStyle) {
