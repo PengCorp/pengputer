@@ -65,7 +65,7 @@ export class Screen {
   private tempCtx!: CanvasRenderingContext2D;
   private tempScale: number = RENDER_SCALE;
 
-  public areGraphicsEnabled: boolean = false;
+  public areGraphicsEnabled: boolean = true;
   private graphics: Graphics;
 
   private cursor: Cursor;
