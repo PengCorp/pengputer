@@ -15,7 +15,12 @@ import {
   TextBuffer,
 } from "../TextBuffer";
 import { Font } from "./Font";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, RENDER_SCALE } from "./constants";
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  GRAPHICS_RENDER_SCALE,
+  RENDER_SCALE,
+} from "./constants";
 import { Graphics } from "./Graphics";
 
 export type ClickListener = (clickEvent: {
@@ -65,7 +70,7 @@ export class Screen {
   private tempCtx!: CanvasRenderingContext2D;
   private tempScale: number = RENDER_SCALE;
 
-  public areGraphicsEnabled: boolean = false;
+  public areGraphicsEnabled: boolean = true;
   private graphics: Graphics;
 
   private cursor: Cursor;
@@ -286,13 +291,23 @@ export class Screen {
     // display graphics
     if (this.areGraphicsEnabled) {
       const graphicsCanvas = this.graphics.getCanvas();
-      this.ctx.imageSmoothingEnabled = true;
-      this.ctx.drawImage(
+      this.bufferCtx.drawImage(
         graphicsCanvas,
         0,
         0,
         graphicsCanvas.width,
         graphicsCanvas.height,
+        0,
+        0,
+        graphicsCanvas.width * GRAPHICS_RENDER_SCALE,
+        graphicsCanvas.height * GRAPHICS_RENDER_SCALE,
+      );
+      this.ctx.drawImage(
+        this.bufferCanvas,
+        0,
+        0,
+        graphicsCanvas.width * GRAPHICS_RENDER_SCALE,
+        graphicsCanvas.height * GRAPHICS_RENDER_SCALE,
         0,
         0,
         this.canvas.width,
@@ -711,7 +726,12 @@ export class Screen {
 
   /*=============================== TERM HANDLING ====================================*/
 
-  updateFromBuffer(buffer: TextBuffer) {
+  update(buffer: TextBuffer) {
+    if (this.areGraphicsEnabled) {
+      this.graphics.draw();
+      return;
+    }
+
     let screenChanged = false;
 
     const page = buffer.getPage(buffer.topLine);

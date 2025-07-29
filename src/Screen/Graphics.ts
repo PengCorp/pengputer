@@ -1,28 +1,70 @@
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
-import { CgaColors } from "../Color/types";
 import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
-import { BitmapBuffer } from "./Graphics.BitmapBuffer";
 
-export type fillStyle = string;
+const palette0 = [
+  new Uint8ClampedArray([0, 0, 0, 255]),
+  new Uint8ClampedArray([78, 243, 243, 255]),
+  new Uint8ClampedArray([243, 78, 243, 255]),
+  new Uint8ClampedArray([255, 255, 255, 255]),
+];
+
+const palette1 = [
+  new Uint8ClampedArray([0, 0, 0, 255]),
+  new Uint8ClampedArray([0, 196, 196, 255]),
+  new Uint8ClampedArray([196, 0, 196, 255]),
+  new Uint8ClampedArray([196, 196, 196, 255]),
+];
+
+const palette2 = [
+  new Uint8ClampedArray([0, 0, 0, 255]),
+  new Uint8ClampedArray([78, 220, 78, 255]),
+  new Uint8ClampedArray([220, 78, 78, 255]),
+  new Uint8ClampedArray([243, 243, 78, 255]),
+];
+
+const palette3 = [
+  new Uint8ClampedArray([0, 0, 0, 255]),
+  new Uint8ClampedArray([0, 196, 0, 255]),
+  new Uint8ClampedArray([196, 0, 0, 255]),
+  new Uint8ClampedArray([196, 196, 0, 255]),
+];
+
 export class Graphics {
+  private width = GRAPHICS_WIDTH;
+  private height = GRAPHICS_HEIGHT;
+
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
-  private strokeStyle: fillStyle = "red";
-  private fillStyle: fillStyle = "blue";
 
-  private bitmap: BitmapBuffer;
+  private imageDataObj: ImageData;
+  private imageData: ImageData["data"];
+
+  private penPosition: Vector = { x: 0, y: 0 };
+  private bitmap: Uint8ClampedArray;
+
+  private palette: Uint8ClampedArray[];
 
   constructor() {
     this.canvas = document.createElement("canvas");
     this.canvas.width = GRAPHICS_WIDTH;
     this.canvas.height = GRAPHICS_HEIGHT;
-    this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
+
+    this.ctx = this.canvas.getContext("2d")!;
     this.ctx.imageSmoothingEnabled = false;
 
-    this.bitmap = new BitmapBuffer();
+    this.bitmap = new Uint8ClampedArray(this.width * this.height);
+    this.bitmap.fill(0);
 
-    this.clear();
+    this.palette = palette0;
+
+    this.imageDataObj = new ImageData(this.width, this.height, {
+      colorSpace: "srgb",
+    });
+    this.imageData = this.imageDataObj.data;
+
+    this.fillRect(0, 0, this.width, this.height, 0);
+
+    this.reset();
 
     this.drawTest();
   }
@@ -31,90 +73,231 @@ export class Graphics {
     return this.canvas;
   }
 
-  clear() {
-    const { ctx, canvas } = this;
+  draw() {
+    const imageDataObj = this.imageDataObj;
+    if (imageDataObj) {
+      this.ctx.putImageData(imageDataObj, 0, 0);
+    }
+  }
 
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  reset() {
+    this.bitmap = this.bitmap.fill(0);
+    this.penPosition.x = 0;
+    this.penPosition.y = 0;
+  }
 
-    this.bitmap.reset();
+  moveTo(x: number, y: number) {
+    this.penPosition.x = x;
+    this.penPosition.y = y;
+  }
+
+  lineTo(x: number, y: number) {
+    let { x: x0, y: y0 } = this.penPosition;
+    let [x1, y1] = [x, y];
+
+    let dx = Math.abs(x1 - x0),
+      sx = x0 < x1 ? 1 : -1;
+    let dy = -Math.abs(y1 - y0),
+      sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy,
+      e2; /* error value e_xy */
+
+    for (;;) {
+      /* loop */
+      this.putPathPixel(x0, y0);
+      if (x0 == x1 && y0 == y1) break;
+      e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x0 += sx;
+      } /* e_xy+e_x > 0 */
+      if (e2 <= dx) {
+        err += dx;
+        y0 += sy;
+      } /* e_xy+e_y < 0 */
+    }
+
+    this.penPosition.x = x1;
+    this.penPosition.y = y1;
+  }
+
+  strokePath(paletteIdx: number) {
+    if (!this.imageData) throw new Error("Image data not loaded.");
+
+    const color = this.palette[paletteIdx];
+
+    for (let y = 0; y < this.height; y += 1) {
+      for (let x = 0; x < this.width; x += 1) {
+        let i = y * this.width + x;
+        if (this.bitmap[i] > 0) {
+          this.imageData[i * 4 + 0] = color[0];
+          this.imageData[i * 4 + 1] = color[1];
+          this.imageData[i * 4 + 2] = color[2];
+          this.imageData[i * 4 + 3] = color[3];
+        }
+      }
+    }
+  }
+
+  floodFill(x: number, y: number, paletteIdx: number) {
+    if (!this.imageData) throw new Error("Image data not loaded.");
+
+    const color = this.palette[paletteIdx];
+
+    const queue = [[x, y]];
+    const filled = new Array(this.width * this.height).fill(0);
+
+    while (queue.length > 0) {
+      const point = queue.shift();
+      if (point) {
+        const [x, y] = point;
+        const idx = y * this.width + x;
+        if (
+          x >= 0 &&
+          x < this.width &&
+          y >= 0 &&
+          y < this.height &&
+          this.bitmap[idx] === 0 &&
+          filled[idx] === 0
+        ) {
+          filled[idx] = 1;
+          this.imageData[idx * 4 + 0] = color[0];
+          this.imageData[idx * 4 + 1] = color[1];
+          this.imageData[idx * 4 + 2] = color[2];
+          this.imageData[idx * 4 + 3] = color[3];
+
+          queue.push([x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]);
+        }
+      }
+    }
+  }
+
+  private putPathPixel(x: number, y: number) {
+    if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+      this.bitmap[y * this.width + x] = 1;
+    }
+  }
+
+  private putColorPixel(i: number, paletteIdx: number) {
+    if (!this.imageData) throw new Error("Bitmap buffer not initialized.");
+
+    const color = this.palette[paletteIdx];
+
+    this.imageData[i * 4 + 0] = color[0];
+    this.imageData[i * 4 + 1] = color[1];
+    this.imageData[i * 4 + 2] = color[2];
+    this.imageData[i * 4 + 3] = color[3];
+  }
+
+  ellipseAt(xc: number, yc: number, rx: number, ry: number) {
+    let rx2 = rx * rx;
+    let ry2 = ry * ry;
+
+    let two_rx2 = 2 * rx2;
+    let two_ry2 = 2 * ry2;
+
+    let x = 0;
+    let y = ry;
+    let px = 0;
+    let py = two_rx2 * y;
+
+    let p = Math.round(ry2 - rx2 * ry + 0.25 * rx2);
+
+    this.putPathPixel(xc + x, yc + y);
+    this.putPathPixel(xc - x, yc + y);
+    this.putPathPixel(xc + x, yc - y);
+    this.putPathPixel(xc - x, yc - y);
+
+    while (px < py) {
+      x++;
+      px += two_ry2;
+      if (p < 0) {
+        p += px + ry2;
+      } else {
+        y--;
+        py -= two_rx2;
+        p += px - py + ry2;
+      }
+      this.putPathPixel(xc + x, yc + y);
+      this.putPathPixel(xc - x, yc + y);
+      this.putPathPixel(xc + x, yc - y);
+      this.putPathPixel(xc - x, yc - y);
+    }
+
+    p = Math.round(
+      ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2,
+    );
+    p = ry2 * (x * x) + rx2 * (y * y) - rx2 * ry2;
+
+    while (y >= 0) {
+      y--;
+      py -= two_rx2;
+      if (p > 0) {
+        p += rx2 - py;
+      } else {
+        x++;
+        px += two_ry2;
+        p += rx2 - py + px;
+      }
+      this.putPathPixel(xc + x, yc + y);
+      this.putPathPixel(xc - x, yc + y);
+      this.putPathPixel(xc + x, yc - y);
+      this.putPathPixel(xc - x, yc - y);
+    }
+  }
+
+  fillRect(x: number, y: number, w: number, h: number, paletteIdx: number) {
+    const color = this.palette[paletteIdx];
+
+    for (let y0 = y; y0 < y + h; y0 += 1) {
+      for (let x0 = x; x0 < x + w; x0 += 1) {
+        const idx = (y0 * this.width + x0) * 4;
+        this.imageData[idx + 0] = color[0];
+        this.imageData[idx + 1] = color[1];
+        this.imageData[idx + 2] = color[2];
+        this.imageData[idx + 3] = color[3];
+      }
+    }
   }
 
   drawTest() {
-    this.bitmap.start(this.ctx);
-
     for (const offset of [0, 30, 60, 90, 120, 150]) {
-      this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-      this.bitmap.moveTo(0, 0 + offset);
-      this.bitmap.lineTo(20, 20 + offset);
-      this.bitmap.strokePath(this.strokeStyle);
-      this.bitmap.reset();
+      this.moveTo(0, 0 + offset);
+      this.lineTo(20, 20 + offset);
+      this.strokePath(2);
+      this.reset();
 
-      this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.LightCyan]);
-      this.bitmap.moveTo(20, 20 + offset);
-      this.bitmap.lineTo(0, 0 + offset + 10);
-      this.bitmap.lineTo(20, 20 + offset + 10);
-      this.bitmap.strokePath(this.strokeStyle);
-      this.bitmap.reset();
+      this.moveTo(20, 20 + offset);
+      this.lineTo(0, 0 + offset + 10);
+      this.lineTo(20, 20 + offset + 10);
+      this.strokePath(1);
+      this.reset();
 
-      this.setStrokeStyle(CGA_PALETTE_DICT[CgaColors.White]);
-      this.bitmap.moveTo(20, 20 + offset + 10);
-      this.bitmap.lineTo(0, 0 + offset + 20);
-      this.bitmap.lineTo(20, 20 + offset + 20);
-      this.bitmap.strokePath(this.strokeStyle);
-      this.bitmap.reset();
+      this.moveTo(20, 20 + offset + 10);
+      this.lineTo(0, 0 + offset + 20);
+      this.lineTo(20, 20 + offset + 20);
+      this.strokePath(3);
+      this.reset();
     }
 
-    this.bitmap.moveTo(310, 10);
-    this.bitmap.lineTo(330, 40);
-    this.bitmap.lineTo(310, 70);
-    this.bitmap.lineTo(300, 70);
-    this.bitmap.lineTo(300, 10);
-    this.bitmap.lineTo(310, 10);
-    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-    this.bitmap.floodFill(305, 15, CGA_PALETTE_DICT[CgaColors.LightCyan]);
-    this.bitmap.reset();
+    this.moveTo(310, 10);
+    this.lineTo(330, 40);
+    this.lineTo(310, 70);
+    this.lineTo(300, 70);
+    this.lineTo(300, 10);
+    this.lineTo(310, 10);
+    this.strokePath(2);
+    this.floodFill(305, 15, 1);
+    this.reset();
 
-    this.setFillStyle(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-    this.fillRect(40, 40, 10, 10);
-    this.setFillStyle(CGA_PALETTE_DICT[CgaColors.LightCyan]);
-    this.fillRect(45, 45, 10, 10);
-    this.setFillStyle(CGA_PALETTE_DICT[CgaColors.White]);
-    this.fillRect(50, 50, 10, 10);
+    this.ellipseAt(150, 100, 10, 10);
+    this.strokePath(1);
+    this.floodFill(150, 100, 3);
+    this.reset();
 
-    this.bitmap.ellipseAt(150, 100, 10, 10);
-    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightCyan]);
-    this.bitmap.floodFill(150, 100, CGA_PALETTE_DICT[CgaColors.White]);
-    this.bitmap.reset();
-
-    this.bitmap.ellipseAt(150, 100, 15, 5);
-    this.bitmap.strokePath(CGA_PALETTE_DICT[CgaColors.LightMagenta]);
-    this.bitmap.floodFill(150, 100, CGA_PALETTE_DICT[CgaColors.White]);
-    this.bitmap.reset();
-
-    this.bitmap.fillRect(
-      200,
-      200,
-      10,
-      10,
-      CGA_PALETTE_DICT[CgaColors.LightMagenta],
-    );
-
-    this.bitmap.fillRect(202, 202, 6, 6, CGA_PALETTE_DICT[CgaColors.White]);
-
-    this.bitmap.end(this.ctx);
-  }
-
-  setStrokeStyle(style: fillStyle) {
-    this.strokeStyle = style;
-  }
-
-  setFillStyle(style: fillStyle) {
-    this.fillStyle = style;
-  }
-
-  fillRect(x: number, y: number, w: number, h: number) {
-    this.ctx.fillStyle = this.fillStyle;
-    this.ctx.fillRect(x, y, w, h);
+    this.ellipseAt(150, 100, 15, 5);
+    this.strokePath(2);
+    this.floodFill(150, 100, 3);
+    this.reset();
   }
 }

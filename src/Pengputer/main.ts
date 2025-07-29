@@ -310,14 +310,24 @@ class PengOS {
   });
 
   let lastTime = performance.now();
+
+  window.sum = 0;
+  window.samples = 0;
+
   const cb = () => {
     const dt = performance.now() - lastTime;
     lastTime = performance.now();
-    // const start = performance.now();
-    screen.updateFromBuffer(textBuffer);
+    const start = performance.now();
+
+    screen.update(textBuffer);
     screen.draw(dt);
-    // const end = performance.now();
-    // window.took = end - start;
+
+    const end = performance.now();
+
+    window.sum += end - start;
+    window.samples += 1;
+    window.avg = window.sum / window.samples;
+
     keyboard.update(dt);
     requestAnimationFrame(cb);
   };
