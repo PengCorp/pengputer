@@ -64,7 +64,7 @@ export class Graphics {
 
     this.fillRect(0, 0, this.width, this.height, 0);
 
-    this.reset();
+    this.resetPath();
 
     this.drawTest();
   }
@@ -80,7 +80,9 @@ export class Graphics {
     }
   }
 
-  reset() {
+  // ============================================================ PATH ============================================================
+
+  resetPath() {
     this.bitmap = this.bitmap.fill(0);
     this.penPosition.x = 0;
     this.penPosition.y = 0;
@@ -122,28 +124,17 @@ export class Graphics {
   }
 
   strokePath(paletteIdx: number) {
-    if (!this.imageData) throw new Error("Image data not loaded.");
-
-    const color = this.palette[paletteIdx];
-
     for (let y = 0; y < this.height; y += 1) {
       for (let x = 0; x < this.width; x += 1) {
         let i = y * this.width + x;
         if (this.bitmap[i] > 0) {
-          this.imageData[i * 4 + 0] = color[0];
-          this.imageData[i * 4 + 1] = color[1];
-          this.imageData[i * 4 + 2] = color[2];
-          this.imageData[i * 4 + 3] = color[3];
+          this.putColorPixel(i, paletteIdx);
         }
       }
     }
   }
 
   floodFill(x: number, y: number, paletteIdx: number) {
-    if (!this.imageData) throw new Error("Image data not loaded.");
-
-    const color = this.palette[paletteIdx];
-
     const queue = [[x, y]];
     const filled = new Array(this.width * this.height).fill(0);
 
@@ -161,32 +152,12 @@ export class Graphics {
           filled[idx] === 0
         ) {
           filled[idx] = 1;
-          this.imageData[idx * 4 + 0] = color[0];
-          this.imageData[idx * 4 + 1] = color[1];
-          this.imageData[idx * 4 + 2] = color[2];
-          this.imageData[idx * 4 + 3] = color[3];
+          this.putColorPixel(idx, paletteIdx);
 
           queue.push([x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]);
         }
       }
     }
-  }
-
-  private putPathPixel(x: number, y: number) {
-    if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-      this.bitmap[y * this.width + x] = 1;
-    }
-  }
-
-  private putColorPixel(i: number, paletteIdx: number) {
-    if (!this.imageData) throw new Error("Bitmap buffer not initialized.");
-
-    const color = this.palette[paletteIdx];
-
-    this.imageData[i * 4 + 0] = color[0];
-    this.imageData[i * 4 + 1] = color[1];
-    this.imageData[i * 4 + 2] = color[2];
-    this.imageData[i * 4 + 3] = color[3];
   }
 
   ellipseAt(xc: number, yc: number, rx: number, ry: number) {
@@ -246,18 +217,31 @@ export class Graphics {
     }
   }
 
-  fillRect(x: number, y: number, w: number, h: number, paletteIdx: number) {
-    const color = this.palette[paletteIdx];
+  // ============================================================ OTHER DRAWING ============================================================
 
+  fillRect(x: number, y: number, w: number, h: number, paletteIdx: number) {
     for (let y0 = y; y0 < y + h; y0 += 1) {
       for (let x0 = x; x0 < x + w; x0 += 1) {
-        const idx = (y0 * this.width + x0) * 4;
-        this.imageData[idx + 0] = color[0];
-        this.imageData[idx + 1] = color[1];
-        this.imageData[idx + 2] = color[2];
-        this.imageData[idx + 3] = color[3];
+        const idx = y0 * this.width + x0;
+        this.putColorPixel(idx, paletteIdx);
       }
     }
+  }
+
+  private putPathPixel(x: number, y: number) {
+    if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+      this.bitmap[y * this.width + x] = 1;
+    }
+  }
+
+  private putColorPixel(i: number, paletteIdx: number) {
+    const color = this.palette[paletteIdx];
+    const imageDataIdx = i * 4;
+
+    this.imageData[imageDataIdx + 0] = color[0];
+    this.imageData[imageDataIdx + 1] = color[1];
+    this.imageData[imageDataIdx + 2] = color[2];
+    this.imageData[imageDataIdx + 3] = color[3];
   }
 
   drawTest() {
@@ -265,19 +249,19 @@ export class Graphics {
       this.moveTo(0, 0 + offset);
       this.lineTo(20, 20 + offset);
       this.strokePath(2);
-      this.reset();
+      this.resetPath();
 
       this.moveTo(20, 20 + offset);
       this.lineTo(0, 0 + offset + 10);
       this.lineTo(20, 20 + offset + 10);
       this.strokePath(1);
-      this.reset();
+      this.resetPath();
 
       this.moveTo(20, 20 + offset + 10);
       this.lineTo(0, 0 + offset + 20);
       this.lineTo(20, 20 + offset + 20);
       this.strokePath(3);
-      this.reset();
+      this.resetPath();
     }
 
     this.moveTo(310, 10);
@@ -288,16 +272,19 @@ export class Graphics {
     this.lineTo(310, 10);
     this.strokePath(2);
     this.floodFill(305, 15, 1);
-    this.reset();
+    this.resetPath();
 
     this.ellipseAt(150, 100, 10, 10);
     this.strokePath(1);
     this.floodFill(150, 100, 3);
-    this.reset();
+    this.resetPath();
 
     this.ellipseAt(150, 100, 15, 5);
     this.strokePath(2);
     this.floodFill(150, 100, 3);
-    this.reset();
+    this.resetPath();
+
+    this.fillRect(150, 150, 25, 25, 3);
+    this.fillRect(155, 155, 15, 15, 2);
   }
 }

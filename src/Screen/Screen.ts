@@ -71,7 +71,7 @@ export class Screen {
   private tempScale: number = RENDER_SCALE;
 
   public areGraphicsEnabled: boolean = true;
-  private graphics: Graphics;
+  public graphics: Graphics;
 
   private cursor: Cursor;
   private curDisplay: boolean;
