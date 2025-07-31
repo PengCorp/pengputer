@@ -1,5 +1,9 @@
+import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
+import { CgaColors } from "../Color/types";
 import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
+import tc from "tinycolor2";
+import { makeSprite, Sprite } from "./Graphics.Sprite";
 
 const palette0 = [
   new Uint8ClampedArray([0, 0, 0, 255]),
@@ -29,15 +33,64 @@ const palette3 = [
   new Uint8ClampedArray([196, 196, 0, 255]),
 ];
 
+const colorToArray = (color: string) => {
+  const rgb = tc(color).toRgb();
+  return new Uint8ClampedArray([rgb.r, rgb.g, rgb.b, 255]);
+};
+
+const palette28 = [
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Black]), // 0 (0x0)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Red]), // 1 (0x1)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Green]), // 2 (0x2)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Blue]), // 3 (0x3)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Yellow]), // 4 (0x4)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Cyan]), // 5 (0x5)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Magenta]), // 6 (0x6)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Orange]), // 7 (0x7)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Chartreuse]), // 8 (0x8)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.SpringGreen]), // 9 (0x9)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Azure]), // 10 (0xA)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Violet]), // 11 (0xB)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.Rose]), // 12 (0xC)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightGray]), // 13 (0xD)
+
+  colorToArray(CGA_PALETTE_DICT[CgaColors.DarkGray]), // 14 (0xE)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightRed]), // 15 (0xF)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightGreen]), // 16 (0x10)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightBlue]), // 17 (0x11)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightYellow]), // 18 (0x12)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightCyan]), // 19 (0x13)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightMagenta]), // 20 (0x14)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightOrange]), // 21 (0x15)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightChartreuse]), // 22 (0x16)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightSpringGreen]), // 23 (0x17)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightAzure]), // 24 (0x18)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightViolet]), // 25 (0x19)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.LightRose]), // 26 (0x1A)
+  colorToArray(CGA_PALETTE_DICT[CgaColors.White]), // 27 (0x1B)
+];
+
+interface Layer {
+  obj: ImageData;
+  data: ImageData["data"];
+}
+
 export class Graphics {
   private width = GRAPHICS_WIDTH;
   private height = GRAPHICS_HEIGHT;
+  private dataLength = GRAPHICS_WIDTH * GRAPHICS_HEIGHT * 4;
 
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
 
-  private imageDataObj: ImageData;
-  private imageData: ImageData["data"];
+  private layers: Layer[] = [];
+
+  private bgImageData!: ImageData;
+
+  private resultImageData!: ImageData;
+
+  private imageDataObj!: ImageData;
+  private imageData!: ImageData["data"];
 
   private penPosition: Vector = { x: 0, y: 0 };
   private bitmap: Uint8ClampedArray;
@@ -55,14 +108,29 @@ export class Graphics {
     this.bitmap = new Uint8ClampedArray(this.width * this.height);
     this.bitmap.fill(0);
 
-    this.palette = palette0;
+    this.palette = palette28;
 
-    this.imageDataObj = new ImageData(this.width, this.height, {
+    this.bgImageData = new ImageData(this.width, this.height, {
       colorSpace: "srgb",
     });
-    this.imageData = this.imageDataObj.data;
+
+    this.imageDataObj = this.bgImageData;
+    this.imageData = this.bgImageData.data;
 
     this.fillRect(0, 0, this.width, this.height, 0);
+
+    this.resultImageData = new ImageData(this.width, this.height, {
+      colorSpace: "srgb",
+    });
+
+    this.addLayer();
+    this.addLayer();
+
+    this.setLayer(0);
+
+    this.fillRect(0, 0, 150, 120, 3);
+
+    this.setLayer(1);
 
     this.resetPath();
 
@@ -74,10 +142,46 @@ export class Graphics {
   }
 
   draw() {
-    const imageDataObj = this.imageDataObj;
-    if (imageDataObj) {
-      this.ctx.putImageData(imageDataObj, 0, 0);
+    const dataLength = this.dataLength;
+    const resultImageData = this.resultImageData;
+    const resultImageDataData = resultImageData.data;
+    const bgImageDataObj = this.bgImageData;
+
+    for (let i = 0; i < dataLength; i += 1) {
+      resultImageDataData[i] = bgImageDataObj.data[i];
     }
+
+    for (let layerIdx = 0; layerIdx < this.layers.length; layerIdx += 1) {
+      const { data } = this.layers[layerIdx];
+      for (let i = 0; i < dataLength; i += 4) {
+        if (data[i + 3] > 0) {
+          resultImageDataData[i + 0] = data[i + 0];
+          resultImageDataData[i + 1] = data[i + 1];
+          resultImageDataData[i + 2] = data[i + 2];
+        }
+      }
+    }
+
+    this.ctx.putImageData(resultImageData, 0, 0);
+  }
+
+  // ============================================================ LAYERS ============================================================
+
+  addLayer() {
+    const imageDataObj = new ImageData(this.width, this.height, {
+      colorSpace: "srgb",
+    });
+    const imageData = imageDataObj.data;
+
+    this.layers.push({
+      obj: imageDataObj,
+      data: imageData,
+    });
+  }
+
+  setLayer(index: number) {
+    this.imageDataObj = this.layers[index].obj;
+    this.imageData = this.layers[index].data;
   }
 
   // ============================================================ PATH ============================================================
@@ -228,6 +332,20 @@ export class Graphics {
     }
   }
 
+  clearRect(x: number, y: number, w: number, h: number) {
+    for (let y0 = y; y0 < y + h; y0 += 1) {
+      for (let x0 = x; x0 < x + w; x0 += 1) {
+        const idx = y0 * this.width + x0;
+        const imageDataIdx = idx * 4;
+
+        this.imageData[imageDataIdx + 0] = 0;
+        this.imageData[imageDataIdx + 1] = 0;
+        this.imageData[imageDataIdx + 2] = 0;
+        this.imageData[imageDataIdx + 3] = 0;
+      }
+    }
+  }
+
   private putPathPixel(x: number, y: number) {
     if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
       this.bitmap[y * this.width + x] = 1;
@@ -242,6 +360,27 @@ export class Graphics {
     this.imageData[imageDataIdx + 1] = color[1];
     this.imageData[imageDataIdx + 2] = color[2];
     this.imageData[imageDataIdx + 3] = color[3];
+  }
+
+  drawSprite(sprite: Sprite, dx: number, dy: number) {
+    for (let y = 0; y < sprite.height; y += 1) {
+      for (let x = 0; x < sprite.width; x += 1) {
+        let paletteIdx = sprite.data[y * sprite.width + x];
+        if (paletteIdx === -1) continue;
+
+        let canvasx = x + dx;
+        let canvasy = y + dy;
+
+        if (
+          canvasx >= 0 &&
+          canvasx < this.width &&
+          canvasy >= 0 &&
+          canvasy < this.height
+        ) {
+          this.putColorPixel(canvasy * this.width + canvasx, paletteIdx);
+        }
+      }
+    }
   }
 
   drawTest() {
@@ -286,5 +425,25 @@ export class Graphics {
 
     this.fillRect(150, 150, 25, 25, 3);
     this.fillRect(155, 155, 15, 15, 2);
+
+    const sprite = makeSprite(
+      [
+        " wwwwww ",
+        "wbbbbbbw",
+        "wbbbbbbw",
+        "wbbbbbbw",
+        "wbbbbbbw",
+        "wbbbbbbw",
+        "wbbbbbbw",
+        " wwwwww ",
+      ],
+      {
+        " ": -1,
+        w: 27,
+        b: 14,
+      },
+    );
+
+    this.drawSprite(sprite, 50, 50);
   }
 }
