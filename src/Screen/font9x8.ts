@@ -5,6 +5,8 @@ import cp437patterns from "./cp437patterns_9x8_2x.png";
 import cp437custom from "./cp437custom_9x8_2x.png";
 import { charArray } from "../types";
 
+/* cSpell:disable */
+
 export const cp437plusCharacterValueMap: charArray[] = [
   " !\"#$%&'()*+,-./",
   "0123456789:;<=>?",
@@ -54,6 +56,8 @@ export const cp437plusCharacterValueMap: charArray[] = [
   "□▪▫▬▲►▼◄◊○●◘◙◦☺︎☻",
   "☼♀︎♂︎♠︎♣︎♥︎♦︎♪♫✓ﬁﬂ�",
 ].map((l) => splitStringIntoCharacters(l));
+
+/* cSpell:enable */
 
 export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
   (l) => splitStringIntoCharacters(l),

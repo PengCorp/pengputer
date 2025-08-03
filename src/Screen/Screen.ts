@@ -70,7 +70,7 @@ export class Screen {
   private tempCtx!: CanvasRenderingContext2D;
   private tempScale: number = RENDER_SCALE;
 
-  public areGraphicsEnabled: boolean = true;
+  public areGraphicsEnabled: boolean = false;
   public graphics: Graphics;
 
   private cursor: Cursor;
@@ -291,6 +291,7 @@ export class Screen {
     // display graphics
     if (this.areGraphicsEnabled) {
       const graphicsCanvas = this.graphics.getCanvas();
+      this.bufferCtx.globalCompositeOperation = "copy";
       this.bufferCtx.drawImage(
         graphicsCanvas,
         0,
@@ -302,6 +303,7 @@ export class Screen {
         graphicsCanvas.width * GRAPHICS_RENDER_SCALE,
         graphicsCanvas.height * GRAPHICS_RENDER_SCALE,
       );
+      this.ctx.globalCompositeOperation = "copy";
       this.ctx.drawImage(
         this.bufferCanvas,
         0,

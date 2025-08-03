@@ -283,6 +283,10 @@ export class Std {
     this.screen.areGraphicsEnabled = areGraphicsEnabled;
   }
 
+  getGraphics() {
+    return this.screen.graphics;
+  }
+
   /* ===================== CONSOLE SCROLLING ========================= */
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */

@@ -4,6 +4,7 @@ import { Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
 import tc from "tinycolor2";
 import { makeSprite, Sprite } from "./Graphics.Sprite";
+import { Size } from "../types";
 
 const palette0 = [
   new Uint8ClampedArray([0, 0, 0, 255]),
@@ -123,18 +124,7 @@ export class Graphics {
       colorSpace: "srgb",
     });
 
-    this.addLayer();
-    this.addLayer();
-
-    this.setLayer(0);
-
-    this.fillRect(0, 0, 150, 120, 3);
-
-    this.setLayer(1);
-
-    this.resetPath();
-
-    this.drawTest();
+    this.reset();
   }
 
   getCanvas() {
@@ -163,6 +153,18 @@ export class Graphics {
     }
 
     this.ctx.putImageData(resultImageData, 0, 0);
+  }
+
+  reset() {
+    this.resetPath();
+
+    this.layers = [];
+    this.addLayer();
+    this.setLayer(0);
+  }
+
+  getSize(): Size {
+    return { w: this.width, h: this.height };
   }
 
   // ============================================================ LAYERS ============================================================
@@ -368,16 +370,16 @@ export class Graphics {
         let paletteIdx = sprite.data[y * sprite.width + x];
         if (paletteIdx === -1) continue;
 
-        let canvasx = x + dx;
-        let canvasy = y + dy;
+        let canvasX = x + dx;
+        let canvasY = y + dy;
 
         if (
-          canvasx >= 0 &&
-          canvasx < this.width &&
-          canvasy >= 0 &&
-          canvasy < this.height
+          canvasX >= 0 &&
+          canvasX < this.width &&
+          canvasY >= 0 &&
+          canvasY < this.height
         ) {
-          this.putColorPixel(canvasy * this.width + canvasx, paletteIdx);
+          this.putColorPixel(canvasY * this.width + canvasX, paletteIdx);
         }
       }
     }
@@ -426,6 +428,8 @@ export class Graphics {
     this.fillRect(150, 150, 25, 25, 3);
     this.fillRect(155, 155, 15, 15, 2);
 
+    /* cSpell:disable */
+
     const sprite = makeSprite(
       [
         " wwwwww ",
@@ -443,6 +447,8 @@ export class Graphics {
         b: 14,
       },
     );
+
+    /* cSpell:enable */
 
     this.drawSprite(sprite, 50, 50);
   }
