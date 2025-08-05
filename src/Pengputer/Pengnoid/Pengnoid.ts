@@ -1,100 +1,86 @@
-import { Executable } from "./FileSystem";
-import { Signal } from "../Toolbox/Signal";
-import { State, StateManager } from "../Toolbox/StateManager";
-import { PC } from "./PC";
-import { Graphics } from "../Screen/Graphics";
-import { Std } from "../Std";
-import { makeSprite } from "../Screen/Graphics.Sprite";
-import { Vector } from "../Toolbox/Vector";
-import { KeyCode } from "../Keyboard/types.keyCode";
+import { Executable } from "../FileSystem";
+import { Signal } from "../../Toolbox/Signal";
+import { State, StateManager } from "../../Toolbox/StateManager";
+import { PC } from "../PC";
+import { Graphics } from "../../Screen/Graphics";
+import { Std } from "../../Std";
+import { makeSprite } from "../../Screen/Graphics.Sprite";
+import { Vector } from "../../Toolbox/Vector";
+import { KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
+import { sprites } from "./sprites";
 
 const LAYER_BG = 0;
 const LAYER_SPRITES = 1;
 
-/* cSpell:disable */
-
-const ball = makeSprite(
-  [
-    "  ░░░░  ",
-    " ░▒▒▒▒░ ",
-    "░▒▒▒▒▒▒░",
-    "░▒▒▒▒▒▒░",
-    "░▒▒▒▒▒▒░",
-    "░▒▒▒▒▒▒░",
-    " ░▒▒▒▒░ ",
-    "  ░░░░  ",
-  ],
-  {
-    " ": -1,
-    "░": 27,
-    "▒": 17,
-    "▓": 3,
-  },
-);
-
-const paddleLeft = makeSprite(
-  [
-    " ░░░░░░░",
-    "░▒░▒▒▒▒▒",
-    "░▒░▒▓▓▓▓",
-    "░▒░▒▓▓▓▓",
-    "░▒░▒▓▓▓▓",
-    "░▒░▒▓▓▓▓",
-    "░▒░▒▒▒▒▒",
-    " ░░░░░░░",
-  ],
-  {
-    " ": -1,
-    "░": 27,
-    "▒": 17,
-    "▓": 3,
-  },
-);
-
-const paddleRight = makeSprite(
-  [
-    "░░░░░░░ ",
-    "▒▒▒▒▒░▒░",
-    "▓▓▓▓▒░▒░",
-    "▓▓▓▓▒░▒░",
-    "▓▓▓▓▒░▒░",
-    "▓▓▓▓▒░▒░",
-    "▒▒▒▒▒░▒░",
-    "░░░░░░░ ",
-  ],
-  {
-    " ": -1,
-    "░": 27,
-    "▒": 17,
-    "▓": 3,
-  },
-);
-
-const paddleCenter = makeSprite(
-  [
-    "░░░░░░░░",
-    "▒▒▒▒▒▒▒▒",
-    "▓▓▓▓▓▓▓▓",
-    "▓▓▓░░▓▓▓",
-    "▓▓▓░░▓▓▓",
-    "▓▓▓▓▓▓▓▓",
-    "▒▒▒▒▒▒▒▒",
-    "░░░░░░░░",
-  ],
-  {
-    " ": -1,
-    "░": 27,
-    "▒": 17,
-    "▓": 3,
-  },
-);
-
-/* cSpell:enable */
-
 enum GameStateKey {
   MainMenu,
   Game,
+}
+
+class Ball {
+  public ballPosition: Vector = { x: 0, y: 0 };
+
+  public ballCounterLength = 1000 / 60;
+  public ballCounter = 0;
+
+  constructor() {}
+
+  tick() {
+    this.ballPosition.x += 1;
+    this.ballPosition.y += 1;
+  }
+
+  update(dt: number) {
+    this.ballCounter += dt;
+    while (this.ballCounter >= this.ballCounterLength) {
+      this.ballCounter -= this.ballCounterLength;
+
+      this.tick();
+    }
+  }
+}
+
+type PaddleDirection = "left" | "right" | null;
+
+class Paddle {
+  public paddlePosition: Vector = { x: 0, y: 240 - 16 };
+
+  public paddleCounterLength = (1000 / 60) * 0.5;
+  public paddleCounter = 0;
+
+  public paddleWidthSegments: number = 5;
+
+  private direction: PaddleDirection = null;
+
+  constructor() {}
+
+  setDirection(direction: PaddleDirection) {
+    if (direction !== this.direction) {
+      this.direction = direction;
+      this.paddleCounter = this.paddleCounterLength;
+    }
+  }
+
+  tick() {
+    switch (this.direction) {
+      case "left":
+        this.paddlePosition.x -= 1;
+        break;
+      case "right":
+        this.paddlePosition.x += 1;
+        break;
+    }
+  }
+
+  update(dt: number) {
+    this.paddleCounter += dt;
+    while (this.paddleCounter >= this.paddleCounterLength) {
+      this.paddleCounter -= this.paddleCounterLength;
+
+      this.tick();
+    }
+  }
 }
 
 const PADDLE_SEGMENT_WIDTH = 8;
@@ -106,17 +92,9 @@ class Game extends State {
 
   public signal: Signal<void> = new Signal();
 
-  private ballPosition: Vector = { x: 0, y: 0 };
+  private ball: Ball = new Ball();
 
-  private ballCounterLength = (1000 / 60) * 10;
-  private ballCounter = 0;
-
-  private paddlePosition: Vector = { x: 0, y: 240 - 16 };
-
-  private paddleCounterLength = (1000 / 60) * 0.5;
-  private paddleCounter = 0;
-
-  private paddleWidthSegments: number = 5;
+  private paddle: Paddle = new Paddle();
 
   private pressedDirections: KeyCode[] = [];
 
@@ -146,10 +124,8 @@ class Game extends State {
       if (ev.pressed) {
         if (ev.code === "ArrowLeft") {
           this.pressedDirections.push("ArrowLeft");
-          this.paddleCounter = this.paddleCounterLength;
         } else if (ev.code === "ArrowRight") {
           this.pressedDirections.push("ArrowRight");
-          this.paddleCounter = this.paddleCounterLength;
         }
       } else {
         if (ev.code === "ArrowLeft") {
@@ -165,39 +141,24 @@ class Game extends State {
 
       this.pressedDirections = _.uniq(this.pressedDirections);
     }
-  }
 
-  private updatePaddle() {
-    if (this.pressedDirections.length > 0) {
-      const dir = this.pressedDirections[this.pressedDirections.length - 1];
+    const dir =
+      this.pressedDirections.length > 0
+        ? this.pressedDirections[this.pressedDirections.length - 1]
+        : null;
 
-      if (dir === "ArrowLeft") {
-        this.paddlePosition.x -= 1;
-      } else if (dir === "ArrowRight") {
-        this.paddlePosition.x += 1;
-      }
+    if (dir === "ArrowLeft") {
+      this.paddle.setDirection("left");
+    } else if (dir === "ArrowRight") {
+      this.paddle.setDirection("right");
+    } else {
+      this.paddle.setDirection(null);
     }
-  }
-
-  private updateBall() {
-    this.ballPosition.x += 1;
-    this.ballPosition.y += 1;
   }
 
   private logic(dt: number) {
-    this.ballCounter += dt;
-    while (this.ballCounter >= this.ballCounterLength) {
-      this.ballCounter -= this.ballCounterLength;
-
-      this.updateBall();
-    }
-
-    this.paddleCounter += dt;
-    while (this.paddleCounter >= this.paddleCounterLength) {
-      this.paddleCounter -= this.paddleCounterLength;
-
-      this.updatePaddle();
-    }
+    this.paddle.update(dt);
+    this.ball.update(dt);
   }
 
   override update(dt: number): void {
@@ -208,6 +169,7 @@ class Game extends State {
     this.logic(dt);
 
     const graphicsSize = graphics.getSize();
+
     graphics.setLayer(LAYER_SPRITES);
     graphics.clearRect(0, 0, graphicsSize.w, graphicsSize.h);
 
@@ -218,7 +180,11 @@ class Game extends State {
   private drawBall() {
     const { graphics } = this;
 
-    graphics.drawSprite(ball, this.ballPosition.x, this.ballPosition.y);
+    graphics.drawSprite(
+      sprites.ball,
+      this.ball.ballPosition.x,
+      this.ball.ballPosition.y,
+    );
   }
 
   private drawPaddle() {
@@ -226,26 +192,26 @@ class Game extends State {
 
     let width = 0;
 
-    this.graphics.drawSprite(
-      paddleLeft,
-      this.paddlePosition.x + PADDLE_SEGMENT_WIDTH * 0,
-      this.paddlePosition.y,
+    graphics.drawSprite(
+      sprites.paddleLeft,
+      this.paddle.paddlePosition.x + PADDLE_SEGMENT_WIDTH * 0,
+      this.paddle.paddlePosition.y,
     );
     width += 1;
 
-    while (width < this.paddleWidthSegments - 1) {
-      this.graphics.drawSprite(
-        paddleCenter,
-        this.paddlePosition.x + PADDLE_SEGMENT_WIDTH * width,
-        this.paddlePosition.y,
+    while (width < this.paddle.paddleWidthSegments - 1) {
+      graphics.drawSprite(
+        sprites.paddleCenter,
+        this.paddle.paddlePosition.x + PADDLE_SEGMENT_WIDTH * width,
+        this.paddle.paddlePosition.y,
       );
       width += 1;
     }
 
-    this.graphics.drawSprite(
-      paddleRight,
-      this.paddlePosition.x + PADDLE_SEGMENT_WIDTH * width,
-      this.paddlePosition.y,
+    graphics.drawSprite(
+      sprites.paddleRight,
+      this.paddle.paddlePosition.x + PADDLE_SEGMENT_WIDTH * width,
+      this.paddle.paddlePosition.y,
     );
   }
 }
