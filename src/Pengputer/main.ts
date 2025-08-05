@@ -178,11 +178,11 @@ class PengOS {
       name: "blakjack.exe",
       createInstance: () => new Blackjack(this.pc),
     });
-    gamesDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "pengnoid.exe",
-      createInstance: () => new Pengnoid(this.pc),
-    });
+    // gamesDir.addItem({
+    //   type: FileSystemObjectType.Executable,
+    //   name: "pengnoid.exe",
+    //   createInstance: () => new Pengnoid(this.pc),
+    // });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
@@ -317,8 +317,7 @@ class PengOS {
 
   let lastTime = performance.now();
 
-  window.sum = 0;
-  window.samples = 0;
+  window.timeSamples = [];
 
   const cb = () => {
     const dt = performance.now() - lastTime;
@@ -330,9 +329,14 @@ class PengOS {
 
     const end = performance.now();
 
-    window.sum += end - start;
-    window.samples += 1;
-    window.avg = window.sum / window.samples;
+    window.timeSamples = window.timeSamples ?? [];
+    window.timeSamples.push(end - start);
+    while (window.timeSamples.length > 60) {
+      window.timeSamples.shift();
+    }
+    window.avg =
+      window.timeSamples.reduce((acc, v) => acc + v, 0) /
+      window.timeSamples.length;
 
     keyboard.update(dt);
     requestAnimationFrame(cb);
