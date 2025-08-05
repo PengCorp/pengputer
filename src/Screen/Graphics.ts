@@ -111,18 +111,14 @@ export class Graphics {
 
     this.palette = palette28;
 
-    this.bgImageData = new ImageData(this.width, this.height, {
-      colorSpace: "srgb",
-    });
+    this.bgImageData = new ImageData(this.width, this.height);
 
     this.imageDataObj = this.bgImageData;
     this.imageData = this.bgImageData.data;
 
     this.fillRect(0, 0, this.width, this.height, 0);
 
-    this.resultImageData = new ImageData(this.width, this.height, {
-      colorSpace: "srgb",
-    });
+    this.resultImageData = new ImageData(this.width, this.height);
 
     this.reset();
   }
@@ -170,9 +166,7 @@ export class Graphics {
   // ============================================================ LAYERS ============================================================
 
   addLayer() {
-    const imageDataObj = new ImageData(this.width, this.height, {
-      colorSpace: "srgb",
-    });
+    const imageDataObj = new ImageData(this.width, this.height);
     const imageData = imageDataObj.data;
 
     this.layers.push({

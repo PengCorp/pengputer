@@ -137,7 +137,7 @@ export class Screen {
       };
     }
 
-    // this.graphics = new Graphics();
+    this.graphics = new Graphics();
   }
 
   async init(containerEl: HTMLElement) {
