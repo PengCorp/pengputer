@@ -77,7 +77,11 @@ class ReadLine {
           } else if (key === "KeyD") {
             this.deleteCharacter();
           }
-        } else if (ev.isAltDown) {
+
+          continue;
+        }
+
+        if (ev.isAltDown) {
           switch (key) {
             case "KeyB":
               this.goBackwardsByWord();
@@ -100,38 +104,59 @@ class ReadLine {
             default:
               break;
           }
-        } else {
-          if (key === "Tab") {
+
+          continue;
+        }
+
+        let handled = true;
+        switch (key) {
+          case "Tab":
             this.tab();
-          } else if (key === "Home") {
+            break;
+          case "Home":
             this.goHome();
-          } else if (key === "End") {
+            break;
+          case "End":
             this.goToEnd();
-          } else if (char === "\n") {
-            this.buffer.printString(char);
-            resolve(this.result);
-            this.keyboard.flushEventBuffer();
-            return;
-          } else if (char === "\b") {
-            this.backspace();
-          } else if (key === "Delete") {
+            break;
+          case "Delete":
             this.deleteCharacter();
-          } else if (key === "ArrowLeft") {
+            break;
+          case "ArrowLeft":
             this.moveBackwards();
-          } else if (key === "ArrowRight") {
+            break;
+          case "ArrowRight":
             this.moveForwards();
-          } else if (key === "ArrowUp") {
+            break;
+          case "ArrowUp":
             this.navigateHistoryBackwards();
-          } else if (key === "ArrowDown") {
+            break;
+          case "ArrowDown":
             this.navigateHistoryForwards();
-          } else if (char) {
-            this.isUsingPreviousEntry = false;
-            const rest = char + this.result.slice(this.curIndex);
-            this.buffer.printString(rest);
-            this.moveCursor({ x: -rest.length + 1, y: 0 });
-            this.result = this.result.slice(0, this.curIndex) + rest;
-            this.curIndex += 1;
-          }
+            break;
+          default:
+            handled = false;
+            break;
+        }
+
+        if (handled) {
+          continue;
+        }
+
+        if (char === "\n") {
+          this.buffer.printString(char);
+          resolve(this.result);
+          this.keyboard.flushEventBuffer();
+          return;
+        } else if (char === "\b") {
+          this.backspace();
+        } else if (char) {
+          this.isUsingPreviousEntry = false;
+          const rest = char + this.result.slice(this.curIndex);
+          this.buffer.printString(rest);
+          this.moveCursor({ x: -rest.length + 1, y: 0 });
+          this.result = this.result.slice(0, this.curIndex) + rest;
+          this.curIndex += 1;
         }
       }
     });
