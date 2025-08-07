@@ -74,6 +74,18 @@ class ReadLine {
             this.arrowLeft();
           } else if (key === "KeyF") {
             this.arrowRight();
+          } else if (key === "KeyD") {
+            this.delete();
+          }
+        } else if (ev.isAltDown) {
+          switch (key) {
+            case "KeyB": this.backwardWord(); break;
+            case "KeyF": this.forwardWord(); break;
+            case "KeyC": this.capitalizeWord(); break;
+            case "KeyL": this.lowercaseWord(); break;
+            case "KeyU": this.upcaseWord(); break;
+            case "KeyD": this.deleteWord(); break;
+            default: break;
           }
         } else {
           if (key === "Tab") {
@@ -240,6 +252,128 @@ class ReadLine {
         }
       }
     }
+  }
+
+  /* word motions */
+
+  private shouldStopWordMotion() {
+    const chr = this.result[this.curIndex];
+    return chr && !chr.match(/[a-zA-Z0-9]/);
+  }
+
+  private backwardWord() {
+    const prevIndex = this.curIndex;
+
+    /* if we are already on a character that stops our motion, skip it */
+    while((--this.curIndex) > 0 && this.shouldStopWordMotion());
+
+    while(this.curIndex >= 0 && !this.shouldStopWordMotion())
+      this.curIndex--;
+
+    this.curIndex++; /* move to the start of the word */
+
+    this.moveCursor({ x: this.curIndex - prevIndex, y: 0 });
+  }
+
+  private forwardWord() {
+    const prevIndex = this.curIndex;
+    const inputLen = this.result.length;
+
+    /* if we are already on a character that stops our motion, skip it */
+    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+      this.curIndex++;
+
+    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+      this.curIndex++;
+
+    this.moveCursor({ x: this.curIndex - prevIndex, y: 0 });
+  }
+
+  private capitalizeWord() {
+    let prevIndex = this.curIndex;
+    const inputLen = this.result.length;
+
+    /* M-c (Alt+C) motion only upcases the first letter
+     * it's on, but moves through the whole word. */
+
+    /* move to the first upcaseable character and upcase that */
+    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+      this.curIndex++;
+
+    this.moveCursor({ x: this.curIndex - prevIndex, y:0 });
+    prevIndex = this.curIndex;
+
+
+    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+      this.curIndex++;
+
+    const left = this.result.slice(0, prevIndex);
+    const middle = this.result[prevIndex].toUpperCase();
+    const right = this.result.slice(prevIndex+1, inputLen);
+
+    this.result = left + middle + right;
+    this.buffer.printString(middle);
+
+    this.moveCursor({ x: this.curIndex - prevIndex - 1, y: 0 });
+  }
+
+  private lowercaseWord() {
+    const prevIndex = this.curIndex;
+    const inputLen = this.result.length;
+
+    /* if we are already on a character that stops our motion, skip it */
+    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+      this.curIndex++;
+
+    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+      this.curIndex++;
+
+    const left = this.result.slice(0, prevIndex);
+    const middle = this.result.slice(prevIndex, this.curIndex).toLowerCase();
+    const right = this.result.slice(this.curIndex, inputLen);
+
+    this.result = left + middle + right;
+    this.buffer.printString(middle);
+  }
+
+  private upcaseWord() {
+    const prevIndex = this.curIndex;
+    const inputLen = this.result.length;
+
+    /* if we are already on a character that stops our motion, skip it */
+    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+      this.curIndex++;
+
+    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+      this.curIndex++;
+
+    const left = this.result.slice(0, prevIndex);
+    const middle = this.result.slice(prevIndex, this.curIndex).toUpperCase();
+    const right = this.result.slice(this.curIndex, inputLen);
+
+    this.result = left + middle + right;
+    this.buffer.printString(middle);
+  }
+
+  private deleteWord() {
+    const prevIndex = this.curIndex;
+    const inputLen = this.result.length;
+
+    /* if we are already on a character that stops our motion, skip it */
+    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+      this.curIndex++;
+
+    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+      this.curIndex++;
+
+    const left = this.result.slice(0, prevIndex);
+    // const middle = this.result.slice(prevIndex, this.curIndex); /* this is the part we delete */
+    const right = this.result.slice(this.curIndex, inputLen);
+
+    this.buffer.printString(right + " ".repeat(this.curIndex - prevIndex));
+    this.moveCursor({ x: prevIndex - inputLen, y: 0 }); /* printString moves the screen cursor */
+    this.result = left + right;
+    this.curIndex = prevIndex; /* no movement is needed */
   }
 }
 
