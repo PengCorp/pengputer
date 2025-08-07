@@ -21,10 +21,10 @@ import energyStar from "./res/energyStar.png";
 
 import { Std } from "../Std";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
-import mountainKingOgg from "./files/documents/music/mountainking.ogg";
+import mountainKingOgg from "./files/documents/music/mountainking.ogg"; // cspell:disable-line
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
-import macgerPng from "./files/documents/pengers/macger.png";
-import nerdgerPng from "./files/documents/pengers/nerdger.png";
+import macgerPng from "./files/documents/pengers/macger.png"; // cspell:disable-line
+import nerdgerPng from "./files/documents/pengers/nerdger.png"; // cspell:disable-line
 import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
@@ -94,7 +94,7 @@ class PengOS {
       createInstance: () => new DateApp(this.pc),
     });
 
-    const pengOSDir = rootDir.mkdir("pengos");
+    const pengOSDir = rootDir.mkdir("pengos"); // cspell:disable-line
     const licenseTxt = new TextFile();
     licenseTxt.replace(
       "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
@@ -159,30 +159,30 @@ class PengOS {
     const gamesDir = rootDir.mkdir("games");
     gamesDir.addItem({
       type: FileSystemObjectType.Link,
-      name: "pongr.exe",
+      name: "pongr.exe", // cspell:disable-line
       data: new LinkFile("https://penger.city/pongerslair/"),
       openType: "run",
     });
     gamesDir.addItem({
       type: FileSystemObjectType.Executable,
-      name: "pengtris.exe",
+      name: "pengtris.exe", // cspell:disable-line
       createInstance: () => new TetrisApp(this.pc),
     });
     gamesDir.addItem({
       type: FileSystemObjectType.Executable,
-      name: "pengswp.exe",
+      name: "pengswp.exe", // cspell:disable-line
       createInstance: () => new PengsweeperApp(this.pc),
     });
     gamesDir.addItem({
       type: FileSystemObjectType.Executable,
-      name: "blakjack.exe",
+      name: "blakjack.exe", // cspell:disable-line
       createInstance: () => new Blackjack(this.pc),
     });
-    // gamesDir.addItem({
-    //   type: FileSystemObjectType.Executable,
-    //   name: "pengnoid.exe",
-    //   createInstance: () => new Pengnoid(this.pc),
-    // });
+    gamesDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "pengnoid.exe",
+      createInstance: () => new Pengnoid(this.pc),
+    });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
@@ -198,20 +198,20 @@ class PengOS {
     });
     musicDir.addItem({
       type: FileSystemObjectType.Audio,
-      name: "mountainking.mid",
+      name: "mountainking.mid", // cspell:disable-line
       data: new AudioFile(mountainKingOgg),
     });
 
     const pengersDir = documentsDir.mkdir("pengers");
     pengersDir.addItem({
       type: FileSystemObjectType.Image,
-      name: "macger.png",
-      data: new ImageFile(macgerPng),
+      name: "macger.png", // cspell:disable-line
+      data: new ImageFile(macgerPng), // cspell:disable-line
     });
     pengersDir.addItem({
       type: FileSystemObjectType.Image,
-      name: "nerdger.png",
-      data: new ImageFile(nerdgerPng),
+      name: "nerdger.png", // cspell:disable-line
+      data: new ImageFile(nerdgerPng), // cspell:disable-line
     });
 
     await this.runStartupAnimation();

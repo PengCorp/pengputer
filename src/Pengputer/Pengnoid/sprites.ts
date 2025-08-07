@@ -21,6 +21,13 @@ const ball = makeSprite(
   },
 );
 
+// const ball = makeSprite([" ░░ ", "░▒▒░", "░▒▒░", " ░░ "], {
+//   " ": -1,
+//   "░": 27,
+//   "▒": 17,
+//   "▓": 3,
+// });
+
 const paddleLeft = makeSprite(
   [
     " ░░░░░░░",
