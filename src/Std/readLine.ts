@@ -279,13 +279,9 @@ class ReadLine {
 
     /* if we are already on a character that stops our motion, skip it */
     // while (--this.curIndex > 0 && this.shouldStopWordMotion());
-    while (true) {
+    do {
       this.curIndex -= 1;
-      if (this.curIndex > 0 && this.shouldStopWordMotion()) {
-        continue;
-      }
-      break;
-    }
+    } while (this.curIndex > 0 && this.shouldStopWordMotion());
 
     while (this.curIndex >= 0 && !this.shouldStopWordMotion()) {
       this.curIndex -= 1;
