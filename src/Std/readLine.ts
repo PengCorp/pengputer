@@ -62,38 +62,51 @@ class ReadLine {
 
         if (ev.isControlDown) {
           if (key === "KeyC") {
-            this.end();
+            this.goToEnd();
             this.buffer.printString("^C");
             resolve(null);
             return;
           } else if (key === "KeyA") {
-            this.home();
+            this.goHome();
           } else if (key === "KeyE") {
-            this.end();
+            this.goToEnd();
           } else if (key === "KeyB") {
-            this.arrowLeft();
+            this.moveBackwards();
           } else if (key === "KeyF") {
-            this.arrowRight();
+            this.moveForwards();
           } else if (key === "KeyD") {
-            this.delete();
+            this.deleteCharacter();
           }
         } else if (ev.isAltDown) {
           switch (key) {
-            case "KeyB": this.backwardWord(); break;
-            case "KeyF": this.forwardWord(); break;
-            case "KeyC": this.capitalizeWord(); break;
-            case "KeyL": this.lowercaseWord(); break;
-            case "KeyU": this.upcaseWord(); break;
-            case "KeyD": this.deleteWord(); break;
-            default: break;
+            case "KeyB":
+              this.goBackwardsByWord();
+              break;
+            case "KeyF":
+              this.goForwardsByWord();
+              break;
+            case "KeyC":
+              this.capitalizeWord();
+              break;
+            case "KeyL":
+              this.lowercaseWord();
+              break;
+            case "KeyU":
+              this.uppercaseWord();
+              break;
+            case "KeyD":
+              this.deleteWord();
+              break;
+            default:
+              break;
           }
         } else {
           if (key === "Tab") {
             this.tab();
           } else if (key === "Home") {
-            this.home();
+            this.goHome();
           } else if (key === "End") {
-            this.end();
+            this.goToEnd();
           } else if (char === "\n") {
             this.buffer.printString(char);
             resolve(this.result);
@@ -102,15 +115,15 @@ class ReadLine {
           } else if (char === "\b") {
             this.backspace();
           } else if (key === "Delete") {
-            this.delete();
+            this.deleteCharacter();
           } else if (key === "ArrowLeft") {
-            this.arrowLeft();
+            this.moveBackwards();
           } else if (key === "ArrowRight") {
-            this.arrowRight();
+            this.moveForwards();
           } else if (key === "ArrowUp") {
-            this.arrowUp();
+            this.navigateHistoryBackwards();
           } else if (key === "ArrowDown") {
-            this.arrowDown();
+            this.navigateHistoryForwards();
           } else if (char) {
             this.isUsingPreviousEntry = false;
             const rest = char + this.result.slice(this.curIndex);
@@ -126,7 +139,7 @@ class ReadLine {
     return promise;
   }
 
-  private arrowUp() {
+  private navigateHistoryBackwards() {
     if (this.previousEntries.length > 0) {
       let replaceWith = "";
       if (!this.isUsingPreviousEntry) {
@@ -149,7 +162,7 @@ class ReadLine {
     }
   }
 
-  private arrowDown() {
+  private navigateHistoryForwards() {
     if (
       this.isUsingPreviousEntry &&
       this.previousEntryIndex < this.previousEntries.length
@@ -170,21 +183,21 @@ class ReadLine {
     }
   }
 
-  private arrowRight() {
+  private moveForwards() {
     if (this.curIndex < this.result.length) {
       this.curIndex += 1;
       this.moveCursor({ x: 1, y: 0 });
     }
   }
 
-  private arrowLeft() {
+  private moveBackwards() {
     if (this.curIndex > 0) {
       this.curIndex -= 1;
       this.moveCursor({ x: -1, y: 0 });
     }
   }
 
-  private delete() {
+  private deleteCharacter() {
     if (this.curIndex < this.result.length) {
       this.isUsingPreviousEntry = false;
       const stringStart = this.result.slice(0, this.curIndex);
@@ -208,7 +221,7 @@ class ReadLine {
     }
   }
 
-  private end() {
+  private goToEnd() {
     this.moveCursor({
       x: this.result.length - this.curIndex,
       y: 0,
@@ -216,7 +229,7 @@ class ReadLine {
     this.curIndex = this.result.length;
   }
 
-  private home() {
+  private goHome() {
     this.moveCursor({ x: -this.curIndex, y: 0 });
     this.curIndex = 0;
   }
@@ -261,30 +274,40 @@ class ReadLine {
     return chr && !chr.match(/[a-zA-Z0-9]/);
   }
 
-  private backwardWord() {
+  private goBackwardsByWord() {
     const prevIndex = this.curIndex;
 
     /* if we are already on a character that stops our motion, skip it */
-    while((--this.curIndex) > 0 && this.shouldStopWordMotion());
+    // while (--this.curIndex > 0 && this.shouldStopWordMotion());
+    while (true) {
+      this.curIndex -= 1;
+      if (this.curIndex > 0 && this.shouldStopWordMotion()) {
+        continue;
+      }
+      break;
+    }
 
-    while(this.curIndex >= 0 && !this.shouldStopWordMotion())
-      this.curIndex--;
+    while (this.curIndex >= 0 && !this.shouldStopWordMotion()) {
+      this.curIndex -= 1;
+    }
 
     this.curIndex++; /* move to the start of the word */
 
     this.moveCursor({ x: this.curIndex - prevIndex, y: 0 });
   }
 
-  private forwardWord() {
+  private goForwardsByWord() {
     const prevIndex = this.curIndex;
     const inputLen = this.result.length;
 
     /* if we are already on a character that stops our motion, skip it */
-    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
-    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
     this.moveCursor({ x: this.curIndex - prevIndex, y: 0 });
   }
@@ -296,20 +319,21 @@ class ReadLine {
     /* M-c (Alt+C) motion only upcases the first letter
      * it's on, but moves through the whole word. */
 
-    /* move to the first upcaseable character and upcase that */
-    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+    /* move to the first character that can be upcased and upcase that */
+    while (this.curIndex < inputLen && this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
-    this.moveCursor({ x: this.curIndex - prevIndex, y:0 });
+    this.moveCursor({ x: this.curIndex - prevIndex, y: 0 });
     prevIndex = this.curIndex;
 
-
-    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
     const left = this.result.slice(0, prevIndex);
     const middle = this.result[prevIndex].toUpperCase();
-    const right = this.result.slice(prevIndex+1, inputLen);
+    const right = this.result.slice(prevIndex + 1, inputLen);
 
     this.result = left + middle + right;
     this.buffer.printString(middle);
@@ -322,11 +346,13 @@ class ReadLine {
     const inputLen = this.result.length;
 
     /* if we are already on a character that stops our motion, skip it */
-    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
-    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
     const left = this.result.slice(0, prevIndex);
     const middle = this.result.slice(prevIndex, this.curIndex).toLowerCase();
@@ -336,16 +362,18 @@ class ReadLine {
     this.buffer.printString(middle);
   }
 
-  private upcaseWord() {
+  private uppercaseWord() {
     const prevIndex = this.curIndex;
     const inputLen = this.result.length;
 
     /* if we are already on a character that stops our motion, skip it */
-    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
-    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
     const left = this.result.slice(0, prevIndex);
     const middle = this.result.slice(prevIndex, this.curIndex).toUpperCase();
@@ -360,18 +388,23 @@ class ReadLine {
     const inputLen = this.result.length;
 
     /* if we are already on a character that stops our motion, skip it */
-    while(this.curIndex < inputLen && this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
-    while(this.curIndex < inputLen && !this.shouldStopWordMotion())
+    while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
+    }
 
     const left = this.result.slice(0, prevIndex);
     // const middle = this.result.slice(prevIndex, this.curIndex); /* this is the part we delete */
     const right = this.result.slice(this.curIndex, inputLen);
 
     this.buffer.printString(right + " ".repeat(this.curIndex - prevIndex));
-    this.moveCursor({ x: prevIndex - inputLen, y: 0 }); /* printString moves the screen cursor */
+    this.moveCursor({
+      x: prevIndex - inputLen,
+      y: 0,
+    }); /* printString moves the screen cursor */
     this.result = left + right;
     this.curIndex = prevIndex; /* no movement is needed */
   }
