@@ -31,7 +31,6 @@ import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 
 import "../Color/ansi";
-import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
@@ -308,7 +307,6 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
-  new ScreenKeyboard(keyboard);
 
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),

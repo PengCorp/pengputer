@@ -3,11 +3,11 @@ import { KeyCode } from "./types";
 
 export class ScreenKeyboard {
   private keyboard!: Keyboard;
-  public isShiftDown: boolean = false;
-  public isCtrlDown: boolean = false;
-  public isCapsOn: boolean = false;
-  public isAltDown: boolean = false;
-  public isMetaDown: boolean = false;
+  private isShiftDown: boolean = false;
+  private isCtrlDown: boolean = false;
+  private isCapsOn: boolean = false;
+  private isAltDown: boolean = false;
+  private isMetaDown: boolean = false;
 
   private keysCapsLocks: HTMLSpanElement[] = [];
   private keysShifts: HTMLSpanElement[] = [];
@@ -90,7 +90,7 @@ export class ScreenKeyboard {
       this.setScreenKeyDown(this.keysMeta, this.isMetaDown);
       this.keyboard.forceMeta = this.isMetaDown;
     } else if (code) {
-      this.keyboard.handleKeyCode(code, true);
+      this.keyboard.sendKeyCode(code, true);
     }
   }
 
@@ -98,14 +98,22 @@ export class ScreenKeyboard {
     if (this.screenKeyMap[code] === true) {
       this.screenKeyMap[code] = false;
 
-      if (code === "CapsLock") {
-      } else if (code === "ShiftLeft" || code === "ShiftRight") {
-      } else if (code === "ControlLeft" || code === "ControlRight") {
-      } else if (code === "AltLeft" || code === "AltRight") {
-      } else if (code === "MetaLeft" || code === "MetaRight") {
-      } else if (code) {
-        this.keyboard.handleKeyCode(code, false);
+      if (code === "CapsLock"
+      || code === "ShiftLeft" || code === "ShiftRight"
+      || code === "ControlLeft" || code === "ControlRight"
+      || code === "AltLeft" || code === "AltRight"
+      || code === "MetaLeft" || code === "MetaRight") {
+        ; /* these are toggle keys */
+      } else {
+        this.keyboard.sendKeyCode(code, false);
       }
+    }
+  }
+
+  public changeKeyState(keyCode: KeyCode, down: boolean) {
+    const elem = document.querySelector<HTMLSpanElement>('.row span[code="'+ keyCode.toString() +'"]')
+    if (elem) {
+      this.setScreenKeyDown([elem], down);
     }
   }
 }

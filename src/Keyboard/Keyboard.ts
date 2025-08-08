@@ -2,6 +2,7 @@ import { Signal } from "../Toolbox/Signal";
 import { ANSI_LAYOUT } from "./ansiLayout";
 import { getIsModifierKey } from "./isModifierKey";
 import { KeyCode, PengKeyboardEvent } from "./types";
+import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 
 export type TypeListener = (
   char: string | null,
@@ -11,6 +12,7 @@ export type TypeListener = (
 export type VoidListener = () => void;
 
 export class Keyboard {
+  private _screenKb: ScreenKeyboard;
   private _pressed: Set<KeyCode>;
   private _layout: any;
 
@@ -24,7 +26,14 @@ export class Keyboard {
 
   private _newEventSignal: Signal<void> = new Signal();
 
-  private _isCapsOn: boolean = false;
+  private modState = {
+    shift: false,
+    control: false,
+    alt: false,
+    meta: false,
+    capslk: false,
+    numlk: false
+  };
 
   public forceShift: boolean = false;
   public forceControl: boolean = false;
@@ -33,6 +42,8 @@ export class Keyboard {
   public forceCaps: boolean = false;
 
   constructor() {
+    this._screenKb = new ScreenKeyboard(this);
+
     this._pressed = new Set();
     this._layout = ANSI_LAYOUT;
 
@@ -49,23 +60,23 @@ export class Keyboard {
   private _getModifiersState() {
     return {
       isShiftDown:
-        this.forceShift ||
-        this._pressed.has("ShiftLeft") ||
-        this._pressed.has("ShiftRight"),
+        this.forceShift || this.modState.shift,
       isControlDown:
-        this.forceControl ||
-        this._pressed.has("ControlLeft") ||
-        this._pressed.has("ControlRight"),
+        this.forceControl || this.modState.control,
       isAltDown:
-        this.forceAlt ||
-        this._pressed.has("AltLeft") ||
-        this._pressed.has("AltRight"),
+        this.forceAlt || this.modState.alt,
       isMetaDown:
-        this.forceMeta ||
-        this._pressed.has("MetaLeft") ||
-        this._pressed.has("MetaRight"),
-      isCapsOn: this.forceCaps || this._isCapsOn,
+        this.forceMeta || this.modState.meta,
+      isCapsOn:
+        this.forceCaps || this.modState.capslk,
     };
+  }
+
+  private _updateModifierStates(event: KeyboardEvent) {
+    this.modState.shift = event.shiftKey;
+    this.modState.control = event.ctrlKey;
+    this.modState.alt = event.altKey;
+    this.modState.meta = event.metaKey;
   }
 
   private _getEventFromCode(kc: KeyCode): PengKeyboardEvent {
@@ -85,14 +96,14 @@ export class Keyboard {
     e: KeyboardEvent,
     pressed: boolean,
   ): PengKeyboardEvent {
-    this._isCapsOn = e.getModifierState("CapsLock");
+    this._updateModifierStates(e);
 
     const ev = this._getEventFromCode(e.code as KeyCode);
     ev.pressed = pressed;
     return ev;
   }
 
-  public handleKeyCode(kc: KeyCode, pressed: boolean) {
+  public sendKeyCode(kc: KeyCode, pressed: boolean) {
     const ev = this._getEventFromCode(kc);
     ev.pressed = pressed;
     this._handleEvent(ev);
@@ -113,6 +124,8 @@ export class Keyboard {
         this._resetAutorepeat();
       }
     }
+    /* notify screen keyboard about key state change */
+    this._screenKb.changeKeyState(ev.code, ev.pressed);
   }
 
   private _onKeyDown(e: KeyboardEvent) {
