@@ -39,6 +39,7 @@ import { FileTransferTest } from "./FileTransferTest";
 import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
 import { Pengnoid } from "./Pengnoid";
+import { RaycasterApp } from "./Raycaster";
 
 const PATH_SEPARATOR = "/";
 
@@ -177,6 +178,11 @@ class PengOS {
       type: FileSystemObjectType.Executable,
       name: "blakjack.exe",
       createInstance: () => new Blackjack(this.pc),
+    });
+    gamesDir.addItem({
+      type: FileSystemObjectType.Executable,
+      name: "pengcaster.exe",
+      createInstance: () => new RaycasterApp(this.pc),
     });
     // gamesDir.addItem({
     //   type: FileSystemObjectType.Executable,

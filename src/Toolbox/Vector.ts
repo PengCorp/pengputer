@@ -24,6 +24,18 @@ export const vectorDivideComponents = (a: Vector, b: Vector): Vector => {
   return { x: Math.floor(a.x / b.x), y: Math.floor(a.y / b.y) };
 };
 
+export const vectorScale = (a: Vector, b: number): Vector => {
+  return { x: a.x * b, y: a.y * b};
+};
+
+export const vectorMagnitude = (a:Vector): number => {
+  return Math.sqrt(a.x * a.x + a.y * a.y);
+};
+
+export const vectorNormalized = (a:Vector): Vector => {
+  return vectorScale(a, 1.0 / vectorMagnitude(a));
+};
+
 interface Rect {
   x: number;
   y: number;
