@@ -1,6 +1,6 @@
 import { Signal } from "../Toolbox/Signal";
 import { ANSI_LAYOUT } from "./ansiLayout";
-import { getIsModifierKey } from "./isModifierKey";
+import isModifier from "./isModifier";
 import { KeyCode, PengKeyboardEvent } from "./types";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 
@@ -86,7 +86,7 @@ export class Keyboard {
       pressed: false,
       isAutoRepeat: false,
       ...this._getModifiersState(),
-      isModifier: getIsModifierKey(kc),
+      isModifier: isModifier.code(kc),
     };
     ev.char = this._getCharFromLayout(ev) ?? null;
     return ev;
@@ -99,6 +99,7 @@ export class Keyboard {
     this._updateModifierStates(e);
 
     const ev = this._getEventFromCode(e.code as KeyCode);
+    ev.isModifier = isModifier.event(e);
     ev.pressed = pressed;
     return ev;
   }
@@ -196,7 +197,7 @@ export class Keyboard {
   private _onKeyTyped(ev: PengKeyboardEvent) {
     if (!ev.pressed) return;
 
-    if (ev.code !== this._autoRepeatCode && !getIsModifierKey(ev.code)) {
+    if (ev.code !== this._autoRepeatCode && !isModifier.code(ev.code)) {
       this._resetAutorepeat();
       this._autoRepeatCode = ev.code;
     }
