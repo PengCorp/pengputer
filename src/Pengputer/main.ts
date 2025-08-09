@@ -1,5 +1,5 @@
 import { padStart } from "lodash";
-import { Keyboard } from "../Keyboard";
+import { Keyboard, PhysicalKeyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadFont9x16 } from "../Screen/font9x16";
 import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
@@ -307,6 +307,12 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
+  const physkb = new PhysicalKeyboard(keyboard);
+  keyboard.addSource(physkb);
+  // const screenkb = new ScreenKeyboard { <=- implements IKeyboard }();
+  // const physkb = new PhysicalKeyboard { <=- implements IKeyboard }();
+  // keyboard.add[name for this](screenkb); // <=- arg.onRegister(keyboard instance);
+  // keyboard.add[name for this](physkb); // <=- arg.onRegister(keyboard instance);
 
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),
