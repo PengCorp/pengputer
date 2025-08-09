@@ -51,23 +51,24 @@ class MapIndex {
 
 type MapDictionary = Record<number, MapIndex>;
 const MAP_ENTRIES: MapDictionary = {
-  1 : new MapIndex(classicColors["white"],       1, MapIndexType.DEFAULT),
-  2 : new MapIndex(classicColors["lightViolet"], 2, MapIndexType.DEFAULT),
-  3 : new MapIndex(classicColors["green"],       3, MapIndexType.TEXT, " PENGER CITY!"),
-  4 : new MapIndex(classicColors["red"],         4, MapIndexType.DEFAULT),
+  1 : new MapIndex(classicColors["white"],     1,   MapIndexType.DEFAULT),
+  2 : new MapIndex(classicColors["yellow"],    2,   MapIndexType.DEFAULT),
+  3 : new MapIndex(classicColors["green"],     0.1, MapIndexType.DEFAULT),
+  4 : new MapIndex(classicColors["red"],       4,   MapIndexType.DEFAULT),
+  5 : new MapIndex(classicColors["lightBlue"], 5,   MapIndexType.DEFAULT),
 }
 
 const MAP: Array<number> = [
-  1,1,1,0,0,0,0,1,1,1,
+  1,1,5,0,0,0,0,5,1,1,
   1,0,0,0,0,0,0,0,0,2,
   1,0,0,0,0,0,0,0,0,1,
-  1,1,3,3,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,2,
+  5,1,3,3,0,0,0,0,0,1,
+  1,0,0,0,0,0,0,5,0,2,
   1,0,0,0,0,0,0,4,0,2,
   1,0,0,0,0,0,0,4,0,1,
   1,0,1,3,0,0,0,0,0,1,
   1,0,0,3,0,0,0,0,0,2,
-  1,1,2,2,1,1,2,2,1,1,
+  5,1,2,2,1,1,2,2,1,1,
 ];
 
 interface GameState {
@@ -93,12 +94,12 @@ const penger8x8: Sprite = {
   height: 8,
   sprite: [
     ' ',' ','#','#','#',' ',' ',' ',
-    ' ',' ','#','p','p','#',' ',' ',
-    ' ','#','#','#','p','#',' ',' ',
-    ' ','#','p','p','#','o','#',' ',
-    ' ','#','p','p','w','#',' ',' ',
-    ' ','#','p','w','w','w','#',' ',
-    ' ','#','p','#','#','w','#',' ',
+    ' ',' ','#','g','g','#',' ',' ',
+    ' ','#','#','#','g','#',' ',' ',
+    ' ','#','g','g','#','o','#',' ',
+    ' ','#','g','g','w','#',' ',' ',
+    ' ','#','g','w','w','w','#',' ',
+    ' ','#','g','#','#','w','#',' ',
     '#','o','#',' ',' ','#','o','#',
   ],
 };
@@ -107,10 +108,10 @@ const penger5x5: Sprite = {
   width:  5,
   height: 5,
   sprite: [
-    ' ', 'p', 'p', ' ', ' ', 
-    'p', '#', 'p', 'o', ' ', 
-    'p', 'p', 'p', 'o', 'o', 
-    'p', 'w', 'w', 'w', ' ', 
+    ' ', 'g', 'g', ' ', ' ', 
+    'g', '#', 'g', 'o', ' ', 
+    'g', 'g', 'g', 'o', 'o', 
+    'g', 'w', 'w', 'w', ' ', 
     'o', 'o', 'w', 'o', 'o', 
   ],
 };
@@ -119,8 +120,8 @@ const penger3x3: Sprite = {
   width:  3,
   height: 3,
   sprite: [
-    ' ', 'p', 'o', 
-    'p', 'w', 'p', 
+    ' ', 'g', 'o', 
+    'g', 'w', 'g', 
     'o', 'w', 'o', 
   ],
 };
@@ -128,24 +129,28 @@ const penger3x3: Sprite = {
 
 class Entity {
   position!: Vector;
+  z!:        number;
   sprite!:   Sprite;
 
-  constructor(position: Vector, sprite: Sprite) {
+  constructor(position: Vector, sprite: Sprite, z: number) {
     this.position = position;
     this.sprite   = sprite;
+
+    this.z = z;
   }
 }
 
 class Player implements Entity {
   position:  Vector;
   direction: Vector;
+  z:         number = 0;
   plane:     Vector;
   sprite:    Sprite;
 
   moveSpeed:   number = 25;
   rotateSpeed: number = 10;
 
-  constructor(position: Vector, direction: Vector, plane: Vector = { x:0, y:0.66 }) {
+  constructor(position: Vector,  direction: Vector, plane: Vector = { x:0, y:0.7 }) {
     this.position  = position;
     this.sprite    = penger8x8;
     this.direction = direction;
@@ -195,11 +200,7 @@ class Raycaster implements GameState {
   private pc: PC;
   private player: Player;
   private entities: Array<Entity>;
-
-  rotateLeft:   boolean = false;
-  rotateRight:  boolean = false;
-  moveForward:  boolean = false;
-  moveBackward: boolean = false;
+  private time: number;
 
   zBuffer: number[];
   
@@ -212,10 +213,12 @@ class Raycaster implements GameState {
 
     this.entities = new Array(
       this.player,
-      new Entity({x:6, y:6}, penger8x8), 
-      new Entity({x:4.5, y:6}, penger5x5),
-      new Entity({x:3, y:6}, penger3x3),
+      new Entity({x:6, y:6}, penger8x8, 0), 
+      new Entity({x:4.5, y:6}, penger5x5, 0),
+      new Entity({x:3, y:6}, penger3x3, 5),
     );
+
+    this.time = 0;
   }
 
   private HandleMovement(dt: number){
@@ -229,7 +232,6 @@ class Raycaster implements GameState {
       }
 
       if (ev.code === "KeyS") {
-        this.rotateRight = ev.pressed;
         this.player.Move(false,dt);
       }
 
@@ -243,12 +245,6 @@ class Raycaster implements GameState {
     }
   }
 
-  private getRandomInt(min: number, max: number): number {
-      min = Math.ceil(min);
-      max = Math.floor(max);
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
   public Enter() {
 
   }
@@ -256,27 +252,18 @@ class Raycaster implements GameState {
   public Update(dt: number) {
     const { std } = this.pc;
 
+    this.time += dt;
     this.HandleMovement(dt);
-
-    // let sprite: Sprite;
-
-    // switch (this.getRandomInt(0, 2)){
-    //   case 0:  sprite = penger8x8; break;
-    //   case 1:  sprite = penger5x5; break;
-    //   default: sprite = penger3x3; break;
-    // };
-
-    // this.entities.push(new Entity({
-    //   x: this.getRandomInt(0, MAP_WIDTH), 
-    //   y: this.getRandomInt(0, MAP_HEIGHT)
-    // }, 
-    // sprite));
 
     std.clearConsole();
     this.zBuffer.fill(1000);
     const size = std.getConsoleSize();
 
-    for (let posY: number = 0; posY < size.h; posY++){
+    this.entities[1].position.x = Math.cos(this.time) + 4.5;
+    this.entities[1].position.y = Math.sin(this.time) + 6;
+    this.entities[1].z = Math.sin(this.time);
+
+    for (let posY: number = 0; posY <= size.h; posY++){
       const p: number = posY - size.h / 2;
 
       if (p <= 0) continue;
@@ -314,17 +301,15 @@ class Raycaster implements GameState {
 
         if (mapPos.x < 0 || mapPos.x >= MAP_WIDTH || mapPos.y < 0 || mapPos.y >= MAP_HEIGHT) continue;
 
-        // const index = MAP[(mapPos.y * MAP_WIDTH) + mapPos.x];
-        // if (index > 0) {
-        //   const entry = MAP_ENTRIES[index];
+        if (rowDist > MAX_STEPS) return;
 
-        //   if (entry.height >= 1) {
         // Floor
         let interpPos: number = Math.floor(posY - 1);
         if (interpPos < 0) interpPos = 0;
         if (interpPos >= size.h) interpPos = size.h - 1;
 
         this.zBuffer[(posX * size.h) + interpPos] = rowDist;
+
         std.setConsoleCursorPosition({x: posX, y: interpPos}); // Here
         std.writeConsole("█", {
             fgColor: mapPos.x % 2 == mapPos.y % 2 ? classicColors["violet"] : classicColors["lightMagenta"],
@@ -339,8 +324,6 @@ class Raycaster implements GameState {
         //     fgColor: entry.fgColor,
         //   }); 
         // }
-        //   }
-        // }
       }
     }
 
@@ -351,12 +334,14 @@ class Raycaster implements GameState {
         (this.player.position.y - entity.position.y) * (this.player.position.y - entity.position.y)
       );
 
+      if (dist > MAX_STEPS) return;
+
       const spritePos: Vector = {
         x: entity.position.x - this.player.position.x,
         y: entity.position.y - this.player.position.y,
       };
 
-      const invDet: number = 1.0 / (this.player.plane.x * this.player.direction.y - this.player.direction.x * this.player.plane.y);
+      const invDet:    number = 1.0 / (this.player.plane.x * this.player.direction.y - this.player.direction.x * this.player.plane.y);
       const transform: Vector = {
         x: invDet * (this.player.direction.y * spritePos.x - this.player.direction.x * spritePos.y),
         y: invDet * (-this.player.plane.y * spritePos.x + this.player.plane.x * spritePos.y),
@@ -366,51 +351,53 @@ class Raycaster implements GameState {
       const spriteHeight: number = Math.abs(Math.ceil(size.h / (transform.y)));
       const spriteWidth:  number = Math.abs(Math.ceil(size.w / (transform.y)));
 
+      const scaledZ = (entity.z * (size.h / 2)) / dist;
+
       const drawStart: Vector = { 
         x: Math.ceil(Math.max(-spriteWidth / 2 + spriteXPos, 0)), 
-        y: Math.ceil(Math.max(-spriteHeight / 2 + size.h / 2, 0)), 
+        y: Math.ceil(Math.max(-spriteHeight / 2 + size.h / 2 - scaledZ, 0)), 
       };
 
       const drawEnd: Vector = { 
         x: Math.ceil(Math.min(spriteWidth / 2 + spriteXPos,  size.w)),
-        y: Math.ceil(Math.min(spriteHeight / 2 + size.h / 2, size.h)),
+        y: Math.ceil(Math.min(spriteHeight / 2 + size.h / 2 - scaledZ, size.h)),
       };
 
       for (let posX: number = drawStart.x; posX < drawEnd.x; ++posX) {
         const spriteScreenXOffset: number = posX - (spriteXPos - spriteWidth / 2);
-        const u:                   number = spriteScreenXOffset / spriteWidth; // for sprite atlas (if you ever want it lol), change this to (* TEX_WIDTH / SPRITE_WIDTH)
+        const u:                   number = spriteScreenXOffset / spriteWidth;
         const texX:                number = Math.ceil(u * entity.sprite.width) - 1;
 
         if (texX < 0 || texX >= entity.sprite.width) continue;
 
         if (transform.y > 0 && posX >= 0 && posX <= size.w - 1 && transform.y < this.zBuffer[posX * size.h]){
           for (let posY: number = drawStart.y; posY < drawEnd.y; ++posY) {
-              const bufIndex: number = (posX * size.h) + posY;
-              if (this.zBuffer[bufIndex] < dist) continue;
+            const bufIndex: number = (posX * size.h) + posY;
+            if (this.zBuffer[bufIndex] < dist) continue;
 
-              const spriteScreenYOffset: number = posY - (size.h / 2 - spriteHeight / 2);
-              const v:                   number = spriteScreenYOffset / spriteHeight;
-              const texY:                number = Math.ceil(v * entity.sprite.height) - 1;
+            const spriteScreenYOffset: number = posY + scaledZ - (size.h / 2 - spriteHeight / 2);
+            const v:                   number = spriteScreenYOffset / spriteHeight;
+            const texY:                number = Math.ceil(v * entity.sprite.height) - 1;
 
-              if (texY < 0 || texY >= entity.sprite.height) continue;
+            if (texY < 0 || texY >= entity.sprite.height) continue;
 
-              const char: char = entity.sprite.sprite[(texY * entity.sprite.width) + texX];
-              if (char === ' ' || char === '') continue;
+            const char: char = entity.sprite.sprite[(texY * entity.sprite.width) + texX];
+            if (char === ' ' || char === '') continue;
 
-              this.zBuffer[bufIndex] = dist;
-              
-              let color: Color;
-              switch (char){
-                case '#': color = classicColors["black"]; break;
-                case 'p': color = classicColors["darkGray"]; break;
-                case 'o': color = classicColors["lightOrange"]; break;
-                default:  color = classicColors["white"];break;
-              }
+            this.zBuffer[bufIndex] = dist;
+            
+            let color: Color;
+            switch (char){
+              case '#': color = classicColors["black"]; break;
+              case 'g': color = classicColors["darkGray"]; break;
+              case 'o': color = classicColors["lightOrange"]; break;
+              default:  color = classicColors["white"];break;
+            }
 
-              std.setConsoleCursorPosition({x: posX, y: posY});
-              std.writeConsole(char, {
-                fgColor: color,
-              });
+            std.setConsoleCursorPosition({x: posX, y: posY});
+            std.writeConsole(char, {
+              fgColor: color,
+            });
           }
         }
       }
@@ -420,7 +407,7 @@ class Raycaster implements GameState {
     for (let posX: number = 0; posX < size.w; posX++){
       const camX = 2.0 * posX / size.w - 1.0;
 
-      const rayDir: Vector = {
+      let rayDir: Vector = {
         x: this.player.direction.x + this.player.plane.x * camX,
         y: this.player.direction.y + this.player.plane.y * camX,
       };
@@ -472,64 +459,39 @@ class Raycaster implements GameState {
           side = true;
         }
 
-        if (mapPos.x < MAP_WIDTH && mapPos.x >= 0 && mapPos.y < MAP_HEIGHT && mapPos.y >= 0) {
-          const mapIndex: number = MAP[(mapPos.y * MAP_WIDTH) + mapPos.x];
-          if (mapIndex > 0) {
-            const entry = MAP_ENTRIES[MAP[(mapPos.y * MAP_WIDTH) + mapPos.x]];
-
-            const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
-            const lineHeight:   number = Math.floor(size.h / perpWallDist);
-
-            const pixelHeight:  number = Math.floor(lineHeight * entry.height);
-            const baseY:        number = Math.floor(size.h/2 + lineHeight/2);
-
-            let drawEnd:      number = baseY;
-            let drawStart:    number = drawEnd - pixelHeight;
-
-            if (drawStart < 0)     drawStart = 0;
-            if (drawEnd >= size.h) drawEnd = size.h - 1;
-
-            switch (entry.type) {
-              case MapIndexType.TEXT:
-                if (!entry.displayStr) break;
-
-                let strInd: number = -1;
-                for (let posY: number = drawStart; posY < drawEnd; posY++) {
-                  const z = this.zBuffer[(posX * size.h) + posY];
-                  strInd++;
-                  if (z <= perpWallDist) continue;
-
-                  this.zBuffer[(posX * size.h) + posY] = perpWallDist;
-
-                  std.setConsoleCursorPosition({x: posX, y: posY});
-                  std.writeConsole(side ? 
-                    entry.displayStr[strInd % entry.displayStr.length].toUpperCase() :
-                    entry.displayStr[strInd % entry.displayStr.length].toLowerCase(), {
-                    fgColor: entry.fgColor,
-                  });
-                }
-              break;
-
-              default:
-                for (let posY: number = drawStart; posY < drawEnd; posY++) {
-                  const z = this.zBuffer[(posX * size.h) + posY];
-                  if (z <= perpWallDist) continue;
-
-                  this.zBuffer[(posX * size.h) + posY] = perpWallDist;
-
-                  std.setConsoleCursorPosition({x: posX, y: posY});
-                  std.writeConsole(side ? "█" : "░", {
-                    fgColor: entry.fgColor,
-                  });
-                }
-              break;
-            }
-
-            continue;
-          }
+        if (mapPos.x < 0 || mapPos.x >= MAP_WIDTH || mapPos.y < 0 || mapPos.y >= MAP_HEIGHT) {
+          boundStep++;
+          continue;
         }
 
-        boundStep++;
+        const mapIndex: number = MAP[(mapPos.y * MAP_WIDTH) + mapPos.x];
+        if (mapIndex <= 0) continue;
+
+        const entry = MAP_ENTRIES[mapIndex];
+        const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
+        if (perpWallDist <= 0) continue;
+
+        const lineHeight:   number = Math.floor(size.h / perpWallDist);
+        const pixelHeight:  number = Math.floor(lineHeight * entry.height);
+        const baseY:        number = Math.floor(size.h/2 + lineHeight/2);
+
+        let drawEnd:        number = baseY;
+        let drawStart:      number = drawEnd - pixelHeight;
+
+        if (drawStart < 0)     drawStart = 0;
+        if (drawEnd >= size.h) drawEnd = size.h - 1;
+
+        for (let posY: number = drawStart; posY <= drawEnd; posY++) {
+          const z = this.zBuffer[(posX * size.h) + posY];
+          if (z <= perpWallDist) continue;
+
+          this.zBuffer[(posX * size.h) + posY] = perpWallDist;
+
+          std.setConsoleCursorPosition({x: posX, y: posY});
+          std.writeConsole(side ? "█" : "░", {
+            fgColor: entry.fgColor,
+          });
+        }
       }
     }
   }
@@ -539,8 +501,6 @@ class Raycaster implements GameState {
     std.clearConsole();
   }
 };
-
-//#endregion
 
 export class RaycasterApp implements Executable {
   private pc: PC;
@@ -555,7 +515,6 @@ export class RaycasterApp implements Executable {
       const { std } = this.pc;
       const size = std.getConsoleSize();
 
-      const DEG2RAD = (Math.PI / 180);
       const strArr = str.split("@n");
       
       for (let y = 0; y < strArr.length; ++y) {
@@ -586,7 +545,7 @@ export class RaycasterApp implements Executable {
       std.writeConsole('\n');
   }
 
-  async run(args: string[]){
+  async run(_: string[]){
     const { std } = this.pc;
     std.setIsConsoleCursorVisible(false);
     std.clearConsole();
@@ -599,17 +558,12 @@ export class RaycasterApp implements Executable {
         const dt = performance.now() - lastTime;
         lastTime = performance.now();
 
+        // Convert seconds to ms
         this.raycaster.Update(dt * 0.001);
 
         if (std.getIsKeyPressed("KeyQ")) {
-            std.setConsoleScreenMode(ScreenMode.mode80x25_9x16);
-
-//           this.printName(`
-// █████   ██████ ███   ██  █████   █████  ████  ██████ ██████ ██████ █████ @n
-// ██   ██ ██     ████  ██ ██      ██     ██  ██ ██       ██   ██     ██  ██@n
-// █████   ████   ██ ██ ██ ██  ███ ██     ██████ ██████   ██   █████  █████ @n
-// ██      ██     ██  ████ ██   ██ ██     ██  ██     ██   ██   ██     ██  ██@n
-// ██      ██████ ██   ███  █████   █████ ██  ██ ██████   ██   ██████ ██  ██\n`);
+          std.setConsoleScreenMode(ScreenMode.mode80x25_9x16);
+          std.setIsConsoleCursorVisible(true);
 
           this.printName(`
 █████╗ ██████╗███╗  ██╗ █████╗  █████╗ ████╗ ██████╗██████╗██████╗█████╗ @n
@@ -617,13 +571,11 @@ export class RaycasterApp implements Executable {
 █████╔╝████╗  ██╔██╗██║██║ ███╗██║    ██████║██████╗  ██║  ████╗  █████╔╝@n
 ██╔══╝ ██╔═╝  ██║╚████║██║  ██║██║    ██╔═██║╚═══██║  ██║  ██╔═╝  ██╔═██╗@n
 ██║    ██████╗██║ ╚███║╚█████╔╝╚█████╗██║ ██║██████║  ██║  ██████╗██║ ██║@n
-╚═╝    ╚═════╝╚═╝  ╚══╝ ╚════╝  ╚════╝╚═╝ ╚═╝╚═════╝  ╚═╝  ╚═════╝╚═╝ ╚═╝\n`)
+╚═╝    ╚═════╝╚═╝  ╚══╝ ╚════╝  ╚════╝╚═╝ ╚═╝╚═════╝  ╚═╝  ╚═════╝╚═╝ ╚═╝\n`);
 
-          const attrib = std.getConsoleAttributes();
+          const attrib   = std.getConsoleAttributes();
           attrib.fgColor = classicColors["white"];
           std.setConsoleAttributes(attrib);
-
-          std.setIsConsoleCursorVisible(true);
 
           std.writeConsole("Thank you for playing Pengcaster!\n");
 
