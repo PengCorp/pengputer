@@ -1,5 +1,5 @@
 import { Keyboard } from "./Keyboard";
-import { KeyCode } from "./types";
+import { type KeyCode } from "./types";
 
 export class ScreenKeyboard {
   private keyboard!: Keyboard;

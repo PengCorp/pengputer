@@ -5,7 +5,7 @@ import cp437plus from "./cp437plus_9x16_2x.png";
 import cp437legacy from "./cp437legacy_9x16_2x.png";
 import cp437patterns from "./cp437patterns_9x16_2x.png";
 import cp437custom from "./cp437custom_9x16_2x.png";
-import { charArray } from "../types";
+import { type charArray } from "../types";
 
 /* cSpell:disable */
 

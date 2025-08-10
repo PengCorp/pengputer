@@ -1,10 +1,10 @@
 import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
 import { CgaColors } from "../Color/types";
-import { Vector } from "../Toolbox/Vector";
+import { type Vector } from "../Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
 import tc from "tinycolor2";
-import { makeSprite, Sprite } from "./Graphics.Sprite";
-import { Size } from "../types";
+import { makeSprite, type Sprite } from "./Graphics.Sprite";
+import { type Size } from "../types";
 
 const palette0 = [
   new Uint8ClampedArray([0, 0, 0, 255]),

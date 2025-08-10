@@ -2,7 +2,7 @@ import {
   AudioFile,
   ImageFile,
   LinkFile,
-  LinkOpenType,
+  type LinkOpenType,
   TextFile,
   BinaryFile,
 } from "./fileTypes";

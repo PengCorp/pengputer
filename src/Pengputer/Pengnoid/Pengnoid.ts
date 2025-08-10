@@ -1,7 +1,7 @@
-import { Executable } from "../FileSystem";
+import { type Executable } from "../FileSystem";
 import { Signal } from "../../Toolbox/Signal";
 import { State, StateManager } from "../../Toolbox/StateManager";
-import { PC } from "../PC";
+import { type PC } from "../PC";
 import { Graphics } from "../../Screen/Graphics";
 import { Std } from "../../Std";
 import { makeSprite } from "../../Screen/Graphics.Sprite";
@@ -12,14 +12,14 @@ import {
   getDoRectsTouch,
   getRectWithPosition,
   getUnitCircleVector,
-  Vector,
+  type Vector,
   vectorDivideByNumberFloored,
   vectorReflect,
 } from "../../Toolbox/Vector";
-import { KeyCode } from "../../Keyboard/types.keyCode";
+import { type KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
 import { sprites } from "./sprites";
-import { Rect } from "../../types";
+import { type Rect } from "../../types";
 
 const LAYER_BG = 0;
 const LAYER_SPRITES = 1;

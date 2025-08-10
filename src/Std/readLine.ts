@@ -1,10 +1,10 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
+import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
-import { Vector } from "../Toolbox/Vector";
+import { type Vector } from "../Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
-import { KeyCode } from "../Keyboard/types";
+import { type KeyCode } from "../Keyboard/types";
 
 interface AutoCompleteInfo {
   autoCompleteStrings?: string[];
