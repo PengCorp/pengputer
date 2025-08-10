@@ -6,10 +6,15 @@ import { Graphics } from "../../Screen/Graphics";
 import { Std } from "../../Std";
 import { makeSprite } from "../../Screen/Graphics.Sprite";
 import {
-  getDoRectsOverlap,
+  compareRectsX,
+  compareRectsY,
+  getDoRectsIntersect,
+  getDoRectsTouch,
   getRectWithPosition,
+  getUnitCircleVector,
   Vector,
   vectorDivideByNumberFloored,
+  vectorReflect,
 } from "../../Toolbox/Vector";
 import { KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
@@ -26,37 +31,16 @@ enum GameStateKey {
 
 class Ball {
   public position: Vector = { x: 0, y: 0 };
-  public direction: Vector = {
-    x: Math.sin(Math.PI / 4),
-    y: Math.cos(Math.PI / 4),
-  };
-
-  public tickCounterLength = 5;
-  public tickCounter = 0;
+  public direction: Vector = getUnitCircleVector(Math.PI / 4);
+  public speed: number = 0.1;
 
   constructor() {}
 
   tick() {
     this.position = {
-      x: this.position.x + this.direction.x,
-      y: this.position.y + this.direction.y,
+      x: this.position.x + this.direction.x * this.speed,
+      y: this.position.y + this.direction.y * this.speed,
     };
-  }
-
-  undoTick() {
-    this.position = {
-      x: this.position.x - this.direction.x,
-      y: this.position.y - this.direction.y,
-    };
-  }
-
-  update(dt: number) {
-    this.tickCounter += dt;
-    while (this.tickCounter >= this.tickCounterLength) {
-      this.tickCounter -= this.tickCounterLength;
-
-      this.tick();
-    }
   }
 
   getRect() {
@@ -67,6 +51,17 @@ class Ball {
       h: 8,
     };
   }
+
+  getNextRect() {
+    const rect = this.getRect();
+    rect.x += this.direction.x * this.speed;
+    rect.y += this.direction.y * this.speed;
+    return rect;
+  }
+
+  bounce(normal: Vector) {
+    this.direction = vectorReflect(this.direction, normal);
+  }
 }
 
 type PaddleDirection = "left" | "right" | null;
@@ -76,8 +71,7 @@ const PADDLE_SEGMENT_SIZE_IN_PIXELS = 8;
 class Paddle {
   public position: Vector = { x: 0, y: 240 - 16 };
 
-  public tickCounterLength = 5;
-  public tickCounter = 0;
+  public speed: number = 0.01;
 
   public widthInSegments: number = 5;
 
@@ -88,34 +82,24 @@ class Paddle {
   setDirection(direction: PaddleDirection) {
     if (direction !== this.direction) {
       this.direction = direction;
-      this.tickCounter = this.tickCounterLength;
     }
   }
 
   tick() {
     switch (this.direction) {
       case "left":
-        this.position.x -= 1;
+        this.position.x -= this.speed;
         break;
       case "right":
-        this.position.x += 1;
+        this.position.x += this.speed;
         break;
-    }
-  }
-
-  update(dt: number) {
-    this.tickCounter += dt;
-    while (this.tickCounter >= this.tickCounterLength) {
-      this.tickCounter -= this.tickCounterLength;
-
-      this.tick();
     }
   }
 
   getRect(): Rect {
     return {
-      x: this.position.x,
-      y: this.position.y,
+      x: Math.floor(this.position.x),
+      y: Math.floor(this.position.y),
       w: this.widthInSegments * PADDLE_SEGMENT_SIZE_IN_PIXELS,
       h: PADDLE_SEGMENT_SIZE_IN_PIXELS,
     };
@@ -205,14 +189,35 @@ class Game extends State {
     this.tickCounter += dt;
 
     while (this.tickCounter >= this.tickLength) {
-      this.paddle.update(this.tickLength);
-      this.ball.update(this.tickLength);
+      this.paddle.tick();
+      this.ball.tick();
+
+      for (const rect of [
+        this.paddle.getRect(),
+        { x: 0, y: 0, h: this.screenRect.h, w: 0 },
+        { x: this.screenRect.w, y: 0, h: this.screenRect.h, w: 0 },
+        { x: 0, y: 0, h: 0, w: this.screenRect.w },
+        { x: 0, y: this.screenRect.h, h: 0, w: this.screenRect.w },
+      ]) {
+        if (getDoRectsIntersect(this.ball.getNextRect(), rect)) {
+          const compareX = compareRectsX(this.ball.getRect(), rect);
+          const compareY = compareRectsY(this.ball.getRect(), rect);
+
+          if (compareY < 0) {
+            this.ball.bounce({ x: 0, y: 1 });
+          } else if (compareY > 0) {
+            this.ball.bounce({ x: 0, y: -1 });
+          }
+
+          if (compareX < 0) {
+            this.ball.bounce({ x: 1, y: 0 });
+          } else if (compareX > 0) {
+            this.ball.bounce({ x: -1, y: 0 });
+          }
+        }
+      }
 
       this.tickCounter -= this.tickLength;
-    }
-
-    if (getDoRectsOverlap(this.paddle.getRect(), this.ball.getRect())) {
-      console.log("rect");
     }
   }
 
@@ -245,30 +250,30 @@ class Game extends State {
   private drawPaddle() {
     const { graphics } = this;
 
-    const drawPos = this.paddle.position;
+    const paddleRect = this.paddle.getRect();
 
     let drawnWidth = 0;
 
     graphics.drawSprite(
       sprites.paddleLeft,
-      drawPos.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * 0,
-      drawPos.y,
+      paddleRect.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * 0,
+      paddleRect.y,
     );
     drawnWidth += 1;
 
     while (drawnWidth < this.paddle.widthInSegments - 1) {
       graphics.drawSprite(
         sprites.paddleCenter,
-        drawPos.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * drawnWidth,
-        drawPos.y,
+        paddleRect.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * drawnWidth,
+        paddleRect.y,
       );
       drawnWidth += 1;
     }
 
     graphics.drawSprite(
       sprites.paddleRight,
-      drawPos.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * drawnWidth,
-      drawPos.y,
+      paddleRect.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * drawnWidth,
+      paddleRect.y,
     );
   }
 }
