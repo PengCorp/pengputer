@@ -74,6 +74,11 @@ class ReadLine {
             this.moveForwards();
           } else if (key === "KeyD") {
             this.deleteCharacter();
+          } else if (key === "KeyP") {
+            this.navigateHistoryBackwards();
+          } else if (key === "KeyN") {
+            /* might not work on some browsers, e.g. Firefox */
+            this.navigateHistoryForwards();
           }
 
           continue;
