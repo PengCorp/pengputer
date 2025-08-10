@@ -1,4 +1,6 @@
-const MODIFIER_CODES = [
+import type { KeyCode } from "./types.keyCode";
+
+const MODIFIER_CODES: KeyCode[] = [
   "ShiftLeft",
   "ShiftRight",
   "ControlLeft",
@@ -8,20 +10,15 @@ const MODIFIER_CODES = [
   "MetaLeft",
   "MetaRight",
   "CapsLock",
-  "AltGraph",
-];
+] as const;
 
-const MODIFIER_KEYS = [
-  "Shift", "Control",
-  "Alt", "Meta", "CapsLock"
-];
+const MODIFIER_KEYS = ["Shift", "Control", "Alt", "Meta", "CapsLock"];
 
-function code(code: string) {
+export function getIsCodeModifier(code: KeyCode) {
   return MODIFIER_CODES.includes(code);
-};
-function event(ev: KeyboardEvent) {
-  return MODIFIER_KEYS.includes(ev.key) || code(ev.code);
-};
-
-export default { code, event };
-export { code, event };
+}
+export function getIsEventModifier(ev: KeyboardEvent) {
+  return (
+    MODIFIER_KEYS.includes(ev.key) || getIsCodeModifier(ev.code as KeyCode)
+  );
+}

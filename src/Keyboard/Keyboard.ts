@@ -14,7 +14,7 @@
  * PhysicalKeyboard and ScreenKeyboard.
  */
 import { ANSI_LAYOUT } from "./ansiLayout";
-import isModifier from "./isModifier";
+import { getIsCodeModifier } from "./isModifier";
 import { Modifier, type KeyCode, type PengKeyboardEvent } from "./types";
 import { Signal } from "@Toolbox/Signal";
 
@@ -77,7 +77,7 @@ export class Keyboard implements KeyboardSource {
       case "MetaRight":
         return Modifier.META;
       case "CapsLock":
-        return Modifier.CAPSLK;
+        return Modifier.CAPS_LOCK;
       default:
         return null;
     }
@@ -89,12 +89,12 @@ export class Keyboard implements KeyboardSource {
       isControlDown: (this._mods & Modifier.CONTROL) != 0,
       isAltDown: (this._mods & Modifier.ALT) != 0,
       isMetaDown: (this._mods & Modifier.META) != 0,
-      isCapsOn: (this._mods & Modifier.CAPSLK) != 0,
+      isCapsOn: (this._mods & Modifier.CAPS_LOCK) != 0,
     };
   }
 
   public setModifiers(mod: number) {
-    this._mods = mod & Modifier.ALLMODS;
+    this._mods = mod & Modifier.ALL_MODIFIERS;
   }
 
   public maskModifiers(ORMask: number, ANDMask: number) {
@@ -124,7 +124,7 @@ export class Keyboard implements KeyboardSource {
   public getCharFromCode(code: KeyCode): string | null {
     /* COPIED (and modified, it's bad ;] ); TODO: rewrite */
     const shift = (this._mods & Modifier.SHIFT) != 0;
-    const capslk = (this._mods & Modifier.CAPSLK) != 0;
+    const capslk = (this._mods & Modifier.CAPS_LOCK) != 0;
 
     const shiftLayout = this._layout["@shift"];
     const capsLayout = this._layout["@caps"];
@@ -170,7 +170,7 @@ export class Keyboard implements KeyboardSource {
       char: this.getCharFromCode(code),
       pressed: pressed,
       isAutoRepeat: false,
-      isModifier: isModifier.code(code),
+      isModifier: getIsCodeModifier(code),
       ...this.getModifierState(),
     };
   }

@@ -320,10 +320,6 @@ export class Std {
     return readKey(this.keyboard);
   }
 
-  /* getIsKeyPressed(keyCode: KeyCode) {
-    return this.keyboard.getIsKeyPressed(keyCode);
-  } -- unused */
-
   flushKeyboardEvents() {
     return this.keyboard.flushEventBuffer();
   }

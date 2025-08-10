@@ -8,9 +8,9 @@ import {
   Modifier,
   type KeyboardSource,
   type KeyCode,
-  type PengKeyboardEvent
+  type PengKeyboardEvent,
 } from "../Keyboard";
-import isModifier from "./isModifier";
+import { getIsCodeModifier } from "./isModifier";
 
 export class ScreenKeyboard implements KeyboardSource {
   private kb: Keyboard;
@@ -19,11 +19,11 @@ export class ScreenKeyboard implements KeyboardSource {
   private _ownedMods: number;
 
   private _special: {
-    [Modifier.SHIFT]:   NodeListOf<HTMLSpanElement>,
-    [Modifier.CONTROL]: NodeListOf<HTMLSpanElement>,
-    [Modifier.ALT]:     NodeListOf<HTMLSpanElement>,
-    [Modifier.META]:    NodeListOf<HTMLSpanElement>,
-    [Modifier.CAPSLK]:  NodeListOf<HTMLSpanElement>,
+    [Modifier.SHIFT]: NodeListOf<HTMLSpanElement>;
+    [Modifier.CONTROL]: NodeListOf<HTMLSpanElement>;
+    [Modifier.ALT]: NodeListOf<HTMLSpanElement>;
+    [Modifier.META]: NodeListOf<HTMLSpanElement>;
+    [Modifier.CAPS_LOCK]: NodeListOf<HTMLSpanElement>;
   };
 
   constructor(kb: Keyboard) {
@@ -31,21 +31,28 @@ export class ScreenKeyboard implements KeyboardSource {
 
     this._ownedMods = 0;
     this._special = {
-      [Modifier.SHIFT]:  document.querySelectorAll<HTMLSpanElement>(".row span.shift"),
-      [Modifier.CONTROL]:document.querySelectorAll<HTMLSpanElement>(".row span.ctrl"),
-      [Modifier.ALT]:    document.querySelectorAll<HTMLSpanElement>(".row span.alt"),
-      [Modifier.META]:   document.querySelectorAll<HTMLSpanElement>(".row span.meta"),
-      [Modifier.CAPSLK]: document.querySelectorAll<HTMLSpanElement>(".row span.capsLock")
+      [Modifier.SHIFT]:
+        document.querySelectorAll<HTMLSpanElement>(".row span.shift"),
+      [Modifier.CONTROL]:
+        document.querySelectorAll<HTMLSpanElement>(".row span.ctrl"),
+      [Modifier.ALT]:
+        document.querySelectorAll<HTMLSpanElement>(".row span.alt"),
+      [Modifier.META]:
+        document.querySelectorAll<HTMLSpanElement>(".row span.meta"),
+      [Modifier.CAPS_LOCK]:
+        document.querySelectorAll<HTMLSpanElement>(".row span.capsLock"),
     };
   }
 
   /* KeyboardSource interface functions */
   public onRegister() {
     const allKeys = document.querySelectorAll<HTMLSpanElement>(".row span");
-    for(const key of allKeys) {
+    for (const key of allKeys) {
       const code = key.getAttribute("code");
-      if(code && code.length != 0) {
-        const func = (ev: MouseEvent) => { this._onKey(code as KeyCode, ev); };
+      if (code && code.length != 0) {
+        const func = (ev: MouseEvent) => {
+          this._onKey(code as KeyCode, ev);
+        };
         key.addEventListener("mousedown", func);
         key.addEventListener("mouseup", func);
       }
@@ -53,17 +60,19 @@ export class ScreenKeyboard implements KeyboardSource {
   }
 
   public onEvent(event: PengKeyboardEvent) {
-    const button = document.querySelector('.row span[code="'+ event.code +'"]');
-    if(!button) return;
-    if(event.isModifier && !event.pressed) {
+    const button = document.querySelector(
+      '.row span[code="' + event.code + '"]',
+    );
+    if (!button) return;
+    if (event.isModifier && !event.pressed) {
       const mod = this.kb.keyCodeToModifier(event.code)!;
-      if((this._ownedMods & mod) !== 0) {
+      if ((this._ownedMods & mod) !== 0) {
         this._toggleModKey(mod);
         this._toggleSetMod(mod);
         return;
       }
     }
-    if(event.pressed) {
+    if (event.pressed) {
       button.classList.add("key-down");
     } else {
       button.classList.remove("key-down");
@@ -92,50 +101,51 @@ export class ScreenKeyboard implements KeyboardSource {
 
   /* checks whether we can grab control of the modifier's value */
   private _canOwnModifier(mod: Modifier): boolean {
-    return (
-      this._ownModifier(mod)
-      || (this.kb.getModifiers() & mod) === 0
-    );
+    return this._ownModifier(mod) || (this.kb.getModifiers() & mod) === 0;
   }
 
   private _toggleSetMod(mod: Modifier) {
-    if((this._ownedMods & mod) != 0) {
+    if ((this._ownedMods & mod) != 0) {
       this._ownedMods &= ~mod;
       this.kb.maskModifiers(0, ~mod);
     } else {
       this._ownedMods |= mod;
-      this.kb.maskModifiers(mod, Modifier.ALLMODS);
+      this.kb.maskModifiers(mod, Modifier.ALL_MODIFIERS);
     }
   }
 
   private _toggleModKey(mod: Modifier) {
-    if(mod == Modifier.ALLMODS) return;
+    if (mod == Modifier.ALL_MODIFIERS) return;
 
     let buttons: NodeListOf<HTMLSpanElement> = this._special[mod];
 
-    for(const button of buttons) {
-      button.classList.toggle("key-down")
+    for (const button of buttons) {
+      button.classList.toggle("key-down");
     }
   }
 
-  private _constructEventFromMouse(code: KeyCode, ev: MouseEvent): PengKeyboardEvent {
+  private _constructEventFromMouse(
+    code: KeyCode,
+    ev: MouseEvent,
+  ): PengKeyboardEvent {
     return {
       code: code,
       char: this.kb.getCharFromCode(code),
       pressed: ev.type == "mousedown",
       isAutoRepeat: false,
-      isModifier: isModifier.code(code),
-      ...this.kb.getModifierState()
+      isModifier: getIsCodeModifier(code),
+      ...this.kb.getModifierState(),
     };
   }
 
   private _onKey(code: KeyCode, ev: MouseEvent) {
     const event = this._constructEventFromMouse(code, ev);
 
-    if(event.isModifier && event.pressed) /* modifier keys are toggle keys */ {
-      const mod = this.kb.keyCodeToModifier(code)!;
+    if (event.isModifier && event.pressed) {
+      /* modifier keys are toggle keys */ const mod =
+        this.kb.keyCodeToModifier(code)!;
 
-      if(this._canOwnModifier(mod)) {
+      if (this._canOwnModifier(mod)) {
         this._toggleModKey(mod);
         this._toggleSetMod(mod);
       }

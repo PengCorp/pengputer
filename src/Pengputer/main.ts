@@ -312,10 +312,10 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
-  const physkb = new PhysicalKeyboard(keyboard);
-  const screenkb = new ScreenKeyboard(keyboard);
-  keyboard.addSource(physkb);
-  keyboard.addSource(screenkb);
+  const physicalKeyboard = new PhysicalKeyboard(keyboard);
+  const screenKeyboard = new ScreenKeyboard(keyboard);
+  keyboard.addSource(physicalKeyboard);
+  keyboard.addSource(screenKeyboard);
 
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),
