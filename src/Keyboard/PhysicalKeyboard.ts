@@ -3,6 +3,7 @@
  * of the physical keyboard.
  */
 import {
+  AutoRepeat,
   Keyboard,
   Modifier,
   type KeyboardSource,
@@ -14,8 +15,12 @@ import isModifier from "./isModifier";
 export class PhysicalKeyboard implements KeyboardSource {
   private kb: Keyboard;
 
+  private autorep: AutoRepeat;
+
   constructor(kb: Keyboard) {
     this.kb = kb;
+
+    this.autorep = new AutoRepeat(150, 50);
   }
 
   public onRegister() {
@@ -25,7 +30,11 @@ export class PhysicalKeyboard implements KeyboardSource {
 
   public onEvent(event: PengKeyboardEvent) {}
   public update(dt: number) {
-    /* TODO: autorepeat here */
+    if(this.autorep.update(dt)) {
+      const event = this.kb.constructEvent(this.autorep.getCode()!, true);
+      event.isAutoRepeat = true;
+      this.kb.sendEvent(this, event);
+    }
   }
 
   private _constructEventFromBrowser(ev: KeyboardEvent): PengKeyboardEvent {
@@ -77,6 +86,10 @@ export class PhysicalKeyboard implements KeyboardSource {
     this._updateModifierStates(ev);
 
     const pengevent = this._constructEventFromBrowser(ev);
+
+    if(pengevent.pressed) {
+      this.autorep.setCode(pengevent.code);
+    } else this.autorep.reset();
 
     this.kb.sendEvent(this, pengevent);
   }
