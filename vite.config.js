@@ -14,6 +14,7 @@ export default defineConfig({
     alias: {
       "@Toolbox": path.resolve(__dirname, "src/Toolbox"),
       "@Color": path.resolve(__dirname, "src/Color"),
+      "@FileSystem": path.resolve(__dirname, "src/FileSystem"),
     },
   },
 });

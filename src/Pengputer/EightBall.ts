@@ -4,7 +4,7 @@
  * Description: Implementing the 8Ball functionality from MrBotka/Hypernerd
  */
 import _ from "lodash";
-import { type Executable } from "../FileSystem/FileSystem";
+import { type Executable } from "@FileSystem/index";
 import { type PC } from "./PC";
 
 async function sha256Mod(string: string, modWith: number) {

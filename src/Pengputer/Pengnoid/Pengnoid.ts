@@ -1,4 +1,4 @@
-import { type Executable } from "../../FileSystem/FileSystem";
+import { type Executable } from "@FileSystem/index";
 import { Signal } from "@Toolbox/Signal";
 import { State, StateManager } from "@Toolbox/StateManager";
 import { type PC } from "../PC";

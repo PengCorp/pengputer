@@ -26,7 +26,7 @@ import {
   type Rect,
   type Size,
 } from "../types";
-import { type Executable } from "../FileSystem/FileSystem";
+import { type Executable } from "@FileSystem/index";
 import { type PC } from "./PC";
 
 const msPerFrame = 16.666666666;

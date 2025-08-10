@@ -8,8 +8,8 @@
 import _ from "lodash";
 import { classicColors, uniqueColors } from "@Color/ansi";
 import { type Color } from "@Color/Color";
-import { type Executable } from "../FileSystem/FileSystem";
 import { type PC } from "./PC";
+import type { Executable } from "@FileSystem/index";
 
 const INITIAL_CASH = 100;
 const NAME_FIELD_WIDTH = 10;

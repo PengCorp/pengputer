@@ -1,4 +1,4 @@
-import { type Executable } from "../FileSystem/FileSystem";
+import { type Executable } from "@FileSystem/index";
 import { type PC } from "./PC";
 
 export class HelloWorld implements Executable {
