@@ -7,7 +7,3 @@ export enum FileSystemObjectType {
   Link = "lnk",
   Binary = "bin",
 }
-
-export interface Executable {
-  run: (args: string[]) => Promise<void>;
-}

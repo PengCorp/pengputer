@@ -6,8 +6,9 @@ import type {
   LinkFile,
   LinkOpenType,
   TextFile,
+  Executable,
 } from "./fileTypes";
-import { type Executable, FileSystemObjectType } from "./types";
+import { FileSystemObjectType } from "./types";
 
 export class FileInfoDirectory {
   type: FileSystemObjectType.Directory = FileSystemObjectType.Directory;

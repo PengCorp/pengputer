@@ -9,7 +9,6 @@ import {
   isDriveLabel,
   PATH_SEPARATOR,
   type DriveLabel,
-  type Executable,
 } from "../FileSystem";
 import type { PC } from "./PC";
 
@@ -18,6 +17,7 @@ import { argparse } from "@Toolbox/argparse";
 import { classicColors } from "@Color/ansi";
 
 import _ from "lodash";
+import type { Executable } from "@FileSystem/fileTypes";
 
 interface TakenProgram {
   path: FilePath;
