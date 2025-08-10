@@ -4,7 +4,7 @@
  * https://stackoverflow.com/questions/47239797/ray-casting-with-different-height-size 
  */ 
 
-import _, { random } from "lodash";
+import _, { last, random } from "lodash";
 import {
   Vector,
   vectorAdd,
@@ -83,19 +83,19 @@ interface GameState {
 class Sprite {
     width:  number;
     height: number;
-    sprite: Array<char>;
+    texture: Array<char>;
 
     constructor(w: number, h: number, arr: Array<char>) {
         this.width  = w;
         this.height = h;
-        this.sprite = arr;
+        this.texture = arr;
     }
 }
 
 const penger8x8: Sprite = {
   width:  8,
   height: 8,
-  sprite: [
+  texture: [
     ' ',' ','#','#','#',' ',' ',' ',
     ' ',' ','#','g','g','#',' ',' ',
     ' ','#','#','#','g','#',' ',' ',
@@ -110,7 +110,7 @@ const penger8x8: Sprite = {
 const penger5x5: Sprite = {
   width:  5,
   height: 5,
-  sprite: [
+  texture: [
     ' ', 'g', 'g', ' ', ' ', 
     'g', '#', 'g', 'o', ' ', 
     'g', 'g', 'g', 'o', 'o', 
@@ -122,7 +122,7 @@ const penger5x5: Sprite = {
 const penger3x3: Sprite = {
   width:  3,
   height: 3,
-  sprite: [
+  texture: [
     ' ', 'g', 'o', 
     'g', 'w', 'g', 
     'o', 'w', 'o', 
@@ -167,11 +167,13 @@ class Player implements Entity {
     let newMapPos = {x: Math.floor(newPos.x), y: Math.floor(newPos.y)};
 
     if (newMapPos.x >= 0 && newMapPos.x < MAP_WIDTH && newMapPos.y >= 0 && newMapPos.y <= MAP_HEIGHT){
-      if (MAP[(newMapPos.y * MAP_WIDTH) + Math.floor(this.position.x)] > 0) {
+      const entryY = MAP[(newMapPos.y * MAP_WIDTH) + Math.floor(this.position.x)];
+      if (entryY > 0 && Math.abs(MAP_ENTRIES[entryY].z) <= 0.5) {
           newPos.y = this.position.y;
       }
 
-      if (MAP[(Math.floor(this.position.y) * MAP_WIDTH) + newMapPos.x] > 0) {
+      const entryX = MAP[(Math.floor(this.position.y) * MAP_WIDTH) + newMapPos.x];
+      if (entryX > 0 && Math.abs(MAP_ENTRIES[entryX].z) <= 0.5) {
           newPos.x = this.position.x;
       }
     }
@@ -296,6 +298,11 @@ class Raycaster implements GameState {
         y: this.player.position.y + rowDist * rayDir0.y,
       }
 
+      // Floor
+      let interpPos: number = Math.floor(posY - 1);
+      if (interpPos < 0) interpPos = 0;
+      if (interpPos >= size.h) interpPos = size.h - 1;
+
       for (let posX: number = 0; posX < size.w; posX++) {
         const mapPos: Vector = {
           x: Math.floor(floorPos.x),
@@ -306,12 +313,7 @@ class Raycaster implements GameState {
 
         if (mapPos.x < 0 || mapPos.x >= MAP_WIDTH || mapPos.y < 0 || mapPos.y >= MAP_HEIGHT) continue;
 
-        if (rowDist > MAX_STEPS) return;
-
-        // Floor
-        let interpPos: number = Math.floor(posY - 1);
-        if (interpPos < 0) interpPos = 0;
-        if (interpPos >= size.h) interpPos = size.h - 1;
+        if (rowDist > MAX_STEPS) break;
 
         this.zBuffer[(posX * size.h) + interpPos] = rowDist;
 
@@ -375,7 +377,8 @@ class Raycaster implements GameState {
 
         if (texX < 0 || texX >= entity.sprite.width) continue;
 
-        if (transform.y > 0 && posX >= 0 && posX <= size.w - 1 && transform.y < this.zBuffer[posX * size.h]){
+        if (transform.y > 0 && posX >= 0 && posX < size.w) // && transform.y < this.zBuffer[posX * size.h] 
+        {
           for (let posY: number = drawStart.y; posY < drawEnd.y; ++posY) {
             const bufIndex: number = (posX * size.h) + posY;
             if (this.zBuffer[bufIndex] < dist) continue;
@@ -386,7 +389,7 @@ class Raycaster implements GameState {
 
             if (texY < 0 || texY >= entity.sprite.height) continue;
 
-            const char: char = entity.sprite.sprite[(texY * entity.sprite.width) + texX];
+            const char: char = entity.sprite.texture[(texY * entity.sprite.width) + texX];
             if (char === ' ' || char === '') continue;
 
             this.zBuffer[bufIndex] = dist;
@@ -497,29 +500,33 @@ class Raycaster implements GameState {
           }
 
           // Bottom
-          for (let posY: number = drawEnd; posY >= Math.max(lastEnd, 0); posY--) {
-            const z = this.zBuffer[(posX * size.h) + posY];
-            if (z <= lastDist) continue;
+          if (drawEnd > lastEnd) {
+              for (let posY: number = drawEnd; posY >= Math.max(lastEnd, 0); posY--) {
+              const z = this.zBuffer[(posX * size.h) + posY];
+              if (z <= lastDist) continue;
 
-            this.zBuffer[(posX * size.h) + posY] = lastDist;
+              this.zBuffer[(posX * size.h) + posY] = lastDist;
 
-            std.setConsoleCursorPosition({x: posX, y: posY});
-            std.writeConsole("░", {
-              fgColor: entry.fgColor,
-            });
+              std.setConsoleCursorPosition({x: posX, y: posY});
+              std.writeConsole("░", {
+                fgColor: entry.fgColor,
+              });
+            }
           }
 
-          // Top
-          for (let posY: number = drawStart; posY <= Math.min(lastStart, size.h - 1); posY++) {
-            const z = this.zBuffer[(posX * size.h) + posY];
-            if (z <= lastDist) continue;
+        // Top
+          if (lastStart > drawStart && entry.z >= -entry.height) {
+            for (let posY: number = drawStart; posY <= Math.min(lastStart, size.h - 1); posY++) {
+              const z = this.zBuffer[(posX * size.h) + posY];
+              if (z <= lastDist) continue;
 
-            this.zBuffer[(posX * size.h) + posY] = lastDist;
+              this.zBuffer[(posX * size.h) + posY] = lastDist;
 
-            std.setConsoleCursorPosition({x: posX, y: posY});
-            std.writeConsole("█", {
-              fgColor: entry.fgColor,
-            });
+              std.setConsoleCursorPosition({x: posX, y: posY});
+              std.writeConsole("▓", {
+                fgColor: entry.fgColor,
+              });
+            }
           }
 
           lastIndex = lastStart = lastEnd = -1;
