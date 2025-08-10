@@ -120,12 +120,6 @@ export class Font {
       }
     }
 
-    return {
-      canvas: this.atlases[0].canvas,
-      x: 0,
-      y: 0,
-      w: this.characterWidth * this.atlases[0].scale,
-      h: this.characterHeight * this.atlases[0].scale,
-    };
+    return null;
   }
 }
