@@ -1,6 +1,5 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { Vector } from "../Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
 import { KeyCode } from "../Keyboard/types";

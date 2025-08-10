@@ -1,7 +1,7 @@
 /* TODO: add comment describing how this works */
 import { ANSI_LAYOUT } from "./ansiLayout";
 import isModifier from "./isModifier";
-import { KeyCode, PengKeyboardEvent } from "./types";
+import { KeyCode, PengKeyboardEvent, Modifier } from "./types";
 import { Signal } from "../Toolbox/Signal";
 
 export interface KeyboardSource {
@@ -10,20 +10,11 @@ export interface KeyboardSource {
   update: (dt: number) => void;
 };
 
-export enum Modifier {
-  SHIFT   = 1<<0,
-  CONTROL = 1<<1,
-  ALT     = 1<<2,
-  META    = 1<<3,
-  CAPSLK  = 1<<4,
-  ALLMODS = Modifier.SHIFT|Modifier.CONTROL|Modifier.ALT|Modifier.META|Modifier.CAPSLK
-}
-
 export class Keyboard implements KeyboardSource {
   private _sources: KeyboardSource[];
   private _eventSig: Signal<PengKeyboardEvent>;
 
-  private _layout: Object;
+  private _layout: any;
 
   private _mods: number = 0;
 
@@ -53,7 +44,7 @@ export class Keyboard implements KeyboardSource {
     src.onRegister();
   }
 
-  public getLayout(): Object {
+  public getLayout(): any {
     return this._layout;
   }
 
@@ -76,9 +67,13 @@ export class Keyboard implements KeyboardSource {
     this._mods &= mod & (Modifier.ALLMODS);
   }
 
+  public setModifiers(newMods: number) {
+    this._mods = newMods;
+  }
+
   public sendKeyCode(source: KeyboardSource | null, code: KeyCode, pressed: boolean) {
     const event = this._constructEvent(code, pressed);
-    sendEvent(source, event);
+    this.sendEvent(source, event);
   }
 
   public sendEvent(source: KeyboardSource | null, event: PengKeyboardEvent) {
@@ -87,7 +82,7 @@ export class Keyboard implements KeyboardSource {
     }
   }
 
-  public getCharFromCode(code: KeyCode): string {
+  public getCharFromCode(code: KeyCode): string | null {
     /* COPIED (and modified, it's bad ;] ); TODO: rewrite */
     const shift = (this._mods & Modifier.SHIFT) != 0;
     const capslk = (this._mods & Modifier.CAPSLK) != 0;
@@ -127,7 +122,18 @@ export class Keyboard implements KeyboardSource {
     return this._eventSig.getPromise();
   }
 
-  public getNextEvent() {
+  public getNextEvent(): PengKeyboardEvent | null | never {
     throw new Error("Not implemented; come back next weekend");
+  }
+
+  private _constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
+    return {
+      code: code,
+      char: this.getCharFromCode(code),
+      pressed: pressed,
+      isAutoRepeat: false,
+      isModifier: isModifier.code(code),
+      ...this.getModifierState()
+    };
   }
 }

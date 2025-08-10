@@ -14,3 +14,12 @@ export interface PengKeyboardEvent {
   isMetaDown?: boolean;
   isCapsOn?: boolean;
 }
+
+export enum Modifier {
+  SHIFT   = 1<<0,
+  CONTROL = 1<<1,
+  ALT     = 1<<2,
+  META    = 1<<3,
+  CAPSLK  = 1<<4,
+  ALLMODS = Modifier.SHIFT|Modifier.CONTROL|Modifier.ALT|Modifier.META|Modifier.CAPSLK
+}

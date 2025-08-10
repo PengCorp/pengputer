@@ -1,6 +1,5 @@
 import { classicColors } from "../Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { TypeListener, VoidListener } from "../Keyboard/Keyboard";
 import { KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { font9x16 } from "../Screen/font9x16";
@@ -321,9 +320,9 @@ export class Std {
     return readKey(this.keyboard);
   }
 
-  getIsKeyPressed(keyCode: KeyCode) {
+  /* getIsKeyPressed(keyCode: KeyCode) {
     return this.keyboard.getIsKeyPressed(keyCode);
-  }
+  } -- unused */
 
   flushKeyboardEvents() {
     return this.keyboard.flushEventBuffer();

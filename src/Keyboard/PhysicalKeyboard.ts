@@ -2,7 +2,7 @@
  * A class for tracking and reporting state
  * of the physical keyboard.
  */
-import { Keyboard, KeyboardSource, Modifier } from "./Keyboard";
+import { Keyboard, KeyboardSource, KeyCode, Modifier, PengKeyboardEvent } from "../Keyboard";
 import isModifier from "./isModifier";
 
 export class PhysicalKeyboard implements KeyboardSource {
@@ -25,7 +25,7 @@ export class PhysicalKeyboard implements KeyboardSource {
   private _constructEventFromBrowser(ev: KeyboardEvent): PengKeyboardEvent {
     return {
       code: ev.code,
-      char: this.kb.getCharFromCode(ev.code),
+      char: this.kb.getCharFromCode(ev.code as KeyCode),
       pressed: ev.type === "keydown",
       isAutoRepeat: false,
       isModifier: isModifier.event(ev),
@@ -33,8 +33,9 @@ export class PhysicalKeyboard implements KeyboardSource {
     };
   }
 
+  // prettier-ignore
   private _updateModifierStates(ev: KeyboardEvent) {
-    this.kb._mods = (
+    this.kb.setModifiers(
       0 // <-- balloon
       | (ev.shiftKey ? Modifier.SHIFT   : 0)
       | (ev.ctrlKey  ? Modifier.CONTROL : 0)

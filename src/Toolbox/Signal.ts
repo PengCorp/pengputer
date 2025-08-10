@@ -31,7 +31,7 @@ export class Signal<D = void> {
   }
 
   /** Returns a promise that resolves with signal value as soon as one is emitted. */
-  public getPromise() {
+  public getPromise(): Promise<D> {
     return new Promise((resolve) => {
       this.listenOnce(resolve);
     });
