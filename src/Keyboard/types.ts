@@ -1,6 +1,12 @@
 import type { KeyCode } from "./types.keyCode";
 export type { KeyCode };
 
+export interface KeyboardSource {
+  onRegister: () => void;
+  onEvent: (event: PengKeyboardEvent) => void;
+  update: (dt: number) => void;
+}
+
 export interface PengKeyboardEvent {
   code: KeyCode;
   char: string | null;

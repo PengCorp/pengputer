@@ -15,12 +15,12 @@ import { getIsEventModifier } from "./isModifier";
 export class PhysicalKeyboard implements KeyboardSource {
   private kb: Keyboard;
 
-  private autorep: AutoRepeat;
+  private autoRepeat: AutoRepeat;
 
   constructor(kb: Keyboard) {
     this.kb = kb;
 
-    this.autorep = new AutoRepeat(150, 50);
+    this.autoRepeat = new AutoRepeat(150, 50);
   }
 
   public onRegister() {
@@ -29,9 +29,10 @@ export class PhysicalKeyboard implements KeyboardSource {
   }
 
   public onEvent(event: PengKeyboardEvent) {}
+
   public update(dt: number) {
-    if (this.autorep.update(dt)) {
-      const event = this.kb.constructEvent(this.autorep.getCode()!, true);
+    if (this.autoRepeat.update(dt)) {
+      const event = this.kb.constructEvent(this.autoRepeat.getCode()!, true);
       event.isAutoRepeat = true;
       this.kb.sendEvent(this, event);
     }
@@ -92,12 +93,12 @@ export class PhysicalKeyboard implements KeyboardSource {
 
     this._updateModifierStates(ev);
 
-    const pengevent = this._constructEventFromBrowser(ev);
+    const pengEvent = this._constructEventFromBrowser(ev);
 
-    if (pengevent.pressed) {
-      this.autorep.setCode(pengevent.code);
-    } else this.autorep.reset();
+    if (pengEvent.pressed) {
+      this.autoRepeat.setCode(pengEvent.code);
+    } else this.autoRepeat.reset();
 
-    this.kb.sendEvent(this, pengevent);
+    this.kb.sendEvent(this, pengEvent);
   }
 }

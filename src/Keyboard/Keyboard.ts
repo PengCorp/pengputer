@@ -15,26 +15,27 @@
  */
 import { ANSI_LAYOUT } from "./ansiLayout";
 import { getIsCodeModifier } from "./isModifier";
-import { Modifier, type KeyCode, type PengKeyboardEvent } from "./types";
+import {
+  Modifier,
+  type KeyboardSource,
+  type KeyCode,
+  type PengKeyboardEvent,
+} from "./types";
 import { Signal } from "@Toolbox/Signal";
-
-export interface KeyboardSource {
-  onRegister: () => void;
-  onEvent: (event: PengKeyboardEvent) => void;
-  update: (dt: number) => void;
-}
 
 export class Keyboard implements KeyboardSource {
   private _sources: KeyboardSource[];
-  private _eventSig: Signal<PengKeyboardEvent>;
+  private _eventSignal: Signal<PengKeyboardEvent>;
 
   private _layout: any;
 
-  /* a bitmask of currently active modifiers */
+  /** A bitmask of currently active modifiers. See Modifier for values. */
   private _mods: number = 0;
 
+  private _eventBuffer: PengKeyboardEvent[] = [];
+
   constructor() {
-    this._eventSig = new Signal();
+    this._eventSignal = new Signal();
     this._sources = [];
     this._layout = ANSI_LAYOUT;
 
@@ -45,14 +46,19 @@ export class Keyboard implements KeyboardSource {
   public onRegister() {}
 
   public onEvent(e: PengKeyboardEvent) {
-    this._eventSig.emit(e);
+    this._eventSignal.emit(e);
   }
 
   public update(dt: number) {
-    for (const src of this._sources) if (src !== this) src.update(dt);
+    for (const src of this._sources) {
+      if (src !== this) {
+        src.update(dt);
+      }
+    }
   }
 
   /* Keyboard API functions */
+
   public addSource(src: KeyboardSource) {
     this._sources.push(src);
     src.onRegister();
@@ -116,6 +122,8 @@ export class Keyboard implements KeyboardSource {
   }
 
   public sendEvent(source: KeyboardSource | null, event: PengKeyboardEvent) {
+    this._eventBuffer.push(event);
+
     for (const src of this._sources) {
       if (src && src !== source) src.onEvent(event);
     }
@@ -124,13 +132,13 @@ export class Keyboard implements KeyboardSource {
   public getCharFromCode(code: KeyCode): string | null {
     /* COPIED (and modified, it's bad ;] ); TODO: rewrite */
     const shift = (this._mods & Modifier.SHIFT) != 0;
-    const capslk = (this._mods & Modifier.CAPS_LOCK) != 0;
+    const capsLock = (this._mods & Modifier.CAPS_LOCK) != 0;
 
     const shiftLayout = this._layout["@shift"];
     const capsLayout = this._layout["@caps"];
     const capsShiftLayout = this._layout["@caps-shift"];
 
-    if (capslk && capsLayout) {
+    if (capsLock && capsLayout) {
       if (shift && capsShiftLayout && capsShiftLayout[code]) {
         return capsShiftLayout[code];
       }
@@ -156,12 +164,18 @@ export class Keyboard implements KeyboardSource {
 
   public flushEventBuffer() {}
 
-  public waitForNextEvent(): Promise<PengKeyboardEvent> {
-    return this._eventSig.getPromise();
+  public async waitForNextEvent(): Promise<PengKeyboardEvent> {
+    await this._eventSignal.getPromise();
+    return this.getNextEvent()!;
   }
 
-  public getNextEvent(): PengKeyboardEvent | null | never {
-    throw new Error("Not implemented; come back next weekend");
+  /**
+   * Shifts out a single event from the Keyboard event buffer for processing.
+   *
+   * Returns null if no events available.
+   */
+  public getNextEvent(): PengKeyboardEvent | null {
+    return this._eventBuffer.shift() ?? null;
   }
 
   public constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
