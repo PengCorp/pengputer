@@ -1,5 +1,5 @@
-import { splitStringIntoCharacters } from "../Toolbox/String";
-import { type Vector } from "../Toolbox/Vector";
+import { splitStringIntoCharacters } from "@Toolbox/String";
+import { type Vector } from "@Toolbox/Vector";
 import { type charArray, type Size } from "../types";
 import { dataURLToImageBitmap } from "../util";
 

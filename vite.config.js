@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import path, { resolve } from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -8,6 +8,12 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
       },
+    },
+  },
+  resolve: {
+    alias: {
+      "@Toolbox": path.resolve(__dirname, "src/Toolbox"),
+      "@Color": path.resolve(__dirname, "src/Color"),
     },
   },
 });

@@ -1,4 +1,4 @@
-import { Signal } from "../Toolbox/Signal";
+import { Signal } from "@Toolbox/Signal";
 import { ANSI_LAYOUT } from "./ansiLayout";
 import { getIsModifierKey } from "./isModifierKey";
 import { type KeyCode, type PengKeyboardEvent } from "./types";

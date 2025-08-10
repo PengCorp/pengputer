@@ -2,7 +2,7 @@ import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
 import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
 import { getIsModifierKey } from "../Keyboard/isModifierKey";
-import { type Vector } from "../Toolbox/Vector";
+import { type Vector } from "@Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
 import { type KeyCode } from "../Keyboard/types";
 

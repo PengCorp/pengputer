@@ -6,8 +6,8 @@
  */
 
 import _ from "lodash";
-import { classicColors, uniqueColors } from "../Color/ansi";
-import { type Color } from "../Color/Color";
+import { classicColors, uniqueColors } from "@Color/ansi";
+import { type Color } from "@Color/Color";
 import { type Executable } from "./FileSystem";
 import { type PC } from "./PC";
 

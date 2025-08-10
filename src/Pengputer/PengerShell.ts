@@ -18,9 +18,9 @@ import {
 import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
 import type { PC } from "./PC";
 
-import { argparse } from "../Toolbox/argparse";
+import { argparse } from "@Toolbox/argparse";
 
-import { classicColors } from "../Color/ansi";
+import { classicColors } from "@Color/ansi";
 
 import _ from "lodash";
 

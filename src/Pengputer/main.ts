@@ -2,8 +2,8 @@ import { padStart } from "lodash";
 import { Keyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadFont9x16 } from "../Screen/font9x16";
-import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
-import { waitFor } from "../Toolbox/waitFor";
+import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
+import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import {
@@ -30,7 +30,7 @@ import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 
-import "../Color/ansi";
+import "@Color/ansi";
 import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";

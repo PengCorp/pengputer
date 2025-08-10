@@ -1,4 +1,4 @@
-import { classicColors } from "../Color/ansi";
+import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
 import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
 import { type KeyCode } from "../Keyboard/types";
@@ -16,7 +16,7 @@ import {
   type CellAttributes,
   TextBuffer,
 } from "../TextBuffer";
-import { type Vector, vectorAdd } from "../Toolbox/Vector";
+import { type Vector, vectorAdd } from "@Toolbox/Vector";
 import { type Rect } from "../types";
 import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";

@@ -1,6 +1,6 @@
 import tc from "tinycolor2";
-import { getBoldColorIndex, namedColors } from "../Color/ansi";
-import { type Vector, vectorDivideComponents } from "../Toolbox/Vector";
+import { getBoldColorIndex, namedColors } from "@Color/ansi";
+import { type Vector, vectorDivideComponents } from "@Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, type Rect, type Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";

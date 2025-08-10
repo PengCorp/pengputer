@@ -2,8 +2,8 @@ import {
   getBoldClassicIndex,
   classicColorRgbValues,
   indexedColorRgbValues,
-} from "../Color/ansi";
-import { ColorType } from "../Color/Color";
+} from "@Color/ansi";
+import { ColorType } from "@Color/Color";
 import { type CellAttributes } from "../TextBuffer";
 import { type ScreenCharacterAttributes } from "./types";
 import tc from "tinycolor2";

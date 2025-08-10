@@ -3,9 +3,9 @@ import {
   getDirectColor,
   indexedColors,
   namedColors,
-} from "../Color/ansi";
-import { ColorType } from "../Color/Color";
-import type { ColorName } from "../Color/types";
+} from "@Color/ansi";
+import { ColorType } from "@Color/Color";
+import type { ColorName } from "@Color/types";
 import {
   BOXED,
   BOXED_BOTTOM,

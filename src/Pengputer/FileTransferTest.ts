@@ -1,4 +1,4 @@
-import { FileTransferManager } from "../Toolbox/FileTransferManager";
+import { FileTransferManager } from "@Toolbox/FileTransferManager";
 
 import { type Executable } from "./FileSystem";
 import { type PC } from "./PC";
