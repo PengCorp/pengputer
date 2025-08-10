@@ -37,12 +37,15 @@ enum MapIndexType {
 class MapIndex {
   fgColor!: Color;
   height!: number;
+  z: number;
+
   type!: MapIndexType;
   displayStr?: string;
-
-  constructor(fgColor: Color, height: number, type: MapIndexType, displayStr?: string){
+  
+  constructor(fgColor: Color, height: number, z: number, type: MapIndexType, displayStr?: string){
     this.fgColor = fgColor;
     this.height  = height;
+    this.z       = z;
     this.type    = type;
 
     if (displayStr) this.displayStr = displayStr;
@@ -51,11 +54,11 @@ class MapIndex {
 
 type MapDictionary = Record<number, MapIndex>;
 const MAP_ENTRIES: MapDictionary = {
-  1 : new MapIndex(classicColors["white"],     1,   MapIndexType.DEFAULT),
-  2 : new MapIndex(classicColors["yellow"],    2,   MapIndexType.DEFAULT),
-  3 : new MapIndex(classicColors["green"],     0.1, MapIndexType.DEFAULT),
-  4 : new MapIndex(classicColors["red"],       4,   MapIndexType.DEFAULT),
-  5 : new MapIndex(classicColors["lightBlue"], 5,   MapIndexType.DEFAULT),
+  1 : new MapIndex(classicColors["white"],     1,   1, MapIndexType.DEFAULT),
+  2 : new MapIndex(classicColors["yellow"],    2,   0, MapIndexType.DEFAULT),
+  3 : new MapIndex(classicColors["green"],     0.1, 0, MapIndexType.DEFAULT),
+  4 : new MapIndex(classicColors["red"],       4,   0, MapIndexType.DEFAULT),
+  5 : new MapIndex(classicColors["lightBlue"], 5,   0, MapIndexType.DEFAULT),
 }
 
 const MAP: Array<number> = [
@@ -263,6 +266,8 @@ class Raycaster implements GameState {
     this.entities[1].position.y = Math.sin(this.time) + 6;
     this.entities[1].z = Math.sin(this.time);
 
+    MAP_ENTRIES[3].z = Math.sin(this.time);
+
     for (let posY: number = 0; posY <= size.h; posY++){
       const p: number = posY - size.h / 2;
 
@@ -407,7 +412,7 @@ class Raycaster implements GameState {
     for (let posX: number = 0; posX < size.w; posX++){
       const camX = 2.0 * posX / size.w - 1.0;
 
-      let rayDir: Vector = {
+      const rayDir: Vector = {
         x: this.player.direction.x + this.player.plane.x * camX,
         y: this.player.direction.y + this.player.plane.y * camX,
       };
@@ -424,8 +429,6 @@ class Raycaster implements GameState {
 
       let sideDist:     Vector  = {x:0, y:0};
       let step:         Vector  = {x:0, y:0};
-      let side:         boolean = false;
-      let boundStep:    number  = 0;
 
       if (rayDir.x < 0) {
         step.x = -1;
@@ -445,6 +448,13 @@ class Raycaster implements GameState {
         sideDist.y = (mapPos.y + 1.0 - this.player.position.y) * deltaDist.y;
       }
 
+      let side:         boolean = false;
+      let boundStep:    number  = 0;
+      let lastIndex:    number  = -1;
+      let lastStart:    number  = -1;
+      let lastEnd:      number  = -1;
+      let lastDist:     number  = -1;
+
       while (boundStep < MAX_STEPS) {
         if (sideDist.x < sideDist.y) {
           sideDist.x += deltaDist.x;
@@ -457,6 +467,62 @@ class Raycaster implements GameState {
           mapPos.y += step.y;
           mapPos.y = Math.floor(mapPos.y);
           side = true;
+        }
+
+        if (lastIndex != -1) {
+          const entry = MAP_ENTRIES[lastIndex];
+          const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
+
+          const lineHeight:   number = Math.floor(size.h / perpWallDist);
+          const pixelHeight:  number = Math.floor(lineHeight * entry.height);
+          const baseY:        number = Math.floor(size.h/2 + lineHeight/2 - lineHeight * entry.z);
+
+          let drawEnd:        number = baseY;
+          let drawStart:      number = drawEnd - pixelHeight;
+
+          if (drawStart < 0)     drawStart = 0;
+          if (drawEnd >= size.h) drawEnd = size.h - 1;
+
+          // Backwall
+          for (let posY: number = drawStart; posY <= drawEnd; posY++) {
+            const z = this.zBuffer[(posX * size.h) + posY];
+            if (z <= perpWallDist) continue;
+
+            this.zBuffer[(posX * size.h) + posY] = perpWallDist;
+
+            std.setConsoleCursorPosition({x: posX, y: posY});
+            std.writeConsole(side ? "█" : "░", {
+              fgColor: entry.fgColor,
+            });
+          }
+
+          // Bottom
+          for (let posY: number = drawEnd; posY >= Math.max(lastEnd, 0); posY--) {
+            const z = this.zBuffer[(posX * size.h) + posY];
+            if (z <= lastDist) continue;
+
+            this.zBuffer[(posX * size.h) + posY] = lastDist;
+
+            std.setConsoleCursorPosition({x: posX, y: posY});
+            std.writeConsole("░", {
+              fgColor: entry.fgColor,
+            });
+          }
+
+          // Top
+          for (let posY: number = drawStart; posY <= Math.min(lastStart, size.h - 1); posY++) {
+            const z = this.zBuffer[(posX * size.h) + posY];
+            if (z <= lastDist) continue;
+
+            this.zBuffer[(posX * size.h) + posY] = lastDist;
+
+            std.setConsoleCursorPosition({x: posX, y: posY});
+            std.writeConsole("█", {
+              fgColor: entry.fgColor,
+            });
+          }
+
+          lastIndex = lastStart = lastEnd = -1;
         }
 
         if (mapPos.x < 0 || mapPos.x >= MAP_WIDTH || mapPos.y < 0 || mapPos.y >= MAP_HEIGHT) {
@@ -473,7 +539,7 @@ class Raycaster implements GameState {
 
         const lineHeight:   number = Math.floor(size.h / perpWallDist);
         const pixelHeight:  number = Math.floor(lineHeight * entry.height);
-        const baseY:        number = Math.floor(size.h/2 + lineHeight/2);
+        const baseY:        number = Math.floor(size.h/2 + lineHeight/2 - lineHeight * entry.z);
 
         let drawEnd:        number = baseY;
         let drawStart:      number = drawEnd - pixelHeight;
@@ -488,9 +554,16 @@ class Raycaster implements GameState {
           this.zBuffer[(posX * size.h) + posY] = perpWallDist;
 
           std.setConsoleCursorPosition({x: posX, y: posY});
-          std.writeConsole(side ? "█" : "░", {
+          std.writeConsole(side ? "█" : "▒", {
             fgColor: entry.fgColor,
           });
+        }
+
+        if (entry.height < 1 || Math.abs(entry.height) >= 0.5) {
+          lastStart = drawStart;
+          lastEnd   = drawEnd;
+          lastIndex = mapIndex;
+          lastDist  = perpWallDist;
         }
       }
     }
