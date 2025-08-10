@@ -30,7 +30,7 @@ import {
   ImageFile,
   LinkFile,
   TextFile,
-} from "../FileSystem/fileTypes";
+} from "@FileSystem/fileTypes";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
