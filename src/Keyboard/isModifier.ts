@@ -20,7 +20,7 @@ function code(code: string) {
   return MODIFIER_CODES.includes(code);
 };
 function event(ev: KeyboardEvent) {
-  return MODIFIER_KEYS.includes(ev.key);
+  return MODIFIER_KEYS.includes(ev.key) || code(ev.code);
 };
 
 export default { code, event };

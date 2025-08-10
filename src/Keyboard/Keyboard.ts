@@ -1,7 +1,25 @@
-/* TODO: add comment describing how this works */
+/*
+ * The core keyboard class.
+ * The Keyboard class manages the global keyboard state.
+ * It, by itself, does not track any events, instead an
+ * 'event source' (KeyboardSource) may be registered
+ * (using Keyboard.addSource) to detect and broadcast events
+ * that occur within the source. There may be multiple sources
+ * at once, at the moment of writing there are two: PhysicalKeyboard
+ * and ScreenKeyboard. The former tracks the state of the physical
+ * keyboard of the user, the latter tracks the on-screen keyboard,
+ * located below the display of the current screen of the PengPuter.
+ *
+ * To understand everything else, read the respective files for
+ * PhysicalKeyboard and ScreenKeyboard.
+ */
 import { ANSI_LAYOUT } from "./ansiLayout";
 import isModifier from "./isModifier";
-import { type KeyCode, type PengKeyboardEvent, Modifier } from "./types";
+import {
+  Modifier,
+  type KeyCode,
+  type PengKeyboardEvent
+} from "./types";
 import { Signal } from "../Toolbox/Signal";
 
 export interface KeyboardSource {
@@ -16,6 +34,7 @@ export class Keyboard implements KeyboardSource {
 
   private _layout: any;
 
+  /* a bitmask of currently active modifiers */
   private _mods: number = 0;
 
   constructor() {
@@ -34,7 +53,8 @@ export class Keyboard implements KeyboardSource {
   }
 
   public update(dt: number) {
-    for (const src of this._sources) if (src !== this) src.update(dt);
+    for (const src of this._sources)
+      if (src !== this) src.update(dt);
   }
 
   /* Keyboard API functions */
@@ -47,6 +67,23 @@ export class Keyboard implements KeyboardSource {
     return this._layout;
   }
 
+  public keyCodeToModifier(code: KeyCode): Modifier | null {
+    switch (code) {
+      case "ShiftLeft": case "ShiftRight":
+        return Modifier.SHIFT;
+      case "ControlLeft": case "ControlRight":
+        return Modifier.CONTROL;
+      case "AltLeft": case "AltRight":
+        return Modifier.ALT
+      case "MetaLeft": case "MetaRight":
+        return Modifier.META;
+      case "CapsLock":
+        return Modifier.CAPSLK;
+      default:
+        return null;
+    }
+  }
+
   public getModifierState(): any {
     return {
       isShiftDown: (this._mods & Modifier.SHIFT) != 0,
@@ -57,12 +94,17 @@ export class Keyboard implements KeyboardSource {
     };
   }
 
-  public setModifierState(mod: Modifier | number) {
-    this._mods &= mod & Modifier.ALLMODS;
+  public setModifiers(mod: number) {
+    this._mods = mod & Modifier.ALLMODS;
   }
 
-  public setModifiers(newMods: number) {
-    this._mods = newMods;
+  public maskModifiers(ORMask: number, ANDMask: number) {
+    this._mods |= ORMask;
+    this._mods &= ANDMask;
+  }
+
+  public getModifiers(): number {
+    return this._mods;
   }
 
   public sendKeyCode(
@@ -70,7 +112,7 @@ export class Keyboard implements KeyboardSource {
     code: KeyCode,
     pressed: boolean,
   ) {
-    const event = this._constructEvent(code, pressed);
+    const event = this.constructEvent(code, pressed);
     this.sendEvent(source, event);
   }
 
@@ -123,7 +165,7 @@ export class Keyboard implements KeyboardSource {
     throw new Error("Not implemented; come back next weekend");
   }
 
-  private _constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
+  public constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
     return {
       code: code,
       char: this.getCharFromCode(code),

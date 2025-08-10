@@ -4,10 +4,10 @@
  */
 import {
   Keyboard,
+  Modifier,
   type KeyboardSource,
   type KeyCode,
-  Modifier,
-  type PengKeyboardEvent,
+  type PengKeyboardEvent
 } from "../Keyboard";
 import isModifier from "./isModifier";
 
@@ -39,31 +39,42 @@ export class PhysicalKeyboard implements KeyboardSource {
     };
   }
 
-  // prettier-ignore
+  private _eventToModifier(ev: KeyboardEvent): Modifier|null {
+    /* The ev.key checking is needed to workaround when user
+     * remaps a key, for example CapsLock -> Control; the
+     * browser reports the original key (CapsLock) as `ev.code',
+     * and the remapped key (Control) as `ev.key'. */
+    switch(ev.key) {
+      case "Control":  return Modifier.CONTROL;
+      case "Shift":    return Modifier.SHIFT;
+      case "Alt":      return Modifier.ALT;
+      case "Meta":     return Modifier.META;
+      case "CapsLock": return Modifier.CAPSLK;
+      default: {
+        let mod: Modifier|null = this.kb.keyCodeToModifier(ev.code as KeyCode);
+        return mod;
+      }
+    }
+  }
+
   private _updateModifierStates(ev: KeyboardEvent) {
-    this.kb.setModifiers(
-      0 // <-- balloon
-      | (ev.shiftKey ? Modifier.SHIFT   : 0)
-      | (ev.ctrlKey  ? Modifier.CONTROL : 0)
-      | (ev.altKey   ? Modifier.ALT     : 0)
-      | (ev.metaKey  ? Modifier.META    : 0)
-      | (ev.getModifierState("CapsLock") ? Modifier.CAPSLK : 0)
-    );
+    const mod = this._eventToModifier(ev);
+    if(!mod) return;
+
+    if(ev.type === "keydown") {
+      this.kb.maskModifiers(mod, Modifier.ALLMODS);
+    } else {
+      this.kb.maskModifiers(0, ~mod);
+    }
   }
 
   private _onKey(ev: KeyboardEvent) {
     ev.preventDefault();
     ev.stopPropagation();
 
-    this._updateModifierStates(ev);
-
-    // ev = { key: Control, type: "keyup" }
-    // this.myHeldMods = CONTROL;
-    // kb.mods = CONTROL | ALT;
-    // this.kb.setModifierState(~((kb.mods&this.myHeldMods) & Modifier.CONTROL));
-    // this.kb.setModifierState(~Modifier.CONTROL);
-
     if (ev.repeat) return;
+
+    this._updateModifierStates(ev);
 
     const pengevent = this._constructEventFromBrowser(ev);
 
