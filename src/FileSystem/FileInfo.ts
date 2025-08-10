@@ -6,7 +6,7 @@ import type {
   LinkFile,
   LinkOpenType,
   TextFile,
-} from "src/Pengputer/fileTypes";
+} from "./fileTypes";
 import { type Executable, FileSystemObjectType } from "./types";
 
 export class FileInfoDirectory {

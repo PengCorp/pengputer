@@ -25,7 +25,12 @@ import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import macgerPng from "./files/documents/pengers/macger.png";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
-import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
+import {
+  AudioFile,
+  ImageFile,
+  LinkFile,
+  TextFile,
+} from "../FileSystem/fileTypes";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";

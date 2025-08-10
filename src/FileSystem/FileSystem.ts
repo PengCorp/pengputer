@@ -5,7 +5,7 @@ import {
   type LinkOpenType,
   TextFile,
   BinaryFile,
-} from "../Pengputer/fileTypes";
+} from "./fileTypes";
 
 import _ from "lodash";
 import {
