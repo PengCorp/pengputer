@@ -3,7 +3,7 @@ import { Font } from "./Font";
 import cp437 from "./cp437_9x8_2x.png";
 import cp437patterns from "./cp437patterns_9x8_2x.png";
 import cp437custom from "./cp437custom_9x8_2x.png";
-import { charArray } from "../types";
+import { type charArray } from "../types";
 
 /* cSpell:disable */
 

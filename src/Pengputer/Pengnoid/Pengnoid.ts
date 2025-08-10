@@ -1,12 +1,12 @@
-import { Executable } from "../FileSystem";
+import { type Executable } from "../FileSystem";
 import { Signal } from "../../Toolbox/Signal";
 import { State, StateManager } from "../../Toolbox/StateManager";
-import { PC } from "../PC";
+import { type PC } from "../PC";
 import { Graphics } from "../../Screen/Graphics";
 import { Std } from "../../Std";
 import { makeSprite } from "../../Screen/Graphics.Sprite";
-import { Vector } from "../../Toolbox/Vector";
-import { KeyCode } from "../../Keyboard/types.keyCode";
+import { type Vector } from "../../Toolbox/Vector";
+import { type KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
 import { sprites } from "./sprites";
 

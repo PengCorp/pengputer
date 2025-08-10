@@ -1,5 +1,5 @@
 import GraphemeSplitter from "grapheme-splitter";
-import { charArray } from "../types";
+import { type charArray } from "../types";
 
 const splitter = new GraphemeSplitter();
 

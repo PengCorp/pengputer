@@ -1,7 +1,7 @@
 import { Signal } from "../Toolbox/Signal";
 import { ANSI_LAYOUT } from "./ansiLayout";
 import { getIsModifierKey } from "./isModifierKey";
-import { KeyCode, PengKeyboardEvent } from "./types";
+import { type KeyCode, type PengKeyboardEvent } from "./types";
 
 export type TypeListener = (
   char: string | null,

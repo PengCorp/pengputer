@@ -1,5 +1,5 @@
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import { type Executable } from "./FileSystem";
+import { type PC } from "./PC";
 
 export class DateApp implements Executable {
   private pc: PC;

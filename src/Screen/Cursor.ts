@@ -1,5 +1,5 @@
-import { Vector, vectorAdd, vectorClone } from "../Toolbox/Vector";
-import { Size } from "../types";
+import { type Vector, vectorAdd, vectorClone } from "../Toolbox/Vector";
+import { type Size } from "../types";
 
 interface Screen {
   getSize: () => Size;

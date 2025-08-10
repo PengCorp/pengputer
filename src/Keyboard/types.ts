@@ -1,5 +1,5 @@
-import { KeyCode } from "./types.keyCode";
-export { KeyCode };
+import { type KeyCode } from "./types.keyCode";
+export { type KeyCode };
 
 export interface PengKeyboardEvent {
   code: KeyCode;

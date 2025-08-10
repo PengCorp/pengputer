@@ -4,8 +4,8 @@ import {
   indexedColorRgbValues,
 } from "../Color/ansi";
 import { ColorType } from "../Color/Color";
-import { CellAttributes } from "../TextBuffer";
-import { ScreenCharacterAttributes } from "./types";
+import { type CellAttributes } from "../TextBuffer";
+import { type ScreenCharacterAttributes } from "./types";
 import tc from "tinycolor2";
 
 export const getScreenCharacterAttributesFromTermCellAttributes = (

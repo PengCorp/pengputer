@@ -1,6 +1,6 @@
 import { CGA_PALETTE_DICT } from "./cgaPalette";
-import { Color, ColorType } from "./Color";
-import { CgaColors, ColorName } from "./types";
+import { type Color, ColorType } from "./Color";
+import { CgaColors, type ColorName } from "./types";
 import tc from "tinycolor2";
 
 export const classicColorRgbValues = new Array(32).fill(

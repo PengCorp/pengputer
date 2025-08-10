@@ -2,8 +2,8 @@ import { Std } from "../Std";
 import { clamp } from "../Toolbox/Math";
 import { splitStringIntoCharacters } from "../Toolbox/String";
 import { isNil } from "../Toolbox/typescript";
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import { type Executable } from "./FileSystem";
+import { type PC } from "./PC";
 import _ from "lodash";
 
 const SEPARATOR = ",";
