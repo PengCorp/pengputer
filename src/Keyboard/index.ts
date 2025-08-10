@@ -1,3 +1,4 @@
 export * from "./types";
-export { Keyboard, KeyboardSource } from "./Keyboard";
+export type { KeyboardSource } from "./Keyboard";
+export { Keyboard } from "./Keyboard";
 export { PhysicalKeyboard } from "./PhysicalKeyboard";

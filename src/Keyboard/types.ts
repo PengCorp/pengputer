@@ -1,5 +1,5 @@
-import { KeyCode } from "./types.keyCode";
-export { KeyCode };
+import type { KeyCode } from "./types.keyCode";
+export type { KeyCode };
 
 export interface PengKeyboardEvent {
   code: KeyCode;
@@ -16,10 +16,14 @@ export interface PengKeyboardEvent {
 }
 
 export enum Modifier {
-  SHIFT   = 1<<0,
-  CONTROL = 1<<1,
-  ALT     = 1<<2,
-  META    = 1<<3,
-  CAPSLK  = 1<<4,
-  ALLMODS = Modifier.SHIFT|Modifier.CONTROL|Modifier.ALT|Modifier.META|Modifier.CAPSLK
+  SHIFT = 1 << 0,
+  CONTROL = 1 << 1,
+  ALT = 1 << 2,
+  META = 1 << 3,
+  CAPSLK = 1 << 4,
+  ALLMODS = Modifier.SHIFT |
+    Modifier.CONTROL |
+    Modifier.ALT |
+    Modifier.META |
+    Modifier.CAPSLK,
 }
