@@ -355,6 +355,8 @@ class ReadLine {
       this.curIndex++;
     }
 
+    if(!this.result[prevIndex]) return; /* at the end of the string */
+
     const left = this.result.slice(0, prevIndex);
     const middle = this.result[prevIndex].toUpperCase();
     const right = this.result.slice(prevIndex + 1, inputLen);
