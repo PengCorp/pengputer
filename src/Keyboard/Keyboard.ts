@@ -15,12 +15,8 @@
  */
 import { ANSI_LAYOUT } from "./ansiLayout";
 import isModifier from "./isModifier";
-import {
-  Modifier,
-  type KeyCode,
-  type PengKeyboardEvent
-} from "./types";
-import { Signal } from "../Toolbox/Signal";
+import { Modifier, type KeyCode, type PengKeyboardEvent } from "./types";
+import { Signal } from "@Toolbox/Signal";
 
 export interface KeyboardSource {
   onRegister: () => void;
@@ -53,8 +49,7 @@ export class Keyboard implements KeyboardSource {
   }
 
   public update(dt: number) {
-    for (const src of this._sources)
-      if (src !== this) src.update(dt);
+    for (const src of this._sources) if (src !== this) src.update(dt);
   }
 
   /* Keyboard API functions */
@@ -69,13 +64,17 @@ export class Keyboard implements KeyboardSource {
 
   public keyCodeToModifier(code: KeyCode): Modifier | null {
     switch (code) {
-      case "ShiftLeft": case "ShiftRight":
+      case "ShiftLeft":
+      case "ShiftRight":
         return Modifier.SHIFT;
-      case "ControlLeft": case "ControlRight":
+      case "ControlLeft":
+      case "ControlRight":
         return Modifier.CONTROL;
-      case "AltLeft": case "AltRight":
-        return Modifier.ALT
-      case "MetaLeft": case "MetaRight":
+      case "AltLeft":
+      case "AltRight":
+        return Modifier.ALT;
+      case "MetaLeft":
+      case "MetaRight":
         return Modifier.META;
       case "CapsLock":
         return Modifier.CAPSLK;

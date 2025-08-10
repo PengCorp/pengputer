@@ -1,6 +1,6 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { type Vector } from "../Toolbox/Vector";
+import { type Vector } from "@Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
 import { type KeyCode } from "../Keyboard/types";
 

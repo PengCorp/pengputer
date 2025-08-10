@@ -1,21 +1,17 @@
 import { padStart } from "lodash";
-import {
-  Keyboard,
-  PhysicalKeyboard,
-  ScreenKeyboard
-} from "../Keyboard";
+import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadFont9x16 } from "../Screen/font9x16";
-import { loadImageBitmapFromUrl } from "../Toolbox/loadImage";
-import { waitFor } from "../Toolbox/waitFor";
+import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
+import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import {
+  FileInfoDirectory,
+  FilePath,
   FileSystem,
   FileSystemObjectType,
-  FileInfoDirectory,
-} from "./FileSystem";
-import { FilePath, type FileInfo } from "./FileSystem";
+} from "../FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
 import { PengerShell } from "./PengerShell";
@@ -29,12 +25,17 @@ import mountainKingOgg from "./files/documents/music/mountainking.ogg";
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import macgerPng from "./files/documents/pengers/macger.png";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
-import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
+import {
+  AudioFile,
+  ImageFile,
+  LinkFile,
+  TextFile,
+} from "@FileSystem/fileTypes";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 
-import "../Color/ansi";
+import "@Color/ansi";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";

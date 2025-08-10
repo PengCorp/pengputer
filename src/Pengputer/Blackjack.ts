@@ -6,10 +6,10 @@
  */
 
 import _ from "lodash";
-import { classicColors, uniqueColors } from "../Color/ansi";
-import { type Color } from "../Color/Color";
-import { type Executable } from "./FileSystem";
+import { classicColors, uniqueColors } from "@Color/ansi";
+import { type Color } from "@Color/Color";
 import { type PC } from "./PC";
+import type { Executable } from "@FileSystem/fileTypes";
 
 const INITIAL_CASH = 100;
 const NAME_FIELD_WIDTH = 10;

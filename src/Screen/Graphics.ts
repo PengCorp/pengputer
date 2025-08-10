@@ -1,6 +1,6 @@
-import { CGA_PALETTE_DICT } from "../Color/cgaPalette";
-import { CgaColors } from "../Color/types";
-import { type Vector } from "../Toolbox/Vector";
+import { CGA_PALETTE_DICT } from "@Color/cgaPalette";
+import { CgaColors } from "@Color/types";
+import { type Vector } from "@Toolbox/Vector";
 import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
 import tc from "tinycolor2";
 import { makeSprite, type Sprite } from "./Graphics.Sprite";

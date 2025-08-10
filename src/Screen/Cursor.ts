@@ -1,4 +1,4 @@
-import { type Vector, vectorAdd, vectorClone } from "../Toolbox/Vector";
+import { type Vector, vectorAdd, vectorClone } from "@Toolbox/Vector";
 import { type Size } from "../types";
 
 interface Screen {

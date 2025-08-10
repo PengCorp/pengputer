@@ -1,9 +1,9 @@
-import { classicColors } from "../Color/ansi";
-import { type Color, ColorType } from "../Color/Color";
+import { classicColors } from "@Color/ansi";
+import { type Color, ColorType } from "@Color/Color";
 import { getIsPrintable } from "../Screen/getIsPrintable";
-import { RingBuffer } from "../Toolbox/RingBuffer";
-import { splitStringIntoCharacters } from "../Toolbox/String";
-import { type Vector } from "../Toolbox/Vector";
+import { RingBuffer } from "@Toolbox/RingBuffer";
+import { splitStringIntoCharacters } from "@Toolbox/String";
+import { type Vector } from "@Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, type Size } from "../types";
 import { BOXED_NO_BOX } from "./constants";
 

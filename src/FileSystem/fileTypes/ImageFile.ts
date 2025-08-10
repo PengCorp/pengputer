@@ -1,4 +1,4 @@
-import { loadImageBitmapFromUrl } from "../../Toolbox/loadImage";
+import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 
 export class ImageFile {
   private src: string;
