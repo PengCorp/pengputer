@@ -1,11 +1,14 @@
 import tc from "tinycolor2";
 import { getBoldColorIndex, namedColors } from "../Color/ansi";
-import { Vector, vectorDivideComponents } from "../Toolbox/Vector";
-import { getIsVectorInZeroAlignedRect, Rect, Size } from "../types";
+import { type Vector, vectorDivideComponents } from "../Toolbox/Vector";
+import { getIsVectorInZeroAlignedRect, type Rect, type Size } from "../types";
 import { Cursor } from "./Cursor";
 import { font9x16 } from "./font9x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
-import { compareScreenBufferCharacter, ScreenBufferCharacter } from "./types";
+import {
+  compareScreenBufferCharacter,
+  type ScreenBufferCharacter,
+} from "./types";
 import {
   BOXED_BOTTOM,
   BOXED_LEFT,

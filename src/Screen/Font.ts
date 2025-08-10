@@ -1,6 +1,6 @@
 import { splitStringIntoCharacters } from "../Toolbox/String";
-import { Vector } from "../Toolbox/Vector";
-import { charArray, Size } from "../types";
+import { type Vector } from "../Toolbox/Vector";
+import { type charArray, type Size } from "../types";
 import { dataURLToImageBitmap } from "../util";
 
 interface Atlas {
@@ -119,5 +119,13 @@ export class Font {
         };
       }
     }
+
+    return {
+      canvas: this.atlases[0].canvas,
+      x: 0,
+      y: 0,
+      w: this.characterWidth * this.atlases[0].scale,
+      h: this.characterHeight * this.atlases[0].scale,
+    };
   }
 }

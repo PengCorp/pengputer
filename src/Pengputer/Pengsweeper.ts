@@ -5,20 +5,24 @@ import {
   namedColors,
   uniqueColors,
 } from "../Color/ansi";
-import { Color, ColorType } from "../Color/Color";
-import { ClickListener } from "../Screen/Screen";
+import { type Color, ColorType } from "../Color/Color";
+import { type ClickListener } from "../Screen/Screen";
 import { Signal } from "../Toolbox/Signal";
 import { State, StateManager } from "../Toolbox/StateManager";
 import {
-  Vector,
+  type Vector,
   vectorAdd,
   vectorClamp,
   vectorSubtract,
   zeroVector,
 } from "../Toolbox/Vector";
-import { getIsVectorInRect, getRectFromVectorAndSize, Size } from "../types";
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import {
+  getIsVectorInRect,
+  getRectFromVectorAndSize,
+  type Size,
+} from "../types";
+import { type Executable } from "./FileSystem";
+import { type PC } from "./PC";
 
 enum GameStateKey {
   MainMenu,
@@ -247,7 +251,7 @@ class Pengsweeper extends State {
 
   private checkWin() {
     if (this.isLoss) {
-      return false;
+      return;
     }
 
     let existCovered = false;

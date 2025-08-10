@@ -7,9 +7,9 @@
 
 import _ from "lodash";
 import { classicColors, uniqueColors } from "../Color/ansi";
-import { Color } from "../Color/Color";
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import { type Color } from "../Color/Color";
+import { type Executable } from "./FileSystem";
+import { type PC } from "./PC";
 
 const INITIAL_CASH = 100;
 const NAME_FIELD_WIDTH = 10;

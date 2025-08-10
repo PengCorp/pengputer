@@ -9,11 +9,11 @@ Sources:
 
 import _ from "lodash";
 import { classicColors, namedColors, uniqueColors } from "../Color/ansi";
-import { Color, ColorType } from "../Color/Color";
+import { type Color, ColorType } from "../Color/Color";
 import { wrapMax } from "../Toolbox/Math";
 import { Signal } from "../Toolbox/Signal";
 import {
-  Vector,
+  type Vector,
   vectorAdd,
   vectorClone,
   vectorEqual,
@@ -23,11 +23,11 @@ import {
 import {
   getIsVectorInRect,
   getRectFromVectorAndSize,
-  Rect,
-  Size,
+  type Rect,
+  type Size,
 } from "../types";
-import { Executable } from "./FileSystem";
-import { PC } from "./PC";
+import { type Executable } from "./FileSystem";
+import { type PC } from "./PC";
 
 const msPerFrame = 16.666666666;
 

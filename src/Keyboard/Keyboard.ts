@@ -1,14 +1,14 @@
 /* TODO: add comment describing how this works */
 import { ANSI_LAYOUT } from "./ansiLayout";
 import isModifier from "./isModifier";
-import { KeyCode, PengKeyboardEvent, Modifier } from "./types";
+import { type KeyCode, type PengKeyboardEvent, Modifier } from "./types";
 import { Signal } from "../Toolbox/Signal";
 
 export interface KeyboardSource {
   onRegister: () => void;
   onEvent: (event: PengKeyboardEvent) => void;
   update: (dt: number) => void;
-};
+}
 
 export class Keyboard implements KeyboardSource {
   private _sources: KeyboardSource[];
@@ -34,8 +34,7 @@ export class Keyboard implements KeyboardSource {
   }
 
   public update(dt: number) {
-    for(const src of this._sources)
-      if(src !== this) src.update(dt);
+    for (const src of this._sources) if (src !== this) src.update(dt);
   }
 
   /* Keyboard API functions */
@@ -50,35 +49,34 @@ export class Keyboard implements KeyboardSource {
 
   public getModifierState(): any {
     return {
-      isShiftDown:
-        (this._mods & Modifier.SHIFT) != 0,
-      isControlDown:
-        (this._mods & Modifier.CONTROL) != 0,
-      isAltDown:
-        (this._mods & Modifier.ALT) != 0,
-      isMetaDown:
-        (this._mods & Modifier.META) != 0,
-      isCapsOn:
-        (this._mods & Modifier.CAPSLK) != 0,
-    }
+      isShiftDown: (this._mods & Modifier.SHIFT) != 0,
+      isControlDown: (this._mods & Modifier.CONTROL) != 0,
+      isAltDown: (this._mods & Modifier.ALT) != 0,
+      isMetaDown: (this._mods & Modifier.META) != 0,
+      isCapsOn: (this._mods & Modifier.CAPSLK) != 0,
+    };
   }
 
   public setModifierState(mod: Modifier | number) {
-    this._mods &= mod & (Modifier.ALLMODS);
+    this._mods &= mod & Modifier.ALLMODS;
   }
 
   public setModifiers(newMods: number) {
     this._mods = newMods;
   }
 
-  public sendKeyCode(source: KeyboardSource | null, code: KeyCode, pressed: boolean) {
+  public sendKeyCode(
+    source: KeyboardSource | null,
+    code: KeyCode,
+    pressed: boolean,
+  ) {
     const event = this._constructEvent(code, pressed);
     this.sendEvent(source, event);
   }
 
   public sendEvent(source: KeyboardSource | null, event: PengKeyboardEvent) {
-    for(const src of this._sources) {
-      if(src && src !== source) src.onEvent(event);
+    for (const src of this._sources) {
+      if (src && src !== source) src.onEvent(event);
     }
   }
 
@@ -115,8 +113,7 @@ export class Keyboard implements KeyboardSource {
     return null;
   }
 
-  public flushEventBuffer() {
-  }
+  public flushEventBuffer() {}
 
   public waitForNextEvent(): Promise<PengKeyboardEvent> {
     return this._eventSig.getPromise();
@@ -133,7 +130,7 @@ export class Keyboard implements KeyboardSource {
       pressed: pressed,
       isAutoRepeat: false,
       isModifier: isModifier.code(code),
-      ...this.getModifierState()
+      ...this.getModifierState(),
     };
   }
 }

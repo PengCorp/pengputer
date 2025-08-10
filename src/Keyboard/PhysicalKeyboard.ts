@@ -2,7 +2,13 @@
  * A class for tracking and reporting state
  * of the physical keyboard.
  */
-import { Keyboard, KeyboardSource, KeyCode, Modifier, PengKeyboardEvent } from "../Keyboard";
+import {
+  Keyboard,
+  type KeyboardSource,
+  type KeyCode,
+  Modifier,
+  type PengKeyboardEvent,
+} from "../Keyboard";
 import isModifier from "./isModifier";
 
 export class PhysicalKeyboard implements KeyboardSource {
@@ -17,7 +23,7 @@ export class PhysicalKeyboard implements KeyboardSource {
     window.addEventListener("keyup", this._onKey.bind(this));
   }
 
-  public onEvent(event: PengKeyboardEvent) { }
+  public onEvent(event: PengKeyboardEvent) {}
   public update(dt: number) {
     /* TODO: autorepeat here */
   }
@@ -29,7 +35,7 @@ export class PhysicalKeyboard implements KeyboardSource {
       pressed: ev.type === "keydown",
       isAutoRepeat: false,
       isModifier: isModifier.event(ev),
-      ...this.kb.getModifierState()
+      ...this.kb.getModifierState(),
     };
   }
 
@@ -57,7 +63,7 @@ export class PhysicalKeyboard implements KeyboardSource {
     // this.kb.setModifierState(~((kb.mods&this.myHeldMods) & Modifier.CONTROL));
     // this.kb.setModifierState(~Modifier.CONTROL);
 
-    if(ev.repeat) return;
+    if (ev.repeat) return;
 
     const pengevent = this._constructEventFromBrowser(ev);
 

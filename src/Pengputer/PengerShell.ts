@@ -3,16 +3,20 @@
  * Description: Implements the
  */
 
-import { Executable } from "./FileSystem";
+import { type Executable } from "./FileSystem";
 import {
-  DriveLabel,
+  type DriveLabel,
   isDriveLabel,
   FileSystem,
   FileSystemObjectType,
 } from "./FileSystem";
-import { FilePath, FloppyStorage, FloppySerialized } from "./FileSystem";
+import {
+  FilePath,
+  type FloppyStorage,
+  type FloppySerialized,
+} from "./FileSystem";
 import { PATH_SEPARATOR, LSKEY_FLOPPIES } from "./FileSystem";
-import { PC } from "./PC";
+import type { PC } from "./PC";
 
 import { argparse } from "../Toolbox/argparse";
 

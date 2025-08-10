@@ -11,9 +11,9 @@ import {
   FileSystemObjectType,
   FileInfoDirectory,
 } from "./FileSystem";
-import { FilePath, FileInfo } from "./FileSystem";
+import { FilePath, type FileInfo } from "./FileSystem";
 import { HelloWorld } from "./HelloWorld";
-import { PC } from "./PC";
+import { type PC } from "./PC";
 import { PengerShell } from "./PengerShell";
 
 import biosPenger from "./res/biosPenger.png";

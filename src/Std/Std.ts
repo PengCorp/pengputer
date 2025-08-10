@@ -1,10 +1,10 @@
 import { classicColors } from "../Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { KeyCode } from "../Keyboard/types";
+import { type KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { font9x16 } from "../Screen/font9x16";
 import { font9x8 } from "../Screen/font9x8";
-import { ClickListener } from "../Screen/Screen";
+import { type ClickListener } from "../Screen/Screen";
 import {
   BOXED,
   BOXED_BOTTOM,
@@ -12,11 +12,11 @@ import {
   BOXED_NO_BOX,
   BOXED_RIGHT,
   BOXED_TOP,
-  CellAttributes,
+  type CellAttributes,
   TextBuffer,
 } from "../TextBuffer";
-import { Vector, vectorAdd } from "../Toolbox/Vector";
-import { Rect } from "../types";
+import { type Vector, vectorAdd } from "../Toolbox/Vector";
+import { type Rect } from "../types";
 import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 import _ from "lodash";
