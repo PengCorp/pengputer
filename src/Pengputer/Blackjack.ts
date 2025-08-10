@@ -8,7 +8,7 @@
 import _ from "lodash";
 import { classicColors, uniqueColors } from "@Color/ansi";
 import { type Color } from "@Color/Color";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "../FileSystem/FileSystem";
 import { type PC } from "./PC";
 
 const INITIAL_CASH = 100;

@@ -13,7 +13,7 @@ import {
   BOXED_RIGHT,
   BOXED_TOP,
 } from "../TextBuffer";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "../FileSystem/FileSystem";
 import { type PC } from "./PC";
 
 const CHAR = "  ";

@@ -1,4 +1,4 @@
-import { type Executable } from "./FileSystem";
+import { type Executable } from "../FileSystem/FileSystem";
 import { type PC } from "./PC";
 
 export class DateApp implements Executable {

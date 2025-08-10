@@ -2,7 +2,7 @@ import { Std } from "../Std";
 import { clamp } from "@Toolbox/Math";
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { isNil } from "@Toolbox/typescript";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "../FileSystem/FileSystem";
 import { type PC } from "./PC";
 import _ from "lodash";
 

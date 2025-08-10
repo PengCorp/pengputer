@@ -7,11 +7,11 @@ import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import {
+  FileInfoDirectory,
+  FilePath,
   FileSystem,
   FileSystemObjectType,
-  FileInfoDirectory,
-} from "./FileSystem";
-import { FilePath, type FileInfo } from "./FileSystem";
+} from "../FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
 import { PengerShell } from "./PengerShell";
