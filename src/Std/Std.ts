@@ -1,6 +1,5 @@
 import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
 import { type KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { font9x16 } from "../Screen/font9x16";
@@ -319,10 +318,6 @@ export class Std {
 
   readConsoleKey() {
     return readKey(this.keyboard);
-  }
-
-  getIsKeyPressed(keyCode: KeyCode) {
-    return this.keyboard.getIsKeyPressed(keyCode);
   }
 
   flushKeyboardEvents() {

@@ -1,5 +1,5 @@
 import { padStart } from "lodash";
-import { Keyboard } from "../Keyboard";
+import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadFont9x16 } from "../Screen/font9x16";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
@@ -36,7 +36,6 @@ import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
 
 import "@Color/ansi";
-import { ScreenKeyboard } from "../Keyboard/ScreenKeyboard";
 import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
@@ -313,7 +312,10 @@ class PengOS {
   await screen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
-  new ScreenKeyboard(keyboard);
+  const physicalKeyboard = new PhysicalKeyboard(keyboard);
+  const screenKeyboard = new ScreenKeyboard(keyboard);
+  keyboard.addSource(physicalKeyboard);
+  keyboard.addSource(screenKeyboard);
 
   const textBuffer = new TextBuffer({
     pageSize: screen.getSizeInCharacters(),

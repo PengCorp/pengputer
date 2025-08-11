@@ -1,7 +1,5 @@
 import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
-import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
-import { getIsModifierKey } from "../Keyboard/isModifierKey";
 import { type Vector } from "@Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
 import { type KeyCode } from "../Keyboard/types";
@@ -76,6 +74,11 @@ class ReadLine {
             this.moveForwards();
           } else if (key === "KeyD") {
             this.deleteCharacter();
+          } else if (key === "KeyP") {
+            this.navigateHistoryBackwards();
+          } else if (key === "KeyN") {
+            /* might not work on some browsers, e.g. Firefox */
+            this.navigateHistoryForwards();
           }
 
           continue;
@@ -351,6 +354,8 @@ class ReadLine {
     while (this.curIndex < inputLen && !this.shouldStopWordMotion()) {
       this.curIndex++;
     }
+
+    if(!this.result[prevIndex]) return; /* at the end of the string */
 
     const left = this.result.slice(0, prevIndex);
     const middle = this.result[prevIndex].toUpperCase();
