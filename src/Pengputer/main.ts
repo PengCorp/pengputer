@@ -182,11 +182,11 @@ class PengOS {
       name: "blakjack.exe", // cspell:disable-line
       createInstance: () => new Blackjack(this.pc),
     });
-    gamesDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "pengnoid.exe",
-      createInstance: () => new Pengnoid(this.pc),
-    });
+    // gamesDir.addItem({
+    //   type: FileSystemObjectType.Executable,
+    //   name: "pengnoid.exe",
+    //   createInstance: () => new Pengnoid(this.pc),
+    // });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");
