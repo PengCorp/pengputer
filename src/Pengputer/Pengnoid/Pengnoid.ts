@@ -256,7 +256,7 @@ class Game extends State {
 
     graphics.drawSprite(
       sprites.paddleLeft,
-      paddleRect.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * 0,
+      paddleRect.x + PADDLE_SEGMENT_SIZE_IN_PIXELS * drawnWidth,
       paddleRect.y,
     );
     drawnWidth += 1;

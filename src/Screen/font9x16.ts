@@ -1,10 +1,10 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { Font } from "./Font";
-import cp437 from "./cp437_9x16_2x.png";
-import cp437plus from "./cp437plus_9x16_2x.png";
-import cp437legacy from "./cp437legacy_9x16_2x.png";
-import cp437patterns from "./cp437patterns_9x16_2x.png";
-import cp437custom from "./cp437custom_9x16_2x.png";
+import cp437 from "./cp437_9x16.png";
+import cp437plus from "./cp437plus_9x16.png";
+import cp437legacy from "./cp437legacy_9x16.png";
+import cp437patterns from "./cp437patterns_9x16.png";
+import cp437custom from "./cp437custom_9x16.png";
 import { type charArray } from "../types";
 
 /* cSpell:disable */
@@ -69,77 +69,66 @@ export const loadFont9x16 = async () => {
   //   "cp437patterns",
   //   cp437patterns,
   //   cp437patternsCharacterValueMap,
-  //   2,
+  //   1,
   //   4,
   // );
-  await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap, 2);
-  await font9x16.loadAtlas(
-    "cp437plus",
-    cp437plus,
-    cp437plusCharacterValueMap,
-    2,
-  );
+  await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap);
+  await font9x16.loadAtlas("cp437plus", cp437plus, cp437plusCharacterValueMap);
   await font9x16.loadAtlas(
     "cp437legacy",
     cp437legacy,
     cp437legacyCharacterValueMap,
-    2,
   );
-  await font9x16.loadAtlas(
-    "cp437custom",
-    cp437custom,
+  await font9x16.loadAtlas("cp437custom", cp437custom, [
     [
-      [
-        "penger00",
-        "penger01",
-        "penger02",
-        "pengDollar",
-        "floppy0",
-        "floppy1",
-        "floppyDrive0",
-        "floppyDrive1",
-        "hardDrive0",
-        "hardDrive1",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ],
-      [
-        "penger10",
-        "penger11",
-        "penger12",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      "penger00",
+      "penger01",
+      "penger02",
+      "pengDollar",
+      "floppy0",
+      "floppy1",
+      "floppyDrive0",
+      "floppyDrive1",
+      "hardDrive0",
+      "hardDrive1",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
     ],
-    2,
-  );
+    [
+      "penger10",
+      "penger11",
+      "penger12",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+  ]);
 };
