@@ -17,8 +17,8 @@ import {
   zeroVector,
 } from "../Toolbox/Vector";
 
-import { classicColors, namedColors, uniqueColors } from "../Color/ansi";
-import { Color, ColorType } from "../Color/Color";
+import { classicColorRgbValues, classicColors, getDirectColor, namedColors, uniqueColors } from "../Color/ansi";
+import { Color, ColorType, DirectColor } from "../Color/Color";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 import { char, Size } from "../types";
@@ -26,7 +26,7 @@ import { ScreenMode } from "../Std";
 
 const MAP_WIDTH:  number = 10;
 const MAP_HEIGHT: number = 10;
-const MAX_STEPS:  number = 15;
+const MAX_STEPS:  number = 100;
 
 enum MapIndexType {
   DEFAULT,
@@ -207,7 +207,7 @@ class Raycaster implements GameState {
   private entities: Array<Entity>;
   private time: number;
 
-  zBuffer: number[];
+  private zBuffer: number[];
   
   constructor(pc:PC){
     this.pc = pc;
@@ -250,6 +250,10 @@ class Raycaster implements GameState {
     }
   }
 
+  private Lerp(a: number, b: number, t: number) {
+    return a + t * (b - a);
+  }
+
   public Enter() {
 
   }
@@ -269,6 +273,26 @@ class Raycaster implements GameState {
     this.entities[1].z = Math.sin(this.time);
 
     MAP_ENTRIES[3].z = Math.sin(this.time);
+
+    for (let posY: number = 0; posY < size.h; posY++) {
+      for (let posX: number = 0; posX < size.w; posX++) {
+        let col: DirectColor = {type: ColorType.Direct, r: 0, g: 0, b: 0};
+
+        // Start: 50, 190, 255
+        // End:   23, 33, 145
+        const t: number = posY / size.h;
+        col.r = this.Lerp(50,  23,  t);
+        col.g = this.Lerp(190, 33,  t);
+        col.b = this.Lerp(255, 145, t);
+        
+        std.setConsoleCursorPosition({x: posX, y: posY});
+        std.writeConsole("█", {
+          fgColor: col,
+        });
+
+      }
+    }
+
 
     for (let posY: number = 0; posY <= size.h; posY++){
       const p: number = posY - size.h / 2;
@@ -500,7 +524,7 @@ class Raycaster implements GameState {
           }
 
           // Bottom
-          if (drawEnd > lastEnd) {
+          if (drawEnd >= lastEnd) {
               for (let posY: number = drawEnd; posY >= Math.max(lastEnd, 0); posY--) {
               const z = this.zBuffer[(posX * size.h) + posY];
               if (z <= lastDist) continue;
@@ -542,8 +566,6 @@ class Raycaster implements GameState {
 
         const entry = MAP_ENTRIES[mapIndex];
         const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
-        if (perpWallDist <= 0) continue;
-
         const lineHeight:   number = Math.floor(size.h / perpWallDist);
         const pixelHeight:  number = Math.floor(lineHeight * entry.height);
         const baseY:        number = Math.floor(size.h/2 + lineHeight/2 - lineHeight * entry.z);
