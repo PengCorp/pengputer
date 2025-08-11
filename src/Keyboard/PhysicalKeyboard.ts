@@ -17,6 +17,8 @@ export class PhysicalKeyboard implements KeyboardSource {
 
   private autoRepeat: AutoRepeat;
 
+  private _caps: boolean = false;
+
   constructor(kb: Keyboard) {
     this.kb = kb;
 
@@ -32,18 +34,18 @@ export class PhysicalKeyboard implements KeyboardSource {
 
   public update(dt: number) {
     if (this.autoRepeat.update(dt)) {
-      const code = this.autoRepeat.getCode();
-      if (code) {
-        const event = this.kb.constructEvent(code, true);
-        event.isAutoRepeat = true;
-        this.kb.sendEvent(this, event);
-      }
+      const code = this.autoRepeat.getCode()!;
+      const event = this.kb.constructEvent(code, true);
+      event.isAutoRepeat = true;
+      this.kb.sendEvent(this, event);
     }
   }
 
   private _constructEventFromBrowser(ev: KeyboardEvent): PengKeyboardEvent {
+    let code = ev.code;
+    if (getIsEventModifier(ev)) code = ev.key;
     return {
-      code: ev.code,
+      code: code,
       char: this.kb.getCharFromCode(ev.code as KeyCode),
       pressed: ev.type === "keydown",
       isAutoRepeat: false,
@@ -79,12 +81,23 @@ export class PhysicalKeyboard implements KeyboardSource {
 
   private _updateModifierStates(ev: KeyboardEvent) {
     const mod = this._eventToModifier(ev);
-    if (!mod) return;
+    /* caps lock gets handled separately */
+    if (!mod || mod == Modifier.CAPS_LOCK) return;
 
     if (ev.type === "keydown") {
       this.kb.maskModifiers(mod, Modifier.ALL_MODIFIERS);
     } else {
       this.kb.maskModifiers(0, ~mod);
+    }
+  }
+
+  private _toggleCaps() {
+    this._caps = !this._caps;
+
+    if(this._caps) {
+      this.kb.maskModifiers(Modifier.CAPS_LOCK, Modifier.ALL_MODIFIERS);
+    } else {
+      this.kb.maskModifiers(0, ~Modifier.CAPS_LOCK);
     }
   }
 
@@ -98,9 +111,13 @@ export class PhysicalKeyboard implements KeyboardSource {
 
     const pengEvent = this._constructEventFromBrowser(ev);
 
-    if (pengEvent.pressed) {
-      this.autoRepeat.setCode(pengEvent.code);
-    } else this.autoRepeat.reset();
+    if (!pengEvent.pressed) this.autoRepeat.reset();
+    else if (pengEvent.isModifier) {
+      /* do not send autorepeat for modifiers */
+      this.autoRepeat.reset();
+      /* browser event handling is really broken */
+      if (ev.key == "CapsLock") this._toggleCaps();
+    } else this.autoRepeat.setCode(pengEvent.code);
 
     this.kb.sendEvent(this, pengEvent);
   }

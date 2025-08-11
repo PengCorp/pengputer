@@ -71,6 +71,9 @@ export class ScreenKeyboard implements KeyboardSource {
         this._toggleModKey(mod);
         this._toggleSetMod(mod);
         return;
+      } else if(mod == Modifier.CAPS_LOCK) {
+        this._toggleSetMod(mod);
+        return
       }
     }
     if (event.pressed) {
@@ -131,7 +134,8 @@ export class ScreenKeyboard implements KeyboardSource {
     ev: MouseEvent,
   ): PengKeyboardEvent {
     return {
-      code: code,
+      /* the side doesn't matter; AltGr etc. is preserved though */
+      code: code.replace("Left", "").replace("Right", ""),
       char: this.kb.getCharFromCode(code),
       pressed: ev.type == "mousedown",
       isAutoRepeat: false,
