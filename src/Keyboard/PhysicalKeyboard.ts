@@ -1,7 +1,3 @@
-/*
- * A class for tracking and reporting state
- * of the physical keyboard.
- */
 import {
   AutoRepeat,
   Keyboard,
@@ -12,6 +8,10 @@ import {
 } from "../Keyboard";
 import { getIsEventModifier } from "./isModifier";
 
+/**
+ * A class for tracking and reporting state
+ * of the physical keyboard.
+ */
 export class PhysicalKeyboard implements KeyboardSource {
   private kb: Keyboard;
 
@@ -20,7 +20,7 @@ export class PhysicalKeyboard implements KeyboardSource {
   constructor(kb: Keyboard) {
     this.kb = kb;
 
-    this.autoRepeat = new AutoRepeat(150, 50);
+    this.autoRepeat = new AutoRepeat(250, 50);
   }
 
   public onRegister() {
@@ -32,9 +32,12 @@ export class PhysicalKeyboard implements KeyboardSource {
 
   public update(dt: number) {
     if (this.autoRepeat.update(dt)) {
-      const event = this.kb.constructEvent(this.autoRepeat.getCode()!, true);
-      event.isAutoRepeat = true;
-      this.kb.sendEvent(this, event);
+      const code = this.autoRepeat.getCode();
+      if (code) {
+        const event = this.kb.constructEvent(code, true);
+        event.isAutoRepeat = true;
+        this.kb.sendEvent(this, event);
+      }
     }
   }
 

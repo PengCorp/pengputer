@@ -15,7 +15,7 @@ import { getIsCodeModifier } from "./isModifier";
 export class ScreenKeyboard implements KeyboardSource {
   private kb: Keyboard;
 
-  /* bitmask of Modifier values that this class has set */
+  /** Bitmask of Modifier values that this class has set. */
   private _ownedMods: number;
 
   private _special: {
@@ -45,6 +45,7 @@ export class ScreenKeyboard implements KeyboardSource {
   }
 
   /* KeyboardSource interface functions */
+
   public onRegister() {
     const allKeys = document.querySelectorAll<HTMLSpanElement>(".row span");
     for (const key of allKeys) {
@@ -94,12 +95,13 @@ export class ScreenKeyboard implements KeyboardSource {
    * the physical keyboard) has set a modifier, and it is not set in
    * our own mask, we must not change its value.
    */
-  /* checks whether we already own the modifier's value */
+
+  /** Checks whether we already own the modifier's value. */
   private _ownModifier(mod: Modifier): boolean {
     return (this._ownedMods & mod) !== 0;
   }
 
-  /* checks whether we can grab control of the modifier's value */
+  /** Checks whether we can grab control of the modifier's value. */
   private _canOwnModifier(mod: Modifier): boolean {
     return this._ownModifier(mod) || (this.kb.getModifiers() & mod) === 0;
   }
@@ -142,8 +144,8 @@ export class ScreenKeyboard implements KeyboardSource {
     const event = this._constructEventFromMouse(code, ev);
 
     if (event.isModifier && event.pressed) {
-      /* modifier keys are toggle keys */ const mod =
-        this.kb.keyCodeToModifier(code)!;
+      // modifier keys are toggle keys
+      const mod = this.kb.keyCodeToModifier(code)!;
 
       if (this._canOwnModifier(mod)) {
         this._toggleModKey(mod);
