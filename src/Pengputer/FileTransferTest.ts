@@ -1,6 +1,6 @@
-import { FileTransferManager } from "../Toolbox/FileTransferManager";
+import { FileTransferManager } from "@Toolbox/FileTransferManager";
 
-import { type Executable } from "./FileSystem";
+import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
 
 export class FileTransferTest implements Executable {

@@ -4,24 +4,24 @@ import {
   indexedColors,
   namedColors,
   uniqueColors,
-} from "../Color/ansi";
-import { type Color, ColorType } from "../Color/Color";
+} from "@Color/ansi";
+import { type Color, ColorType } from "@Color/Color";
 import { type ClickListener } from "../Screen/Screen";
-import { Signal } from "../Toolbox/Signal";
-import { State, StateManager } from "../Toolbox/StateManager";
+import { Signal } from "@Toolbox/Signal";
+import { State, StateManager } from "@Toolbox/StateManager";
 import {
   type Vector,
   vectorAdd,
   vectorClamp,
   vectorSubtract,
   zeroVector,
-} from "../Toolbox/Vector";
+} from "@Toolbox/Vector";
 import {
   getIsVectorInRect,
   getRectFromVectorAndSize,
   type Size,
 } from "../types";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
 
 enum GameStateKey {

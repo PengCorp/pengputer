@@ -1,6 +1,5 @@
-import { classicColors } from "../Color/ansi";
+import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { type TypeListener, type VoidListener } from "../Keyboard/Keyboard";
 import { type KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
 import { font9x16 } from "../Screen/font9x16";
@@ -16,7 +15,7 @@ import {
   type CellAttributes,
   TextBuffer,
 } from "../TextBuffer";
-import { type Vector, vectorAdd } from "../Toolbox/Vector";
+import { type Vector, vectorAdd } from "@Toolbox/Vector";
 import { type Rect } from "../types";
 import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
@@ -319,10 +318,6 @@ export class Std {
 
   readConsoleKey() {
     return readKey(this.keyboard);
-  }
-
-  getIsKeyPressed(keyCode: KeyCode) {
-    return this.keyboard.getIsKeyPressed(keyCode);
   }
 
   flushKeyboardEvents() {

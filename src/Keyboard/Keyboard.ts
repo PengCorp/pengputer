@@ -1,219 +1,172 @@
-import { Signal } from "../Toolbox/Signal";
+/*
+ * The core keyboard class.
+ * The Keyboard class manages the global keyboard state.
+ * It, by itself, does not track any events, instead an
+ * 'event source' (KeyboardSource) may be registered
+ * (using Keyboard.addSource) to detect and broadcast events
+ * that occur within the source. There may be multiple sources
+ * at once, at the moment of writing there are two: PhysicalKeyboard
+ * and ScreenKeyboard. The former tracks the state of the physical
+ * keyboard of the user, the latter tracks the on-screen keyboard,
+ * located below the display of the current screen of the PengPuter.
+ *
+ * To understand everything else, read the respective files for
+ * PhysicalKeyboard and ScreenKeyboard.
+ */
 import { ANSI_LAYOUT } from "./ansiLayout";
-import { getIsModifierKey } from "./isModifierKey";
-import { type KeyCode, type PengKeyboardEvent } from "./types";
+import { getIsCodeModifier } from "./isModifier";
+import {
+  Modifier,
+  type KeyboardSource,
+  type KeyCode,
+  type PengKeyboardEvent,
+} from "./types";
+import { Signal } from "@Toolbox/Signal";
 
-export type TypeListener = (
-  char: string | null,
-  keyCode: KeyCode,
-  ev: PengKeyboardEvent,
-) => void;
-export type VoidListener = () => void;
+export class Keyboard implements KeyboardSource {
+  private _sources: KeyboardSource[];
+  private _eventSignal: Signal<PengKeyboardEvent>;
 
-export class Keyboard {
-  private _pressed: Set<KeyCode>;
   private _layout: any;
 
-  private _autoRepeatDelay: number;
-  private _autoRepeatDelayCounter: number;
-  private _autoRepeatInterval: number;
-  private _autoRepeatIntervalCounter: number;
-  private _autoRepeatCode: KeyCode | null;
+  /** A bitmask of currently active modifiers. See Modifier for values. */
+  private _mods: number = 0;
 
   private _eventBuffer: PengKeyboardEvent[] = [];
 
-  private _newEventSignal: Signal<void> = new Signal();
-
-  private _isCapsOn: boolean = false;
-
-  public forceShift: boolean = false;
-  public forceControl: boolean = false;
-  public forceAlt: boolean = false;
-  public forceMeta: boolean = false;
-  public forceCaps: boolean = false;
-
   constructor() {
-    this._pressed = new Set();
+    this._eventSignal = new Signal();
+    this._sources = [];
     this._layout = ANSI_LAYOUT;
 
-    window.addEventListener("keydown", this._onKeyDown.bind(this));
-    window.addEventListener("keyup", this._onKeyUp.bind(this));
-
-    this._autoRepeatDelay = 250;
-    this._autoRepeatDelayCounter = this._autoRepeatDelay;
-    this._autoRepeatInterval = 50;
-    this._autoRepeatIntervalCounter = this._autoRepeatInterval;
-    this._autoRepeatCode = null;
+    this.addSource(this);
   }
 
-  private _getModifiersState() {
-    return {
-      isShiftDown:
-        this.forceShift ||
-        this._pressed.has("ShiftLeft") ||
-        this._pressed.has("ShiftRight"),
-      isControlDown:
-        this.forceControl ||
-        this._pressed.has("ControlLeft") ||
-        this._pressed.has("ControlRight"),
-      isAltDown:
-        this.forceAlt ||
-        this._pressed.has("AltLeft") ||
-        this._pressed.has("AltRight"),
-      isMetaDown:
-        this.forceMeta ||
-        this._pressed.has("MetaLeft") ||
-        this._pressed.has("MetaRight"),
-      isCapsOn: this.forceCaps || this._isCapsOn,
-    };
+  /* KeyboardSource interface functions */
+  public onRegister() {}
+
+  public onEvent(e: PengKeyboardEvent) {
+    this._eventSignal.emit(e);
   }
 
-  private _getEventFromCode(kc: KeyCode): PengKeyboardEvent {
-    const ev: PengKeyboardEvent = {
-      code: kc,
-      char: null,
-      pressed: false,
-      isAutoRepeat: false,
-      ...this._getModifiersState(),
-      isModifier: getIsModifierKey(kc),
-    };
-    ev.char = this._getCharFromLayout(ev) ?? null;
-    return ev;
-  }
-
-  private _getPengKeyboardEventFromKeyboardEvent(
-    e: KeyboardEvent,
-    pressed: boolean,
-  ): PengKeyboardEvent {
-    this._isCapsOn = e.getModifierState("CapsLock");
-
-    const ev = this._getEventFromCode(e.code as KeyCode);
-    ev.pressed = pressed;
-    return ev;
-  }
-
-  public handleKeyCode(kc: KeyCode, pressed: boolean) {
-    const ev = this._getEventFromCode(kc);
-    ev.pressed = pressed;
-    this._handleEvent(ev);
-  }
-
-  private _handleEvent(ev: PengKeyboardEvent) {
-    // if char not provided attempt to fill it in
-    if (!ev.char) {
-      ev.char = this._getCharFromLayout(ev) ?? null;
-    }
-    this._pushEvent(ev);
-    if (ev.pressed) {
-      this._pressed.add(ev.code);
-      this._onKeyTyped(ev);
-    } else {
-      this._pressed.delete(ev.code);
-      if (this._autoRepeatCode === ev.code) {
-        this._resetAutorepeat();
+  public update(dt: number) {
+    for (const src of this._sources) {
+      if (src !== this) {
+        src.update(dt);
       }
     }
   }
 
-  private _onKeyDown(e: KeyboardEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  /* Keyboard API functions */
 
-    if (e.repeat) return;
-
-    const pengEvent = this._getPengKeyboardEventFromKeyboardEvent(e, true);
-
-    this._handleEvent(pengEvent);
+  public addSource(src: KeyboardSource) {
+    this._sources.push(src);
+    src.onRegister();
   }
 
-  private _onKeyUp(e: KeyboardEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const pengEvent = this._getPengKeyboardEventFromKeyboardEvent(e, false);
-
-    this._handleEvent(pengEvent);
+  public getLayout(): any {
+    return this._layout;
   }
 
-  private _resetAutorepeat() {
-    this._autoRepeatCode = null;
-    this._autoRepeatDelayCounter = this._autoRepeatDelay;
-    this._autoRepeatIntervalCounter = 0;
+  public keyCodeToModifier(code: KeyCode): Modifier | null {
+    switch (code) {
+      case "ShiftLeft":
+      case "ShiftRight":
+        return Modifier.SHIFT;
+      case "ControlLeft":
+      case "ControlRight":
+        return Modifier.CONTROL;
+      case "AltLeft":
+      case "AltRight":
+        return Modifier.ALT;
+      case "MetaLeft":
+      case "MetaRight":
+        return Modifier.META;
+      case "CapsLock":
+        return Modifier.CAPS_LOCK;
+      default:
+        return null;
+    }
   }
 
-  public printState() {
-    console["log"](this._pressed);
+  public getModifierState(): any {
+    return {
+      isShiftDown: (this._mods & Modifier.SHIFT) != 0,
+      isControlDown: (this._mods & Modifier.CONTROL) != 0,
+      isAltDown: (this._mods & Modifier.ALT) != 0,
+      isMetaDown: (this._mods & Modifier.META) != 0,
+      isCapsOn: (this._mods & Modifier.CAPS_LOCK) != 0,
+    };
   }
 
-  public getIsKeyPressed(keyCode: KeyCode) {
-    return this._pressed.has(keyCode);
+  public setModifiers(mod: number) {
+    this._mods = mod & Modifier.ALL_MODIFIERS;
   }
 
-  private _getCharFromLayout(ev: PengKeyboardEvent) {
-    const { code: keyCode, isShiftDown, isCapsOn } = ev;
+  public maskModifiers(ORMask: number, ANDMask: number) {
+    this._mods |= ORMask;
+    this._mods &= ANDMask;
+  }
+
+  public getModifiers(): number {
+    return this._mods;
+  }
+
+  public sendKeyCode(
+    source: KeyboardSource | null,
+    code: KeyCode,
+    pressed: boolean,
+  ) {
+    const event = this.constructEvent(code, pressed);
+    this.sendEvent(source, event);
+  }
+
+  public sendEvent(source: KeyboardSource | null, event: PengKeyboardEvent) {
+    this._eventBuffer.push(event);
+
+    for (const src of this._sources) {
+      if (src && src !== source) src.onEvent(event);
+    }
+  }
+
+  public getCharFromCode(code: KeyCode): string | null {
+    /* COPIED (and modified, it's bad ;] ); TODO: rewrite */
+    const shift = (this._mods & Modifier.SHIFT) != 0;
+    const capsLock = (this._mods & Modifier.CAPS_LOCK) != 0;
 
     const shiftLayout = this._layout["@shift"];
     const capsLayout = this._layout["@caps"];
     const capsShiftLayout = this._layout["@caps-shift"];
 
-    if (isCapsOn && capsLayout) {
-      if (isShiftDown && capsShiftLayout && capsShiftLayout[keyCode]) {
-        return capsShiftLayout[keyCode];
+    if (capsLock && capsLayout) {
+      if (shift && capsShiftLayout && capsShiftLayout[code]) {
+        return capsShiftLayout[code];
       }
 
-      if (capsLayout[keyCode]) {
-        return capsLayout[keyCode];
+      if (capsLayout[code]) {
+        return capsLayout[code];
       }
     }
 
-    if (isShiftDown) {
-      if (shiftLayout && shiftLayout[keyCode]) {
-        return shiftLayout[keyCode];
+    if (shift) {
+      if (shiftLayout && shiftLayout[code]) {
+        return shiftLayout[code];
       }
       return null;
     }
 
-    if (this._layout[keyCode]) {
-      return this._layout[keyCode];
+    if (this._layout[code]) {
+      return this._layout[code];
     }
 
     return null;
   }
 
-  private _onKeyTyped(ev: PengKeyboardEvent) {
-    if (!ev.pressed) return;
+  public flushEventBuffer() {}
 
-    if (ev.code !== this._autoRepeatCode && !getIsModifierKey(ev.code)) {
-      this._resetAutorepeat();
-      this._autoRepeatCode = ev.code;
-    }
-  }
-
-  public update(dt: any) {
-    if (this._autoRepeatCode) {
-      this._autoRepeatDelayCounter -= dt;
-      if (this._autoRepeatDelayCounter <= 0) {
-        this._autoRepeatIntervalCounter -= dt;
-        while (this._autoRepeatIntervalCounter <= 0) {
-          this._autoRepeatIntervalCounter += this._autoRepeatInterval;
-          const ev = this._getEventFromCode(this._autoRepeatCode);
-          ev.pressed = true;
-          ev.isAutoRepeat = true;
-          this._pushEvent(ev);
-          this._onKeyTyped(ev);
-        }
-      }
-    }
-  }
-
-  private _pushEvent(ev: PengKeyboardEvent) {
-    this._eventBuffer.push(ev);
-    this._newEventSignal.emit();
-  }
-
-  public flushEventBuffer() {
-    this._resetAutorepeat();
-    this._eventBuffer = [];
+  public async waitForNextEvent(): Promise<PengKeyboardEvent> {
+    await this._eventSignal.getPromise();
+    return this.getNextEvent()!;
   }
 
   /**
@@ -225,24 +178,14 @@ export class Keyboard {
     return this._eventBuffer.shift() ?? null;
   }
 
-  /**
-   * Shifts out a single event from the Keyboard event buffer for processing.
-   *
-   * Returns a promise if no events available. The promise will resolve with an event.
-   */
-  public waitForNextEvent(): PengKeyboardEvent | Promise<PengKeyboardEvent> {
-    const immediateEvent = this._eventBuffer.shift();
-    if (immediateEvent) {
-      return immediateEvent;
-    }
-    return new Promise((resolve) => {
-      const unsub = this._newEventSignal.listen(() => {
-        const ev = this._eventBuffer.shift();
-        if (ev) {
-          unsub();
-          resolve(ev);
-        }
-      });
-    });
+  public constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
+    return {
+      code: code,
+      char: this.getCharFromCode(code),
+      pressed: pressed,
+      isAutoRepeat: false,
+      isModifier: getIsCodeModifier(code),
+      ...this.getModifierState(),
+    };
   }
 }

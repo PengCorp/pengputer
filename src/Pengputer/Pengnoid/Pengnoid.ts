@@ -1,6 +1,6 @@
-import { type Executable } from "../FileSystem";
-import { Signal } from "../../Toolbox/Signal";
-import { State, StateManager } from "../../Toolbox/StateManager";
+import { type Executable } from "@FileSystem/fileTypes";
+import { Signal } from "@Toolbox/Signal";
+import { State, StateManager } from "@Toolbox/StateManager";
 import { type PC } from "../PC";
 import { Graphics } from "../../Screen/Graphics";
 import { Std } from "../../Std";
@@ -15,7 +15,7 @@ import {
   type Vector,
   vectorDivideByNumberFloored,
   vectorReflect,
-} from "../../Toolbox/Vector";
+} from "@Toolbox/Vector";
 import { type KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
 import { sprites } from "./sprites";

@@ -3,9 +3,9 @@ import {
   getDirectColor,
   indexedColors,
   namedColors,
-} from "../Color/ansi";
-import { ColorType } from "../Color/Color";
-import type { ColorName } from "../Color/types";
+} from "@Color/ansi";
+import { ColorType } from "@Color/Color";
+import type { ColorName } from "@Color/types";
 import {
   BOXED,
   BOXED_BOTTOM,
@@ -13,7 +13,7 @@ import {
   BOXED_RIGHT,
   BOXED_TOP,
 } from "../TextBuffer";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
 
 const CHAR = "  ";

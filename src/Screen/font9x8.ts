@@ -1,4 +1,4 @@
-import { splitStringIntoCharacters } from "../Toolbox/String";
+import { splitStringIntoCharacters } from "@Toolbox/String";
 import { Font } from "./Font";
 import cp437 from "./cp437_9x8_2x.png";
 import cp437patterns from "./cp437patterns_9x8_2x.png";

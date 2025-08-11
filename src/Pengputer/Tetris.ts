@@ -8,10 +8,10 @@ Sources:
 */
 
 import _ from "lodash";
-import { classicColors, namedColors, uniqueColors } from "../Color/ansi";
-import { type Color, ColorType } from "../Color/Color";
-import { wrapMax } from "../Toolbox/Math";
-import { Signal } from "../Toolbox/Signal";
+import { classicColors, namedColors, uniqueColors } from "@Color/ansi";
+import { type Color, ColorType } from "@Color/Color";
+import { wrapMax } from "@Toolbox/Math";
+import { Signal } from "@Toolbox/Signal";
 import {
   type Vector,
   vectorAdd,
@@ -19,14 +19,14 @@ import {
   vectorEqual,
   vectorMultiplyComponents,
   zeroVector,
-} from "../Toolbox/Vector";
+} from "@Toolbox/Vector";
 import {
   getIsVectorInRect,
   getRectFromVectorAndSize,
   type Rect,
   type Size,
 } from "../types";
-import { type Executable } from "./FileSystem";
+import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
 
 const msPerFrame = 16.666666666;

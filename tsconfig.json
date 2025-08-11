@@ -24,7 +24,14 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "useUnknownInCatchVariables": true
+    "useUnknownInCatchVariables": true,
+
+    "baseUrl": ".", // relative to tsconfig.json
+    "paths": {
+      "@Toolbox/*": ["src/Toolbox/*"],
+      "@Color/*": ["src/Color/*"],
+      "@FileSystem/*": ["src/FileSystem/*"]
+    }
   },
   "include": ["src/**/*"]
 }

@@ -1,5 +1,5 @@
 import { Std } from "../Std/Std";
-import { FileSystem } from "./FileSystem";
+import { FileSystem } from "../FileSystem/FileSystem";
 
 export interface PC {
   fileSystem: FileSystem;
