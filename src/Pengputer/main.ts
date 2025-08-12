@@ -346,6 +346,6 @@ class PengOS {
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(keyboard, textBuffer, screen);
-  await pengOS.startup();
+  // const pengOS = new PengOS(keyboard, textBuffer, screen);
+  // await pengOS.startup();
 })();
