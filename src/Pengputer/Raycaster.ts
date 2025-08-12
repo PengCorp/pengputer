@@ -17,36 +17,28 @@ import {
   zeroVector,
 } from "../Toolbox/Vector";
 
-import { classicColorRgbValues, classicColors, getDirectColor, namedColors, uniqueColors } from "../Color/ansi";
+import { classicColors, getDirectColor } from "../Color/ansi";
 import { Color, ColorType, DirectColor } from "../Color/Color";
 import { Executable } from "./FileSystem";
 import { PC } from "./PC";
 import { char, Size } from "../types";
-import { ScreenMode } from "../Std";
+import { ScreenMode, Std } from "../Std";
 
-const MAP_WIDTH:  number = 10;
-const MAP_HEIGHT: number = 10;
+const MAP_WIDTH:  number = 12;
+const MAP_HEIGHT: number = 16;
 const MAX_STEPS:  number = 100;
 
-enum MapIndexType {
-  DEFAULT,
-  TEXT,
-  DOOR,
-}
-
 class MapIndex {
-  fgColor!: Color;
-  height!: number;
-  z: number;
+  public fgColor!: Color;
+  public height!:  number;
+  public z!:       number;
 
-  type!: MapIndexType;
-  displayStr?: string;
+  public displayStr?: string;
   
-  constructor(fgColor: Color, height: number, z: number, type: MapIndexType, displayStr?: string){
+  constructor(fgColor: Color, height: number, z: number, displayStr?: string){
     this.fgColor = fgColor;
     this.height  = height;
     this.z       = z;
-    this.type    = type;
 
     if (displayStr) this.displayStr = displayStr;
   }
@@ -54,24 +46,32 @@ class MapIndex {
 
 type MapDictionary = Record<number, MapIndex>;
 const MAP_ENTRIES: MapDictionary = {
-  1 : new MapIndex(classicColors["white"],     1,   1, MapIndexType.DEFAULT),
-  2 : new MapIndex(classicColors["yellow"],    2,   0, MapIndexType.DEFAULT),
-  3 : new MapIndex(classicColors["green"],     0.1, 0, MapIndexType.DEFAULT),
-  4 : new MapIndex(classicColors["red"],       4,   0, MapIndexType.DEFAULT),
-  5 : new MapIndex(classicColors["lightBlue"], 5,   0, MapIndexType.DEFAULT),
+  1 : new MapIndex(classicColors["white"], 1, 0),
+  2 : new MapIndex(classicColors["lightChartreuse"], 2, 0),
+  3 : new MapIndex(classicColors["green"], 0.1, 0.3),
+  4 : new MapIndex(classicColors["red"], 4, 0),
+  5 : new MapIndex(classicColors["lightBlue"], 5, 0),
+  6 : new MapIndex(classicColors["lightOrange"], 2, 0),
+  7 : new MapIndex(classicColors["lightRose"], 3.5, 0),
 }
 
 const MAP: Array<number> = [
-  1,1,5,0,0,0,0,5,1,1,
-  1,0,0,0,0,0,0,0,0,2,
-  1,0,0,0,0,0,0,0,0,1,
-  5,1,3,3,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,5,0,2,
-  1,0,0,0,0,0,0,4,0,2,
-  1,0,0,0,0,0,0,4,0,1,
-  1,0,1,3,0,0,0,0,0,1,
-  1,0,0,3,0,0,0,0,0,2,
-  5,1,2,2,1,1,2,2,1,1,
+  2,4,4,5,4,7,7,4,5,4,4,2,
+  2,3,3,4,0,0,0,0,4,0,0,2,
+  2,3,0,6,0,0,0,0,6,0,0,2,
+  2,0,0,6,0,0,0,0,6,0,0,2,
+  2,0,0,4,0,0,0,0,4,0,0,2,
+  2,1,1,5,6,6,6,6,5,1,1,2,
+  2,1,0,0,0,0,0,0,0,0,2,2,
+  2,1,0,0,0,0,0,0,0,0,1,2,
+  2,5,1,3,3,0,0,0,0,0,1,2,
+  2,1,0,0,0,0,0,0,5,0,2,2,
+  2,1,0,0,0,0,0,0,4,0,2,2,
+  2,1,0,0,0,0,0,0,4,0,1,2,
+  2,1,0,1,3,0,0,0,0,0,1,2,
+  2,1,0,0,3,0,0,0,0,0,2,2,
+  2,5,1,4,4,1,1,4,4,1,1,2,
+  2,2,2,2,2,2,2,2,2,2,2,2,
 ];
 
 interface GameState {
@@ -81,15 +81,15 @@ interface GameState {
 }
 
 class Sprite {
-    width:  number;
-    height: number;
-    texture: Array<char>;
+  public width:  number;
+  public height: number;
+  public texture: Array<char>;
 
-    constructor(w: number, h: number, arr: Array<char>) {
-        this.width  = w;
-        this.height = h;
-        this.texture = arr;
-    }
+  constructor(w: number, h: number, arr: Array<char>) {
+      this.width  = w;
+      this.height = h;
+      this.texture = arr;
+  }
 }
 
 const penger8x8: Sprite = {
@@ -131,9 +131,9 @@ const penger3x3: Sprite = {
 
 
 class Entity {
-  position!: Vector;
-  z!:        number;
-  sprite!:   Sprite;
+  public position!: Vector;
+  public z!:        number;
+  public sprite!:   Sprite;
 
   constructor(position: Vector, sprite: Sprite, z: number) {
     this.position = position;
@@ -144,14 +144,14 @@ class Entity {
 }
 
 class Player implements Entity {
-  position:  Vector;
-  direction: Vector;
-  z:         number = 0;
-  plane:     Vector;
-  sprite:    Sprite;
+  public position:  Vector;
+  public direction: Vector;
+  public z: number = 0;
+  public plane:     Vector;
+  public sprite:    Sprite;
 
-  moveSpeed:   number = 25;
-  rotateSpeed: number = 10;
+  protected moveSpeed:   number = 25;
+  protected rotateSpeed: number = 10;
 
   constructor(position: Vector,  direction: Vector, plane: Vector = { x:0, y:0.7 }) {
     this.position  = position;
@@ -205,28 +205,33 @@ class Raycaster implements GameState {
   private pc: PC;
   private player: Player;
   private entities: Array<Entity>;
+  private openDoor: boolean = false;
   private time: number;
 
-  private zBuffer: number[];
+  private zBuffer: number[] = [];
+  private size: Size = {w: 0, h: 0};
   
   constructor(pc:PC){
-    this.pc = pc;
-    this.player = new Player({x: 5, y: 5}, {x: -1, y: 0});
-
-    let size = pc.std.getConsoleSize();
-    this.zBuffer = new Array(size.h * size.w).fill(1000);
+    this.pc      = pc;
+    this.time    = 0;
+    this.player  = new Player({x: 5, y: 12}, {x: -1, y: 0});
 
     this.entities = new Array(
       this.player,
-      new Entity({x:6, y:6}, penger8x8, 0), 
-      new Entity({x:4.5, y:6}, penger5x5, 0),
-      new Entity({x:3, y:6}, penger3x3, 5),
+      new Entity({x:6,   y:10}, penger8x8, 0), 
+      new Entity({x:4.5, y:10}, penger5x5, 0),
+      new Entity({x:3,   y:10}, penger3x3, 5),
     );
 
-    this.time = 0;
+    this.ClearScreen(pc.std);
   }
 
-  private HandleMovement(dt: number){
+  private ClearScreen(std: Std) {
+    std.clearConsole();
+    if (this.zBuffer) this.zBuffer.fill(1000);
+  }
+
+  private HandleInputs(dt: number){
     const { std } = this.pc;
     const ev = std.getNextKeyboardEvent();
     if (ev) {
@@ -247,6 +252,8 @@ class Raycaster implements GameState {
       if (ev.code === "KeyD") {
         this.player.Look(false,dt);
       }
+
+      if (ev.code === "KeyE") this.openDoor = !this.openDoor;
     }
   }
 
@@ -254,33 +261,14 @@ class Raycaster implements GameState {
     return a + t * (b - a);
   }
 
-  public Enter() {
-
-  }
-
-  public Update(dt: number) {
-    const { std } = this.pc;
-
-    this.time += dt;
-    this.HandleMovement(dt);
-
-    std.clearConsole();
-    this.zBuffer.fill(1000);
-    const size = std.getConsoleSize();
-
-    this.entities[1].position.x = Math.cos(this.time) + 4.5;
-    this.entities[1].position.y = Math.sin(this.time) + 6;
-    this.entities[1].z = Math.sin(this.time);
-
-    MAP_ENTRIES[3].z = Math.sin(this.time);
-
-    for (let posY: number = 0; posY < size.h; posY++) {
-      for (let posX: number = 0; posX < size.w; posX++) {
+  private RenderBackground(std: Std) {
+    for (let posY: number = 0; posY < this.size.h; posY++) {
+      for (let posX: number = 0; posX < this.size.w; posX++) {
         let col: DirectColor = {type: ColorType.Direct, r: 0, g: 0, b: 0};
 
         // Start: 50, 190, 255
         // End:   23, 33, 145
-        const t: number = posY / size.h;
+        const t: number = posY / (this.size.h / 2);
         col.r = this.Lerp(50,  23,  t);
         col.g = this.Lerp(190, 33,  t);
         col.b = this.Lerp(255, 145, t);
@@ -289,17 +277,17 @@ class Raycaster implements GameState {
         std.writeConsole("█", {
           fgColor: col,
         });
-
       }
     }
+  }
 
-
-    for (let posY: number = 0; posY <= size.h; posY++){
-      const p: number = posY - size.h / 2;
+  private RenderFloorAndCeiling(std: Std) {
+    for (let posY: number = 0; posY <= this.size.h; posY++){
+      const p: number = posY - this.size.h / 2;
 
       if (p <= 0) continue;
 
-      const camPosY: number = size.h / 2;
+      const camPosY: number = this.size.h / 2;
       const rowDist: number = camPosY / p;
 
       const rayDir0: Vector = {
@@ -313,8 +301,8 @@ class Raycaster implements GameState {
       };
 
       const floorStep: Vector = {
-        x: rowDist * (rayDir1.x - rayDir0.x) / size.w,
-        y: rowDist * (rayDir1.y - rayDir0.y) / size.w,
+        x: rowDist * (rayDir1.x - rayDir0.x) / this.size.w,
+        y: rowDist * (rayDir1.y - rayDir0.y) / this.size.w,
       }
 
       let floorPos: Vector = {
@@ -325,9 +313,9 @@ class Raycaster implements GameState {
       // Floor
       let interpPos: number = Math.floor(posY - 1);
       if (interpPos < 0) interpPos = 0;
-      if (interpPos >= size.h) interpPos = size.h - 1;
+      if (interpPos >= this.size.h) interpPos = this.size.h - 1;
 
-      for (let posX: number = 0; posX < size.w; posX++) {
+      for (let posX: number = 0; posX < this.size.w; posX++) {
         const mapPos: Vector = {
           x: Math.floor(floorPos.x),
           y: Math.floor(floorPos.y),
@@ -339,14 +327,15 @@ class Raycaster implements GameState {
 
         if (rowDist > MAX_STEPS) break;
 
-        this.zBuffer[(posX * size.h) + interpPos] = rowDist;
+        this.zBuffer[(posX * this.size.h) + interpPos] = rowDist;
 
         std.setConsoleCursorPosition({x: posX, y: interpPos}); // Here
         std.writeConsole("█", {
             fgColor: mapPos.x % 2 == mapPos.y % 2 ? classicColors["violet"] : classicColors["lightMagenta"],
         }); 
 
-        // Ceiling
+        // Ceiling, its been turned off due to no real usecase atm haha :)
+        // If you ever did want to use it, comment out Math.ceil(1 / entry.height), as that only allows for ceilings to go farther upward.
         // interpPos = size.h - posY + Math.ceil(1 / entry.height);
         // if (interpPos < size.h && interpPos >= 0) {
         //   this.zBuffer[(posX * size.h) + interpPos] = rowDist;
@@ -357,7 +346,9 @@ class Raycaster implements GameState {
         // }
       }
     }
+  }
 
+  private RenderSprites(std: Std) {
     // Sprite Drawing
     this.entities.forEach((entity, index, array) => {
       const dist: number = Math.sqrt(
@@ -378,20 +369,20 @@ class Raycaster implements GameState {
         y: invDet * (-this.player.plane.y * spritePos.x + this.player.plane.x * spritePos.y),
       }
 
-      const spriteXPos:   number = Math.ceil((size.w / 2) * (1 + transform.x / transform.y));
-      const spriteHeight: number = Math.abs(Math.ceil(size.h / (transform.y)));
-      const spriteWidth:  number = Math.abs(Math.ceil(size.w / (transform.y)));
+      const spriteXPos:   number = Math.ceil((this.size.w / 2) * (1 + transform.x / transform.y));
+      const spriteHeight: number = Math.abs(Math.ceil(this.size.h / (transform.y)));
+      const spriteWidth:  number = Math.abs(Math.ceil(this.size.w / (transform.y)));
 
-      const scaledZ = (entity.z * (size.h / 2)) / dist;
+      const scaledZ = (entity.z * (this.size.h / 2)) / dist;
 
       const drawStart: Vector = { 
         x: Math.ceil(Math.max(-spriteWidth / 2 + spriteXPos, 0)), 
-        y: Math.ceil(Math.max(-spriteHeight / 2 + size.h / 2 - scaledZ, 0)), 
+        y: Math.ceil(Math.max(-spriteHeight / 2 + this.size.h / 2 - scaledZ, 0)), 
       };
 
       const drawEnd: Vector = { 
-        x: Math.ceil(Math.min(spriteWidth / 2 + spriteXPos,  size.w)),
-        y: Math.ceil(Math.min(spriteHeight / 2 + size.h / 2 - scaledZ, size.h)),
+        x: Math.ceil(Math.min(spriteWidth / 2 + spriteXPos,  this.size.w)),
+        y: Math.ceil(Math.min(spriteHeight / 2 + this.size.h / 2 - scaledZ, this.size.h)),
       };
 
       for (let posX: number = drawStart.x; posX < drawEnd.x; ++posX) {
@@ -401,13 +392,13 @@ class Raycaster implements GameState {
 
         if (texX < 0 || texX >= entity.sprite.width) continue;
 
-        if (transform.y > 0 && posX >= 0 && posX < size.w) // && transform.y < this.zBuffer[posX * size.h] 
+        if (transform.y > 0 && posX >= 0 && posX < this.size.w) // && transform.y < this.zBuffer[posX * size.h] 
         {
           for (let posY: number = drawStart.y; posY < drawEnd.y; ++posY) {
-            const bufIndex: number = (posX * size.h) + posY;
+            const bufIndex: number = (posX * this.size.h) + posY;
             if (this.zBuffer[bufIndex] < dist) continue;
 
-            const spriteScreenYOffset: number = posY + scaledZ - (size.h / 2 - spriteHeight / 2);
+            const spriteScreenYOffset: number = posY + scaledZ - (this.size.h / 2 - spriteHeight / 2);
             const v:                   number = spriteScreenYOffset / spriteHeight;
             const texY:                number = Math.ceil(v * entity.sprite.height) - 1;
 
@@ -434,10 +425,12 @@ class Raycaster implements GameState {
         }
       }
     });
+  }
 
-    // Wall drawing
-    for (let posX: number = 0; posX < size.w; posX++){
-      const camX = 2.0 * posX / size.w - 1.0;
+  private RenderCubes(std: Std) {
+ // Wall drawing
+    for (let posX: number = 0; posX < this.size.w; posX++){
+      const camX = 2.0 * posX / this.size.w - 1.0;
 
       const rayDir: Vector = {
         x: this.player.direction.x + this.player.plane.x * camX,
@@ -500,22 +493,22 @@ class Raycaster implements GameState {
           const entry = MAP_ENTRIES[lastIndex];
           const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
 
-          const lineHeight:   number = Math.floor(size.h / perpWallDist);
+          const lineHeight:   number = Math.floor(this.size.h / perpWallDist);
           const pixelHeight:  number = Math.floor(lineHeight * entry.height);
-          const baseY:        number = Math.floor(size.h/2 + lineHeight/2 - lineHeight * entry.z);
+          const baseY:        number = Math.floor(this.size.h/2 + lineHeight/2 - lineHeight * entry.z);
 
           let drawEnd:        number = baseY;
           let drawStart:      number = drawEnd - pixelHeight;
 
           if (drawStart < 0)     drawStart = 0;
-          if (drawEnd >= size.h) drawEnd = size.h - 1;
+          if (drawEnd >= this.size.h) drawEnd = this.size.h - 1;
 
           // Backwall
           for (let posY: number = drawStart; posY <= drawEnd; posY++) {
-            const z = this.zBuffer[(posX * size.h) + posY];
+            const z = this.zBuffer[(posX * this.size.h) + posY];
             if (z <= perpWallDist) continue;
 
-            this.zBuffer[(posX * size.h) + posY] = perpWallDist;
+            this.zBuffer[(posX * this.size.h) + posY] = perpWallDist;
 
             std.setConsoleCursorPosition({x: posX, y: posY});
             std.writeConsole(side ? "█" : "░", {
@@ -524,12 +517,12 @@ class Raycaster implements GameState {
           }
 
           // Bottom
-          if (drawEnd >= lastEnd) {
+          if (drawEnd > lastEnd) {
               for (let posY: number = drawEnd; posY >= Math.max(lastEnd, 0); posY--) {
-              const z = this.zBuffer[(posX * size.h) + posY];
+              const z = this.zBuffer[(posX * this.size.h) + posY];
               if (z <= lastDist) continue;
 
-              this.zBuffer[(posX * size.h) + posY] = lastDist;
+              this.zBuffer[(posX * this.size.h) + posY] = lastDist;
 
               std.setConsoleCursorPosition({x: posX, y: posY});
               std.writeConsole("░", {
@@ -540,11 +533,11 @@ class Raycaster implements GameState {
 
         // Top
           if (lastStart > drawStart && entry.z >= -entry.height) {
-            for (let posY: number = drawStart; posY <= Math.min(lastStart, size.h - 1); posY++) {
-              const z = this.zBuffer[(posX * size.h) + posY];
+            for (let posY: number = drawStart; posY <= Math.min(lastStart, this.size.h - 1); posY++) {
+              const z = this.zBuffer[(posX * this.size.h) + posY];
               if (z <= lastDist) continue;
 
-              this.zBuffer[(posX * size.h) + posY] = lastDist;
+              this.zBuffer[(posX * this.size.h) + posY] = lastDist;
 
               std.setConsoleCursorPosition({x: posX, y: posY});
               std.writeConsole("▓", {
@@ -566,21 +559,21 @@ class Raycaster implements GameState {
 
         const entry = MAP_ENTRIES[mapIndex];
         const perpWallDist: number = side ? (sideDist.y - deltaDist.y) : (sideDist.x - deltaDist.x);
-        const lineHeight:   number = Math.floor(size.h / perpWallDist);
+        const lineHeight:   number = Math.floor(this.size.h / perpWallDist);
         const pixelHeight:  number = Math.floor(lineHeight * entry.height);
-        const baseY:        number = Math.floor(size.h/2 + lineHeight/2 - lineHeight * entry.z);
+        const baseY:        number = Math.floor(this.size.h / 2 + lineHeight / 2 - lineHeight * entry.z);
 
         let drawEnd:        number = baseY;
         let drawStart:      number = drawEnd - pixelHeight;
 
         if (drawStart < 0)     drawStart = 0;
-        if (drawEnd >= size.h) drawEnd = size.h - 1;
+        if (drawEnd >= this.size.h) drawEnd = this.size.h - 1;
 
         for (let posY: number = drawStart; posY <= drawEnd; posY++) {
-          const z = this.zBuffer[(posX * size.h) + posY];
+          const z = this.zBuffer[(posX * this.size.h) + posY];
           if (z <= perpWallDist) continue;
 
-          this.zBuffer[(posX * size.h) + posY] = perpWallDist;
+          this.zBuffer[(posX * this.size.h) + posY] = perpWallDist;
 
           std.setConsoleCursorPosition({x: posX, y: posY});
           std.writeConsole(side ? "█" : "▒", {
@@ -598,9 +591,46 @@ class Raycaster implements GameState {
     }
   }
 
+  public Enter() {
+    this.size    = this.pc.std.getConsoleSize();
+    this.zBuffer = new Array(this.size.h * this.size.w);
+
+    this.ClearScreen(this.pc.std);
+  }
+
+  public Update(dt: number) {
+    const { std } = this.pc;
+    this.time += dt;
+
+    this.HandleInputs(dt);
+
+    if (this.openDoor) MAP_ENTRIES[6].z = Math.max(MAP_ENTRIES[6].z - dt, -MAP_ENTRIES[6].height - 0.1);
+    else               MAP_ENTRIES[6].z = Math.min(MAP_ENTRIES[6].z + dt, 0);
+
+    // Orbitting Penger
+    this.entities[1].position.x = Math.cos(this.time) + 4.5;
+    this.entities[1].position.y = Math.sin(this.time) + 10;
+    this.entities[1].z = Math.sin(this.time);
+
+    // Clearing console and Z-Buffer
+    this.ClearScreen(std);
+
+    // Render order is as follows:
+    // 1. Background
+    // 2. Floor and Ceiling (planes, not cubes!)
+    // 3. Sprites
+    // 4. Cubes (tops and bottoms included!)
+    this.RenderBackground(std);
+    this.RenderFloorAndCeiling(std);
+    this.RenderSprites(std);
+    this.RenderCubes(std);
+  }
+
   public Exit() {
     const { std } = this.pc;
-    std.clearConsole();
+    this.ClearScreen(std);
+
+
   }
 };
 
@@ -653,6 +683,7 @@ export class RaycasterApp implements Executable {
     std.clearConsole();
 
     std.setConsoleScreenMode(ScreenMode.mode80x50_9x8);
+    this.raycaster.Enter();
 
     return new Promise<void>((resolve) => {
       let lastTime = performance.now();
