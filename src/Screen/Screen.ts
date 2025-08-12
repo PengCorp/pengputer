@@ -138,6 +138,7 @@ export class Screen {
     this.textCanvas.width = this.widthInPixels;
     this.textCanvas.height = this.heightInPixels;
     this.textCtx = this.textCanvas.getContext("2d")!;
+    this.textCtx.imageSmoothingEnabled = false;
 
     this.bufferCanvas = document.createElement("canvas");
     this.bufferCanvas.width = this.widthInPixels;

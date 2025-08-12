@@ -43,6 +43,7 @@ import { FileTransferTest } from "./FileTransferTest";
 import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
 import { Pengnoid } from "./Pengnoid";
+import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 const PATH_SEPARATOR = "/";
 
@@ -252,11 +253,12 @@ class PengOS {
       std.writeConsole("AMD-K6(rm)-III/450 Processor\n");
       std.writeConsole("Memory Test :        ");
       await waitFor(500);
-      for (let i = 0; i <= 262144; i += 1024) {
+      await runAnimationLoop((dt, tt) => {
+        const mem = Math.round(262144 * (Math.min(tt, 2500) / 2500));
         std.moveConsoleCursorBy({ x: -7, y: 0 });
-        std.writeConsole(`${padStart(String(i), 6, " ")}K`);
-        await waitFor(7);
-      }
+        std.writeConsole(`${padStart(String(mem), 6, " ")}K`);
+        return mem === 262144;
+      });
       await waitFor(500);
       std.writeConsole(` OK\n`);
       std.writeConsole("\n");
