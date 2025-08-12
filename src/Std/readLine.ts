@@ -50,7 +50,7 @@ class ReadLine {
 
   public run() {
     const promise = new Promise<string | null>(async (resolve) => {
-      while (true) {
+      eventLoop: while (true) {
         const ev = await this.keyboard.waitForNextEvent();
 
         if (!ev.pressed) continue;
@@ -81,69 +81,59 @@ class ReadLine {
             this.navigateHistoryForwards();
           }
 
-          continue;
+          continue eventLoop;
         }
 
         if (ev.isAltDown) {
           switch (key) {
             case "KeyB":
               this.goBackwardsByWord();
-              break;
+              continue eventLoop;
             case "KeyF":
               this.goForwardsByWord();
-              break;
+              continue eventLoop;
             case "KeyC":
               this.capitalizeWord();
-              break;
+              continue eventLoop;
             case "KeyL":
               this.lowercaseWord();
-              break;
+              continue eventLoop;
             case "KeyU":
               this.uppercaseWord();
-              break;
+              continue eventLoop;
             case "KeyD":
               this.deleteWord();
-              break;
-            default:
-              break;
+              continue eventLoop;
           }
 
-          continue;
+          continue eventLoop;
         }
 
-        let handled = true;
         switch (key) {
           case "Tab":
             this.tab();
-            break;
+            continue eventLoop;
           case "Home":
             this.goHome();
-            break;
+            continue eventLoop;
           case "End":
             this.goToEnd();
-            break;
+            continue eventLoop;
           case "Delete":
             this.deleteCharacter();
-            break;
+            continue eventLoop;
           case "ArrowLeft":
             this.moveBackwards();
-            break;
+            continue eventLoop;
           case "ArrowRight":
             this.moveForwards();
-            break;
+            continue eventLoop;
           case "ArrowUp":
             this.navigateHistoryBackwards();
-            break;
+            continue eventLoop;
           case "ArrowDown":
             this.navigateHistoryForwards();
-            break;
-          default:
-            handled = false;
-            break;
-        }
-
-        if (handled) {
-          continue;
+            continue eventLoop;
         }
 
         if (char === "\n") {
@@ -355,7 +345,7 @@ class ReadLine {
       this.curIndex++;
     }
 
-    if(!this.result[prevIndex]) return; /* at the end of the string */
+    if (!this.result[prevIndex]) return; /* at the end of the string */
 
     const left = this.result.slice(0, prevIndex);
     const middle = this.result[prevIndex].toUpperCase();

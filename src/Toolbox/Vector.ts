@@ -157,7 +157,7 @@ export const compareRectsY = (a: Rect, b: Rect) => {
 
 export const getUnitCircleVector = (angle: number) => {
   return {
-    x: Math.sin(angle),
-    y: Math.cos(angle),
+    x: Math.cos(angle),
+    y: Math.sin(angle),
   };
 };

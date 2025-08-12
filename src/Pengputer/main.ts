@@ -42,7 +42,6 @@ import { Colors } from "./Colors";
 import { FileTransferTest } from "./FileTransferTest";
 import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
-import { Pengnoid } from "./Pengnoid";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 const PATH_SEPARATOR = "/";
@@ -183,11 +182,6 @@ class PengOS {
       name: "blakjack.exe", // cspell:disable-line
       createInstance: () => new Blackjack(this.pc),
     });
-    // gamesDir.addItem({
-    //   type: FileSystemObjectType.Executable,
-    //   name: "pengnoid.exe",
-    //   createInstance: () => new Pengnoid(this.pc),
-    // });
 
     const documentsDir = rootDir.mkdir("documents");
     const musicDir = documentsDir.mkdir("music");

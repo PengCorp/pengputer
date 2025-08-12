@@ -1,3 +1,7 @@
+/** ================================================================= */
+/** ============================== WIP ============================== */
+/** ================================================================= */
+
 import { type Executable } from "@FileSystem/fileTypes";
 import { Signal } from "@Toolbox/Signal";
 import { State, StateManager } from "@Toolbox/StateManager";
@@ -20,6 +24,8 @@ import { type KeyCode } from "../../Keyboard/types.keyCode";
 import _ from "lodash";
 import { sprites } from "./sprites";
 import { type Rect } from "../../types";
+import { runAnimationLoop } from "@Toolbox/AnimationLoop";
+import { Timer } from "@Toolbox/Timer";
 
 const LAYER_BG = 0;
 const LAYER_SPRITES = 1;
@@ -32,7 +38,7 @@ enum GameStateKey {
 class Ball {
   public position: Vector = { x: 0, y: 0 };
   public direction: Vector = getUnitCircleVector(Math.PI / 4);
-  public speed: number = 0.1;
+  public speed: number = 0.01;
 
   constructor() {}
 
@@ -69,11 +75,14 @@ type PaddleDirection = "left" | "right" | null;
 const PADDLE_SEGMENT_SIZE_IN_PIXELS = 8;
 
 class Paddle {
-  public position: Vector = { x: 0, y: 240 - 16 };
+  public widthInSegments: number = 5;
+
+  public position: Vector = {
+    x: 0,
+    y: 240 - 16,
+  };
 
   public speed: number = 0.01;
-
-  public widthInSegments: number = 5;
 
   private direction: PaddleDirection = null;
 
@@ -121,8 +130,7 @@ class Game extends State {
 
   private screenRect: Rect;
 
-  private tickCounter: number = 0;
-  private tickLength: number = 0.1;
+  private tickTimer = new Timer(0.1);
 
   constructor(pc: PC) {
     super();
@@ -133,6 +141,11 @@ class Game extends State {
 
     const graphicsSize = this.graphics.getSize();
     this.screenRect = { x: 0, y: 0, w: graphicsSize.w, h: graphicsSize.h };
+
+    this.ball.position.y = this.paddle.getRect().y - this.ball.getRect().h;
+    this.paddle.position.x = Math.floor((320 - this.paddle.getRect().w) / 2);
+    this.ball.position.x = Math.floor((320 - this.ball.getRect().w) / 2);
+    this.ball.direction = getUnitCircleVector(-Math.PI / 4);
   }
 
   override onEnter(): void {
@@ -186,9 +199,8 @@ class Game extends State {
   }
 
   private doLogic(dt: number) {
-    this.tickCounter += dt;
-
-    while (this.tickCounter >= this.tickLength) {
+    this.tickTimer.tick(dt);
+    while (this.tickTimer.checkWrap()) {
       this.paddle.tick();
       this.ball.tick();
 
@@ -216,8 +228,6 @@ class Game extends State {
           }
         }
       }
-
-      this.tickCounter -= this.tickLength;
     }
   }
 
@@ -325,28 +335,16 @@ export class Pengnoid implements Executable {
 
     this.changeState(GameStateKey.Game);
 
-    return new Promise<void>((resolve) => {
-      let lastTime = performance.now();
-      const doAnimationFrame: FrameRequestCallback = async () => {
-        const dt = performance.now() - lastTime;
-        lastTime = performance.now();
-
-        const start = performance.now();
-        this.stateManager.update(dt);
-        const end = performance.now();
-        window.updateTime = end - start;
-
-        if (this.stateManager.getIsEmpty()) {
-          std.setAreGraphicsEnabled(false);
-          std.clearConsole();
-          std.writeConsole("Thank you for playing!\n");
-          resolve();
-          return;
-        }
-
-        requestAnimationFrame(doAnimationFrame);
-      };
-      requestAnimationFrame(doAnimationFrame);
+    await runAnimationLoop((dt) => {
+      const start = performance.now();
+      this.stateManager.update(dt);
+      const end = performance.now();
+      window.updateTime = end - start;
+      return this.stateManager.getIsEmpty();
     });
+
+    std.setAreGraphicsEnabled(false);
+    std.clearConsole();
+    std.writeConsole("Thank you for playing!\n");
   }
 }
