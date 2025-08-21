@@ -239,6 +239,7 @@ export class Colors implements Executable {
       "violet",
       "magenta",
       "rose",
+      "red",
     ] satisfies ColorName[]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
@@ -260,6 +261,7 @@ export class Colors implements Executable {
       "lightViolet",
       "lightMagenta",
       "lightRose",
+      "lightRed",
     ] satisfies ColorName[]) {
       std.writeConsole(CHAR, {
         bgColor: classicColors[i],
