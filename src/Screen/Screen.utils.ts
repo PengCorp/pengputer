@@ -1,4 +1,4 @@
-export function createShader(
+export function loadShader(
   gl: WebGL2RenderingContext,
   type: GLenum,
   source: string,
@@ -33,4 +33,18 @@ export function createProgram(
   console.error(gl.getProgramInfoLog(program));
   gl.deleteProgram(program);
   return null;
+}
+
+export function createTextureFromImageBitmap(
+  gl: WebGL2RenderingContext,
+  bitmap: ImageBitmap,
+) {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+  return { texture, width: bitmap.width, height: bitmap.height };
 }
