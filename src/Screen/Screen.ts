@@ -114,7 +114,7 @@ export class Screen {
 
   async init(containerEl: HTMLElement) {
     this.initCanvas(containerEl);
-    initScreen(this.gl);
+    await initScreen(this.gl);
   }
 
   initCanvas(containerEl: HTMLElement) {

@@ -37,6 +37,7 @@
     "bitfield",
     "burndir",
     "dedup",
+    "fract",
     "freesound",
     "fscommit",
     "highp",
