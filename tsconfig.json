@@ -30,7 +30,8 @@
     "paths": {
       "@Toolbox/*": ["src/Toolbox/*"],
       "@Color/*": ["src/Color/*"],
-      "@FileSystem/*": ["src/FileSystem/*"]
+      "@FileSystem/*": ["src/FileSystem/*"],
+      "@src/*": ["src/*"]
     }
   },
   "include": ["src/**/*"]
