@@ -14,8 +14,9 @@ in vec4 a_position;
 out vec2 v_screenPosition;
 
 void main() {
-  v_screenPosition = a_position.xy * 0.5 + 0.5;
-  v_screenPosition.y = 1.0 - v_screenPosition.y;
+  v_screenPosition = a_position.xy * 0.5 + 0.5; // transform [-1, 1] to [0, 1]
+  v_screenPosition.y = 1.0 - v_screenPosition.y; // flip y to be in screen coordinate space
+  v_screenPosition *= 0.999999; // make screen position [0, 1) instead of [0, 1]
   
   gl_Position = a_position;
 }
@@ -24,8 +25,6 @@ void main() {
 const fShaderStr = `#version 300 es
 precision highp float;
 
-const float epsilon = 0.00001;
-
 uniform ivec2 u_gridResolution;
 uniform sampler2D u_texture;
 uniform ivec2 u_textureSize;
@@ -33,6 +32,13 @@ uniform ivec2 u_textureSize;
 in vec2 v_screenPosition;
 
 out vec4 o_fragColor;
+
+vec4 srcOverDst(vec4 src, vec4 dst) {
+  vec3 rgb = src.rgb * src.a + dst.rgb * (1.0 - src.a);
+  float a = src.a + dst.a * (1.0 - src.a);
+
+  return vec4(rgb, a);
+}
 
 void main() {
   ivec2 textureGridPosition = ivec2(2, 2);
@@ -43,17 +49,22 @@ void main() {
 
   vec2 textureOrigin = vec2(textureGridPosition * characterPixelSize) * texelSize;
 
-  vec2 screenGridPos = max(vec2(0.0, 0.0), v_screenPosition - epsilon) * vec2(u_gridResolution);
+  vec2 screenGridPos = v_screenPosition * vec2(u_gridResolution);
   vec2 cellPos = fract(screenGridPos);
 
   vec2 texturePosition = textureOrigin + cellPos * tileSize;
-
-  texturePosition += epsilon * texelSize;
 
   o_fragColor = texture(
     u_texture,
     texturePosition
   );
+
+  // TODO: change atlases to be white on black, blend by .r instead of by .a
+  vec4 bgColor = vec4(0.0, 0.0, 1.0, 1.0);
+  vec4 fgColor = vec4(1.0, 1.0, 1.0, 1.0);
+  fgColor.a = o_fragColor.a;
+
+  o_fragColor = srcOverDst(fgColor, bgColor);
 }
 `;
 
