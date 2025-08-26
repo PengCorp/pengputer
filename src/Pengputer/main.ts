@@ -43,6 +43,7 @@ import { FileTransferTest } from "./FileTransferTest";
 import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
+import { PixiScreen } from "@src/PixiScreen";
 
 const PATH_SEPARATOR = "/";
 
@@ -304,8 +305,11 @@ class PengOS {
   await loadFont9x16();
   await loadFont9x8();
 
-  const screen = new Screen();
-  await screen.init(document.getElementById("screen-container")!);
+  // const screen = new Screen();
+  // await screen.init(document.getElementById("screen-container")!);
+
+  const pixiScreen = new PixiScreen();
+  await pixiScreen.init(document.getElementById("screen-container")!);
 
   const keyboard = new Keyboard();
   const physicalKeyboard = new PhysicalKeyboard(keyboard);
@@ -314,7 +318,7 @@ class PengOS {
   keyboard.addSource(screenKeyboard);
 
   const textBuffer = new TextBuffer({
-    pageSize: screen.getSizeInCharacters(),
+    pageSize: { w: 80, h: 25 },
     scrollbackLength: 0,
   });
 
@@ -327,8 +331,9 @@ class PengOS {
     lastTime = performance.now();
     const start = performance.now();
 
-    screen.update(textBuffer);
-    screen.draw(dt);
+    // screen.update(textBuffer);
+    // screen.draw(dt);
+    pixiScreen.draw(dt);
 
     const end = performance.now();
 
@@ -346,6 +351,6 @@ class PengOS {
   };
   requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(keyboard, textBuffer, screen);
-  await pengOS.startup();
+  // const pengOS = new PengOS(keyboard, textBuffer, screen);
+  // await pengOS.startup();
 })();

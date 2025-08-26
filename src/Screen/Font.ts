@@ -2,6 +2,7 @@ import { splitStringIntoCharacters } from "@Toolbox/String";
 import { type Vector } from "@Toolbox/Vector";
 import { type charArray, type Size } from "../types";
 import { dataURLToImageBitmap } from "../util";
+import * as PIXI from "pixi.js";
 
 interface Atlas {
   canvas: HTMLCanvasElement;
@@ -9,6 +10,7 @@ interface Atlas {
   characterLocations: Record<string, Vector>;
   scale: number;
   patternRunLength: number;
+  tiles: Record<string, PIXI.Texture>;
 }
 
 /** Represents a font that contains character glyphs. Single font can contain multiple atlases with character maps. */
@@ -61,6 +63,8 @@ export class Font {
     // load image
 
     const bitmap = await dataURLToImageBitmap(dataURL);
+    const texture = await PIXI.Assets.load<PIXI.Texture>(dataURL);
+    const textureSource = texture.source;
 
     const canvas = document.createElement("canvas");
 
@@ -79,6 +83,7 @@ export class Font {
     // load valueMap
 
     const characterLocations: Record<string, Vector> = {};
+    const tiles: Record<string, PIXI.Texture> = {};
     for (let y = 0; y < valueMap.length; y += 1) {
       for (let x = 0; x < valueMap[y].length; x += 1) {
         if (!characterLocations[valueMap[y][x]]) {
@@ -86,6 +91,17 @@ export class Font {
             x: x * this.characterWidth * scale,
             y: y * this.characterHeight * scale,
           };
+        }
+        if (!tiles[valueMap[y][x]]) {
+          tiles[valueMap[y][x]] = new PIXI.Texture({
+            source: textureSource,
+            frame: new PIXI.Rectangle(
+              x * this.characterWidth * scale,
+              y * this.characterHeight * scale,
+              this.characterWidth * scale,
+              this.characterHeight * scale,
+            ),
+          });
         }
       }
     }
@@ -96,6 +112,7 @@ export class Font {
       characterLocations,
       scale,
       patternRunLength,
+      tiles,
     };
   }
 
@@ -110,8 +127,10 @@ export class Font {
           this.characterWidth *
           atlas.scale *
           (screenX % atlas.patternRunLength);
+
         return {
           canvas: atlas.canvas,
+          tile: atlas.tiles[char],
           x: characterLocation.x + variantOffset,
           y: characterLocation.y,
           w: this.characterWidth * atlas.scale,
