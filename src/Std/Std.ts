@@ -279,7 +279,7 @@ export class Std {
   /* ===================== GRAPHICS ========================= */
 
   setAreGraphicsEnabled(areGraphicsEnabled: boolean) {
-    this.screen.areGraphicsEnabled = areGraphicsEnabled;
+    this.screen.setAreGraphicsEnabled(areGraphicsEnabled);
   }
 
   getGraphics() {
