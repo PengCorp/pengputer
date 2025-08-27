@@ -22,26 +22,12 @@ in vec2 aPosition;
 out vec2 vTextureCoord;
 
 void main() {
-    vec2 screenPosition = vec2(aPosition);
-    screenPosition = screenPosition * 2.0 - 1.0;
+    vec2 screenPosition = aPosition * 2.0 - 1.0;
     gl_Position = vec4(screenPosition, 0.0, 1.0);
     vTextureCoord = aPosition * vec2(1.0, -1.0) + vec2(0.0, 1.0);
 }
 `;
 
-const compositeFragment_ = `
-precision mediump float;
-uniform sampler2D uNormal, uInverted, uMask;
-uniform float uThreshold;
-varying vec2 vTextureCoord;
-void main(){
-  vec4 a = texture2D(uNormal, vTextureCoord);
-  vec4 b = texture2D(uInverted, vTextureCoord);
-  float m = texture2D(uMask, vTextureCoord).a;
-  m = (uThreshold <= 0.0) ? m : step(uThreshold, m);
-  gl_FragColor = mix(a, b, m);
-}
-`;
 const compositeFragment = `
 precision mediump float;
 uniform sampler2D uNormal, uInverted, uMask;
@@ -181,8 +167,10 @@ export class PixiScreen {
 
     this.sceneNormal = new PIXI.Container();
     this.renderTextureNormal = PIXI.RenderTexture.create(renderTextureOpts);
+
     this.sceneInverted = new PIXI.Container();
     this.renderTextureInverted = PIXI.RenderTexture.create(renderTextureOpts);
+
     this.sceneMask = new PIXI.Container();
     this.renderTextureMask = PIXI.RenderTexture.create(renderTextureOpts);
 
@@ -201,7 +189,6 @@ export class PixiScreen {
     });
     screenQuad.filters = [compositeFilter];
     this.stage.addChild(screenQuad);
-    // this.stage.addChild();
 
     for (let y = 0; y < this.heightInCharacters; y += 1) {
       for (let x = 0; x < this.widthInCharacters; x += 1) {
