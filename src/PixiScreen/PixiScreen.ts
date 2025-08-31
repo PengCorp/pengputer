@@ -1,4 +1,6 @@
 import { ScreenMode } from "@src/Std";
+
+import { Ticker } from "pixi.js";
 import type { Size } from "@src/types";
 import * as PIXI from "pixi.js";
 import { Cursor } from "@src/Screen/Cursor";
@@ -15,7 +17,7 @@ export type ClickListener = (clickEvent: {
   mouseButton: number;
 }) => void;
 
-const compositeVertex = `
+const compositeVertex = `#version 300 es
 precision mediump float;
 
 in vec2 aPosition;
@@ -28,15 +30,18 @@ void main() {
 }
 `;
 
-const compositeFragment = `
+const compositeFragment = `#version 300 es
 precision mediump float;
 uniform sampler2D uNormal, uInverted, uMask;
-varying vec2 vTextureCoord;
+in vec2 vTextureCoord;
+out vec4 oColor;
+
 void main(){
   vec4 A = texture(uNormal, vTextureCoord);
   vec4 B = texture(uInverted, vTextureCoord);
   vec4 M = texture(uMask, vTextureCoord);
-  gl_FragColor = mix(A, B, M.a);
+  int m = int(round(M.a * 255.5));
+  oColor = mix(A, B, m % 2 == 0 ? 0.0 : 1.0);
 }
 `;
 
@@ -72,7 +77,11 @@ export class PixiScreen {
   private charBlinkCounter: number;
 
   private sceneNormal!: PIXI.Container;
+  private sceneNormalFg!: PIXI.Container;
+  private sceneNormalBg!: PIXI.Container;
   private sceneInverted!: PIXI.Container;
+  private sceneInvertedFg!: PIXI.Container;
+  private sceneInvertedBg!: PIXI.Container;
   private sceneMask!: PIXI.Container;
   private renderTextureNormal!: PIXI.RenderTexture;
   private renderTextureInverted!: PIXI.RenderTexture;
@@ -166,9 +175,25 @@ export class PixiScreen {
     };
 
     this.sceneNormal = new PIXI.Container();
+    this.sceneNormalBg = new PIXI.Container({
+      label: "bg",
+    });
+    this.sceneNormalFg = new PIXI.Container({
+      label: "fg",
+    });
+    this.sceneNormal.addChild(this.sceneNormalBg);
+    this.sceneNormal.addChild(this.sceneNormalFg);
     this.renderTextureNormal = PIXI.RenderTexture.create(renderTextureOpts);
 
     this.sceneInverted = new PIXI.Container();
+    this.sceneInvertedBg = new PIXI.Container({
+      label: "bg",
+    });
+    this.sceneInvertedFg = new PIXI.Container({
+      label: "fg",
+    });
+    this.sceneInverted.addChild(this.sceneInvertedBg);
+    this.sceneInverted.addChild(this.sceneInvertedFg);
     this.renderTextureInverted = PIXI.RenderTexture.create(renderTextureOpts);
 
     this.sceneMask = new PIXI.Container();
@@ -192,7 +217,7 @@ export class PixiScreen {
 
     for (let y = 0; y < this.heightInCharacters; y += 1) {
       for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.sceneNormal.addChild(
+        this.sceneNormalBg.addChild(
           new PIXI.Sprite({
             texture: PIXI.Texture.WHITE,
             width: this.characterWidth,
@@ -203,7 +228,7 @@ export class PixiScreen {
           }),
         );
 
-        this.sceneNormal.addChild(
+        this.sceneNormalFg.addChild(
           new PIXI.Sprite({
             x: x * this.characterWidth,
             y: y * this.characterHeight,
@@ -218,7 +243,7 @@ export class PixiScreen {
 
     for (let y = 0; y < this.heightInCharacters; y += 1) {
       for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.sceneInverted.addChild(
+        this.sceneInvertedBg.addChild(
           new PIXI.Sprite({
             texture: PIXI.Texture.WHITE,
             width: this.characterWidth,
@@ -229,7 +254,7 @@ export class PixiScreen {
           }),
         );
 
-        this.sceneInverted.addChild(
+        this.sceneInvertedFg.addChild(
           new PIXI.Sprite({
             x: x * this.characterWidth,
             y: y * this.characterHeight,
@@ -249,6 +274,18 @@ export class PixiScreen {
         y: 50,
         width: 100,
         height: 50,
+        alpha: 1 / 255,
+      }),
+    );
+
+    this.sceneMask.addChild(
+      new PIXI.Sprite({
+        texture: PIXI.Texture.WHITE,
+        x: 75,
+        y: 75,
+        width: 100,
+        height: 50,
+        alpha: 1 / 255,
       }),
     );
   }
@@ -293,6 +330,7 @@ export class PixiScreen {
       this.charBlinkCounter += this.charBlinkDuration;
       this.charBlinkState = !this.charBlinkState;
     }
+    performance.mark("draw-start");
 
     this.app.renderer.render({
       container: this.sceneNormal,
@@ -308,5 +346,7 @@ export class PixiScreen {
       container: this.sceneMask,
       target: this.renderTextureMask,
     });
+    performance.mark("draw-end");
+    performance.measure("draw", "draw-start", "draw-end");
   }
 }
