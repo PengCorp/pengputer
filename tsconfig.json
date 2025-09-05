@@ -31,8 +31,9 @@
       "@Toolbox/*": ["src/Toolbox/*"],
       "@Color/*": ["src/Color/*"],
       "@FileSystem/*": ["src/FileSystem/*"],
-      "@src/*": ["src/*"]
+      "@src/*": ["src/*"],
+      "@src_test/*": ["src_test/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src_test/**/*"]
 }
