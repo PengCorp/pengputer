@@ -32,16 +32,14 @@ void main() {
 
 const compositeFragment = `#version 300 es
 precision mediump float;
-uniform sampler2D uNormal, uInverted, uMask;
+
+uniform sampler2D uCharacterTexture;
 in vec2 vTextureCoord;
 out vec4 oColor;
 
 void main(){
-  vec4 A = texture(uNormal, vTextureCoord);
-  vec4 B = texture(uInverted, vTextureCoord);
-  vec4 M = texture(uMask, vTextureCoord);
-  int m = int(round(M.a * 255.5));
-  oColor = mix(A, B, m % 2 == 0 ? 0.0 : 1.0);
+  vec4 A = texture(uCharacterTexture, vTextureCoord);
+  oColor = A;
 }
 `;
 
@@ -76,16 +74,8 @@ export class PixiScreen {
   private charBlinkDuration: number;
   private charBlinkCounter: number;
 
-  private sceneNormal!: PIXI.Container;
-  private sceneNormalFg!: PIXI.Container;
-  private sceneNormalBg!: PIXI.Container;
-  private sceneInverted!: PIXI.Container;
-  private sceneInvertedFg!: PIXI.Container;
-  private sceneInvertedBg!: PIXI.Container;
-  private sceneMask!: PIXI.Container;
-  private renderTextureNormal!: PIXI.RenderTexture;
-  private renderTextureInverted!: PIXI.RenderTexture;
-  private renderTextureMask!: PIXI.RenderTexture;
+  private charactersScene!: PIXI.Container;
+  private renderTexture!: PIXI.RenderTexture;
 
   public isDirty: boolean = false;
 
@@ -174,30 +164,8 @@ export class PixiScreen {
       resolution: this.app.renderer.resolution,
     };
 
-    this.sceneNormal = new PIXI.Container();
-    this.sceneNormalBg = new PIXI.Container({
-      label: "bg",
-    });
-    this.sceneNormalFg = new PIXI.Container({
-      label: "fg",
-    });
-    this.sceneNormal.addChild(this.sceneNormalBg);
-    this.sceneNormal.addChild(this.sceneNormalFg);
-    this.renderTextureNormal = PIXI.RenderTexture.create(renderTextureOpts);
-
-    this.sceneInverted = new PIXI.Container();
-    this.sceneInvertedBg = new PIXI.Container({
-      label: "bg",
-    });
-    this.sceneInvertedFg = new PIXI.Container({
-      label: "fg",
-    });
-    this.sceneInverted.addChild(this.sceneInvertedBg);
-    this.sceneInverted.addChild(this.sceneInvertedFg);
-    this.renderTextureInverted = PIXI.RenderTexture.create(renderTextureOpts);
-
-    this.sceneMask = new PIXI.Container();
-    this.renderTextureMask = PIXI.RenderTexture.create(renderTextureOpts);
+    this.charactersScene = new PIXI.Container();
+    this.renderTexture = PIXI.RenderTexture.create(renderTextureOpts);
 
     screenQuad.width = this.app.renderer.width;
     screenQuad.height = this.app.renderer.height;
@@ -207,87 +175,37 @@ export class PixiScreen {
         fragment: compositeFragment,
       }),
       resources: {
-        uNormal: this.renderTextureNormal.source,
-        uInverted: this.renderTextureInverted.source,
-        uMask: this.renderTextureMask.source,
+        uCharacterTexture: this.renderTexture.source,
       },
     });
     screenQuad.filters = [compositeFilter];
     this.stage.addChild(screenQuad);
 
+    this.charactersScene.addChild(
+      new PIXI.Sprite({
+        texture: PIXI.Texture.WHITE,
+        width: this.widthInCharacters * this.characterWidth,
+        height: this.heightInCharacters * this.characterHeight,
+        x: 0,
+        y: 0,
+        tint: 0x000000,
+      }),
+    );
+
     for (let y = 0; y < this.heightInCharacters; y += 1) {
       for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.sceneNormalBg.addChild(
-          new PIXI.Sprite({
-            texture: PIXI.Texture.WHITE,
-            width: this.characterWidth,
-            height: this.characterHeight,
-            x: x * this.characterWidth,
-            y: y * this.characterHeight,
-            tint: 0x0000ff,
-          }),
-        );
-
-        this.sceneNormalFg.addChild(
+        this.charactersScene.addChild(
           new PIXI.Sprite({
             x: x * this.characterWidth,
             y: y * this.characterHeight,
             width: this.characterWidth,
             height: this.characterHeight,
             texture: this.font.getCharacter("G", 0)!.tile,
-            tint: 0xcccccc,
+            tint: 0xffffff,
           }),
         );
       }
     }
-
-    for (let y = 0; y < this.heightInCharacters; y += 1) {
-      for (let x = 0; x < this.widthInCharacters; x += 1) {
-        this.sceneInvertedBg.addChild(
-          new PIXI.Sprite({
-            texture: PIXI.Texture.WHITE,
-            width: this.characterWidth,
-            height: this.characterHeight,
-            x: x * this.characterWidth,
-            y: y * this.characterHeight,
-            tint: 0xcccccc,
-          }),
-        );
-
-        this.sceneInvertedFg.addChild(
-          new PIXI.Sprite({
-            x: x * this.characterWidth,
-            y: y * this.characterHeight,
-            width: this.characterWidth,
-            height: this.characterHeight,
-            texture: this.font.getCharacter("G", 0)!.tile,
-            tint: 0x0000ff,
-          }),
-        );
-      }
-    }
-
-    this.sceneMask.addChild(
-      new PIXI.Sprite({
-        texture: PIXI.Texture.WHITE,
-        x: 50,
-        y: 50,
-        width: 100,
-        height: 50,
-        alpha: 1 / 255,
-      }),
-    );
-
-    this.sceneMask.addChild(
-      new PIXI.Sprite({
-        texture: PIXI.Texture.WHITE,
-        x: 75,
-        y: 75,
-        width: 100,
-        height: 50,
-        alpha: 1 / 255,
-      }),
-    );
   }
 
   setScreenMode(screenSize: Size, font: Font) {
@@ -333,19 +251,10 @@ export class PixiScreen {
     performance.mark("draw-start");
 
     this.app.renderer.render({
-      container: this.sceneNormal,
-      target: this.renderTextureNormal,
+      container: this.charactersScene,
+      target: this.renderTexture,
     });
 
-    this.app.renderer.render({
-      container: this.sceneInverted,
-      target: this.renderTextureInverted,
-    });
-
-    this.app.renderer.render({
-      container: this.sceneMask,
-      target: this.renderTextureMask,
-    });
     performance.mark("draw-end");
     performance.measure("draw", "draw-start", "draw-end");
   }
