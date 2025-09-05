@@ -18,9 +18,9 @@ import {
   TextBuffer,
 } from "../TextBuffer";
 import { Font } from "./Font";
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./constants";
 import { Graphics } from "./Graphics";
 import { drawScreen, initScreen } from "./Screen.gl";
+import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
 
 export type ClickListener = (clickEvent: {
   position: Vector;
@@ -42,7 +42,7 @@ export class Screen {
   private ctx!: CanvasRenderingContext2D;
   private gl!: WebGL2RenderingContext;
 
-  public areGraphicsEnabled: boolean = false;
+  private areGraphicsEnabled: boolean = false;
   public graphics: Graphics;
 
   private cursor: Cursor;
@@ -117,7 +117,7 @@ export class Screen {
     await initScreen(this.gl);
   }
 
-  initCanvas(containerEl: HTMLElement) {
+  private initCanvas(containerEl: HTMLElement) {
     const canvasBox = document.createElement("div");
     canvasBox.setAttribute("id", "screen-box");
 
@@ -125,8 +125,8 @@ export class Screen {
     this.canvas = canvas;
 
     canvas.setAttribute("id", "screen");
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
+    canvas.width = 100;
+    canvas.height = 100;
 
     // this.ctx = canvas.getContext("2d")!;
     this.gl = canvas.getContext("webgl2")!;
@@ -181,6 +181,18 @@ export class Screen {
   public reset() {
     this.showCursor();
     this.setCursorSize(this.characterHeight - 2, this.characterHeight - 1);
+  }
+
+  public setAreGraphicsEnabled(areGraphicsEnabled: boolean) {
+    this.areGraphicsEnabled = areGraphicsEnabled;
+
+    if (areGraphicsEnabled) {
+      this.canvas.width = GRAPHICS_WIDTH;
+      this.canvas.height = GRAPHICS_HEIGHT;
+    } else {
+      this.canvas.width = this.widthInPixels;
+      this.canvas.height = this.heightInPixels;
+    }
   }
 
   draw(dt: number) {
