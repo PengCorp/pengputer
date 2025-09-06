@@ -1,5 +1,17 @@
+import type { Size } from "@src/types";
 import cp437_9x16Url from "./cp437_9x16.png";
 import { loadTexture, createShader, createProgram } from "./util";
+
+// prettier-ignore
+const quad = [
+  -1.0, 1.0,
+  -1.0, -1.0,
+  1.0, -1.0,
+
+  1.0, -1.0,
+  1.0, 1.0,
+  -1.0, 1.0,
+];
 
 const vss = `#version 300 es
  
@@ -14,6 +26,7 @@ in uvec3 a_foregroundColor;
 
 flat out uvec3 v_backgroundColor;
 flat out uvec3 v_foregroundColor;
+out vec2 v_positionInCell;
 
 vec2 screenToClip(vec2 screen) {
   return vec2(
@@ -43,6 +56,7 @@ void main() {
 
   v_backgroundColor = a_backgroundColor;
   v_foregroundColor = a_foregroundColor;
+  v_positionInCell = clipToScreen(a_position);
 }
 `;
 
@@ -54,16 +68,22 @@ uniform uvec2 u_gridSize;
 
 flat in uvec3 v_backgroundColor;
 flat in uvec3 v_foregroundColor;
+in vec2 v_positionInCell;
  
 out vec4 o_color;
  
 void main() {
-  o_color = vec4(
+  vec3 fgColor = vec3(
     float(v_foregroundColor.r) / 255.0,
     float(v_foregroundColor.g) / 255.0,
-    float(v_foregroundColor.b) / 255.0,
-    1
+    float(v_foregroundColor.b) / 255.0
   );
+  vec3 bgColor = vec3(
+    float(v_backgroundColor.r) / 255.0,
+    float(v_backgroundColor.g) / 255.0,
+    float(v_backgroundColor.b) / 255.0
+  );
+  o_color = mix(vec4(bgColor.rgb, 1.0), vec4(fgColor.rgb, 1.0), v_positionInCell.y);
 }
 `;
 
@@ -75,11 +95,74 @@ const aForegroundColorLocation = 3;
 const uniforms = ["u_gridSize", "u_characterSize"] as const;
 type Uniform = (typeof uniforms)[number];
 
+class TerminalCellBuffer {
+  private originsData: Uint32Array;
+  private foregroundColorData: Uint32Array;
+  private backgroundColorData: Uint32Array;
+  private gridSize: Size;
+
+  public constructor() {
+    this.originsData = new Uint32Array();
+    this.foregroundColorData = new Uint32Array();
+    this.backgroundColorData = new Uint32Array();
+    this.gridSize = { w: 0, h: 0 };
+
+    this.setSize({ w: 80, h: 25 });
+  }
+
+  public setSize(newGridSize: Size) {
+    this.gridSize = newGridSize;
+    const offsets = [];
+    const backgroundColor = [];
+    const foregroundColor = [];
+    for (let y = 0; y < this.gridSize.h; y += 1) {
+      for (let x = 0; x < this.gridSize.w; x += 1) {
+        offsets.push(x, y);
+        backgroundColor.push(
+          (y / this.gridSize.h) * 255,
+          (x / this.gridSize.w) * 255,
+          0,
+        );
+        foregroundColor.push(
+          0,
+          (y / this.gridSize.h) * 255,
+          (x / this.gridSize.w) * 255,
+        );
+      }
+    }
+
+    this.originsData = new Uint32Array(offsets);
+    this.backgroundColorData = new Uint32Array(backgroundColor);
+    this.foregroundColorData = new Uint32Array(foregroundColor);
+  }
+
+  public getNumberOfCells() {
+    return this.gridSize.w * this.gridSize.h;
+  }
+
+  public getSize(): Size {
+    return { ...this.gridSize };
+  }
+
+  public getOriginsData() {
+    return this.originsData;
+  }
+
+  public getForegroundColorData() {
+    return this.foregroundColorData;
+  }
+
+  public getBackgroundColorData() {
+    return this.backgroundColorData;
+  }
+}
+
 export class TerminalRenderer {
   private gl: WebGL2RenderingContext;
   private program!: WebGLProgram;
 
   private vao!: WebGLVertexArrayObject;
+
   private quadBuffer!: WebGLBuffer;
   private originsBuffer!: WebGLBuffer;
   private foregroundColorsBuffer!: WebGLBuffer;
@@ -87,13 +170,16 @@ export class TerminalRenderer {
 
   private charTex!: WebGLTexture;
 
-  private characterGridSize = [80, 25];
   private characterSize = [9, 16];
 
   private uniforms: Partial<Record<Uniform, WebGLUniformLocation>> = {};
 
+  private cellBuffer: TerminalCellBuffer;
+
   public constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
+
+    this.cellBuffer = new TerminalCellBuffer();
   }
 
   public async init() {
@@ -130,16 +216,7 @@ export class TerminalRenderer {
     gl.bindVertexArray(vao);
 
     {
-      // prettier-ignore
-      var quadData = new Float32Array([
-        -1.0, 1.0,
-        -1.0, -1.0,
-        1.0, -1.0,
-
-        1.0, -1.0,
-        1.0, 1.0,
-        -1.0, 1.0,
-      ]);
+      var quadData = new Float32Array(quad);
       var quadBuffer = gl.createBuffer();
       this.quadBuffer = quadBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
@@ -149,7 +226,7 @@ export class TerminalRenderer {
     }
 
     {
-      var originsData = new Uint32Array([0, 0, 1, 0, 0, 1]);
+      var originsData = this.cellBuffer.getOriginsData();
       var originsBuffer = gl.createBuffer();
       this.originsBuffer = originsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, originsBuffer);
@@ -160,9 +237,7 @@ export class TerminalRenderer {
     }
 
     {
-      var foregroundColorsData = new Uint32Array([
-        0, 0, 255, 255, 0, 0, 0, 255, 0,
-      ]);
+      var foregroundColorsData = this.cellBuffer.getForegroundColorData();
       var foregroundColorsBuffer = gl.createBuffer();
       this.foregroundColorsBuffer = foregroundColorsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, foregroundColorsBuffer);
@@ -179,9 +254,7 @@ export class TerminalRenderer {
     }
 
     {
-      var backgroundColorsData = new Uint32Array([
-        0, 0, 0, 255, 255, 255, 0, 0, 0,
-      ]);
+      var backgroundColorsData = this.cellBuffer.getBackgroundColorData();
       var backgroundColorsBuffer = gl.createBuffer();
       this.backgroundColorsBuffer = backgroundColorsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, backgroundColorsBuffer);
@@ -208,11 +281,8 @@ export class TerminalRenderer {
 
     gl.useProgram(program);
 
-    gl.uniform2ui(
-      this.uniforms["u_gridSize"]!,
-      this.characterGridSize[0],
-      this.characterGridSize[1],
-    );
+    const gridSize = this.cellBuffer.getSize();
+    gl.uniform2ui(this.uniforms["u_gridSize"]!, gridSize.w, gridSize.h);
     gl.uniform2ui(
       this.uniforms["u_characterSize"]!,
       this.characterSize[0],
@@ -221,7 +291,12 @@ export class TerminalRenderer {
 
     gl.bindVertexArray(vao);
 
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 3);
+    gl.drawArraysInstanced(
+      gl.TRIANGLES,
+      0,
+      quad.length / 2,
+      this.cellBuffer.getNumberOfCells(),
+    );
 
     gl.bindVertexArray(null);
 
