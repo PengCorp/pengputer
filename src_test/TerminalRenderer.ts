@@ -112,9 +112,11 @@ class TerminalCellBuffer {
 
   public setSize(newGridSize: Size) {
     this.gridSize = newGridSize;
+
     const offsets = [];
     const backgroundColor = [];
     const foregroundColor = [];
+
     for (let y = 0; y < this.gridSize.h; y += 1) {
       for (let x = 0; x < this.gridSize.w; x += 1) {
         offsets.push(x, y);
@@ -211,13 +213,13 @@ export class TerminalRenderer {
       this.uniforms[uniform] = gl.getUniformLocation(program, uniform)!;
     }
 
-    var vao = gl.createVertexArray();
+    const vao = gl.createVertexArray();
     this.vao = vao;
     gl.bindVertexArray(vao);
 
     {
-      var quadData = new Float32Array(quad);
-      var quadBuffer = gl.createBuffer();
+      const quadData = new Float32Array(quad);
+      const quadBuffer = gl.createBuffer();
       this.quadBuffer = quadBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, quadData, gl.STATIC_DRAW);
@@ -226,8 +228,8 @@ export class TerminalRenderer {
     }
 
     {
-      var originsData = this.cellBuffer.getOriginsData();
-      var originsBuffer = gl.createBuffer();
+      const originsData = this.cellBuffer.getOriginsData();
+      const originsBuffer = gl.createBuffer();
       this.originsBuffer = originsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, originsBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, originsData, gl.STATIC_DRAW);
@@ -237,8 +239,8 @@ export class TerminalRenderer {
     }
 
     {
-      var foregroundColorsData = this.cellBuffer.getForegroundColorData();
-      var foregroundColorsBuffer = gl.createBuffer();
+      const foregroundColorsData = this.cellBuffer.getForegroundColorData();
+      const foregroundColorsBuffer = gl.createBuffer();
       this.foregroundColorsBuffer = foregroundColorsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, foregroundColorsBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, foregroundColorsData, gl.STATIC_DRAW);
@@ -254,8 +256,8 @@ export class TerminalRenderer {
     }
 
     {
-      var backgroundColorsData = this.cellBuffer.getBackgroundColorData();
-      var backgroundColorsBuffer = gl.createBuffer();
+      const backgroundColorsData = this.cellBuffer.getBackgroundColorData();
+      const backgroundColorsBuffer = gl.createBuffer();
       this.backgroundColorsBuffer = backgroundColorsBuffer;
       gl.bindBuffer(gl.ARRAY_BUFFER, backgroundColorsBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, backgroundColorsData, gl.STATIC_DRAW);
