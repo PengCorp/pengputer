@@ -1,4 +1,7 @@
 #version 300 es
+
+precision highp float;
+precision highp int;
  
 uniform uvec2 u_gridSize;
 uniform uvec2 u_characterSize;
@@ -8,9 +11,11 @@ in vec2 a_position;
 in uvec2 a_origin;
 in uvec3 a_backgroundColor;
 in uvec3 a_foregroundColor;
+in uvec2 a_atlasPosition;
 
 flat out uvec3 v_backgroundColor;
 flat out uvec3 v_foregroundColor;
+flat out uvec2 v_atlasPosition;
 
 out vec2 v_positionInCell;
 out vec4 v_clipPosition;
@@ -44,5 +49,6 @@ void main() {
 
   v_backgroundColor = a_backgroundColor;
   v_foregroundColor = a_foregroundColor;
+  v_atlasPosition = a_atlasPosition;
   v_positionInCell = clipToScreen(a_position);
 }

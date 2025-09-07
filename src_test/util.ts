@@ -1,3 +1,8 @@
+import type { ImageTexture } from "./types";
+
+/**
+ * Creates a shader from a string.
+ */
 export function createShader(
   gl: WebGL2RenderingContext,
   shaderType: number,
@@ -24,6 +29,9 @@ export function createShader(
   throw new Error("Failed to compile shader");
 }
 
+/**
+ * Creates a program from a set of shaders.
+ */
 export function createProgram(
   gl: WebGL2RenderingContext,
   shaders: WebGLShader[],
@@ -51,6 +59,9 @@ export function createProgram(
   throw new Error("Failed to link program");
 }
 
+/**
+ * Loads a texture from a file.
+ */
 export async function loadTexture(gl: WebGL2RenderingContext, url: string) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -73,7 +84,7 @@ export async function loadTexture(gl: WebGL2RenderingContext, url: string) {
   const image = new Image();
   image.crossOrigin = "anonymous";
 
-  return new Promise<WebGLTexture>((resolve, reject) => {
+  return new Promise<ImageTexture>((resolve, reject) => {
     image.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(
@@ -90,7 +101,11 @@ export async function loadTexture(gl: WebGL2RenderingContext, url: string) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-      resolve(texture);
+      resolve({
+        width: image.width,
+        height: image.height,
+        texture,
+      });
     };
 
     image.onerror = () => {

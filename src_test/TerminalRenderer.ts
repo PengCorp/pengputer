@@ -3,6 +3,7 @@ import cp437_9x16Url from "./cp437_9x16.png";
 import { loadTexture, createShader, createProgram } from "./util";
 import vss from "./Character.vert?raw";
 import fss from "./Character.frag?raw";
+import type { ImageTexture } from "./types";
 
 // prettier-ignore
 const quad = [
@@ -19,20 +20,35 @@ const aPositionLocation = 0;
 const aOriginLocation = 1;
 const aBackgroundColorLocation = 2;
 const aForegroundColorLocation = 3;
+const aAtlasPositionLocation = 4;
+// decoration
+// xxxx xxxx xxxx xxxx xxxx xxxx hbcc oooo
+// oooo - outline (rlbt) (right left bottom top)
+// cc - cursor style (no cursor, bottom, border, left), cursor blinks according to blinking timer
+// b - is character blinking
+// h - is half bright
+const aDecorationLocation = 5;
 
-const uniforms = ["u_gridSize", "u_characterSize"] as const;
+const uniforms = [
+  "u_gridSize",
+  "u_characterSize",
+  "u_atlas",
+  "u_atlasSize",
+] as const;
 type Uniform = (typeof uniforms)[number];
 
 class TerminalCellBuffer {
   private originsData: Uint32Array;
   private foregroundColorData: Uint32Array;
   private backgroundColorData: Uint32Array;
+  private atlasPositionData: Uint32Array;
   private gridSize: Size;
 
   public constructor() {
     this.originsData = new Uint32Array();
     this.foregroundColorData = new Uint32Array();
     this.backgroundColorData = new Uint32Array();
+    this.atlasPositionData = new Uint32Array();
     this.gridSize = { w: 0, h: 0 };
 
     this.__setSize({ w: 80, h: 25 });
@@ -44,6 +60,7 @@ class TerminalCellBuffer {
     const offsets = [];
     const backgroundColor = [];
     const foregroundColor = [];
+    const atlasPosition = [];
 
     for (let y = 0; y < this.gridSize.h; y += 1) {
       for (let x = 0; x < this.gridSize.w; x += 1) {
@@ -58,12 +75,14 @@ class TerminalCellBuffer {
           (y / this.gridSize.h) * 255,
           (x / this.gridSize.w) * 255,
         );
+        atlasPosition.push(x % 32, y % 8);
       }
     }
 
     this.originsData = new Uint32Array(offsets);
     this.backgroundColorData = new Uint32Array(backgroundColor);
     this.foregroundColorData = new Uint32Array(foregroundColor);
+    this.atlasPositionData = new Uint32Array(atlasPosition);
   }
 
   public getNumberOfCells() {
@@ -85,6 +104,10 @@ class TerminalCellBuffer {
   public getBackgroundColorData() {
     return this.backgroundColorData;
   }
+
+  public getAtlasPositionData() {
+    return this.atlasPositionData;
+  }
 }
 
 export class TerminalRenderer {
@@ -97,8 +120,9 @@ export class TerminalRenderer {
   private originsBuffer!: WebGLBuffer;
   private foregroundColorsBuffer!: WebGLBuffer;
   private backgroundColorsBuffer!: WebGLBuffer;
+  private atlasPositionBuffer!: WebGLBuffer;
 
-  private charTex!: WebGLTexture;
+  private charTex!: ImageTexture;
 
   private characterSize = [9, 16];
 
@@ -139,6 +163,7 @@ export class TerminalRenderer {
         aBackgroundColorLocation,
         "a_backgroundColor",
       );
+      gl.bindAttribLocation(program, aAtlasPositionLocation, "a_atlasPosition");
     });
     this.program = program;
 
@@ -151,6 +176,7 @@ export class TerminalRenderer {
     gl.bindVertexArray(vao);
 
     {
+      // quad for vertex shader
       const quadData = new Float32Array(quad);
       const quadBuffer = gl.createBuffer();
       this.quadBuffer = quadBuffer;
@@ -161,6 +187,7 @@ export class TerminalRenderer {
     }
 
     {
+      // screen origins
       const originsData = this.cellBuffer.getOriginsData();
       const originsBuffer = gl.createBuffer();
       this.originsBuffer = originsBuffer;
@@ -172,6 +199,7 @@ export class TerminalRenderer {
     }
 
     {
+      // foregroundColors
       const foregroundColorsData = this.cellBuffer.getForegroundColorData();
       const foregroundColorsBuffer = gl.createBuffer();
       this.foregroundColorsBuffer = foregroundColorsBuffer;
@@ -189,6 +217,7 @@ export class TerminalRenderer {
     }
 
     {
+      // backgroundColors
       const backgroundColorsData = this.cellBuffer.getBackgroundColorData();
       const backgroundColorsBuffer = gl.createBuffer();
       this.backgroundColorsBuffer = backgroundColorsBuffer;
@@ -203,6 +232,18 @@ export class TerminalRenderer {
         0,
       );
       gl.vertexAttribDivisor(aBackgroundColorLocation, 1);
+    }
+
+    {
+      // atlasPosition
+      const atlasPositionData = this.cellBuffer.getAtlasPositionData();
+      const atlasPositionBuffer = gl.createBuffer();
+      this.atlasPositionBuffer = atlasPositionBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, atlasPositionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, atlasPositionData, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(aAtlasPositionLocation);
+      gl.vertexAttribIPointer(aAtlasPositionLocation, 2, gl.UNSIGNED_INT, 0, 0);
+      gl.vertexAttribDivisor(aAtlasPositionLocation, 1);
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -239,13 +280,25 @@ export class TerminalRenderer {
 
     gl.useProgram(program);
 
-    const gridSize = this.cellBuffer.getSize();
-    gl.uniform2ui(this.uniforms["u_gridSize"]!, gridSize.w, gridSize.h);
-    gl.uniform2ui(
-      this.uniforms["u_characterSize"]!,
-      this.characterSize[0],
-      this.characterSize[1],
-    );
+    {
+      // uniforms
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.charTex.texture);
+      gl.uniform1i(this.uniforms["u_atlas"]!, 0);
+      gl.uniform2ui(
+        this.uniforms["u_atlasSize"]!,
+        this.charTex.width,
+        this.charTex.height,
+      );
+
+      const gridSize = this.cellBuffer.getSize();
+      gl.uniform2ui(this.uniforms["u_gridSize"]!, gridSize.w, gridSize.h);
+      gl.uniform2ui(
+        this.uniforms["u_characterSize"]!,
+        this.characterSize[0],
+        this.characterSize[1],
+      );
+    }
 
     gl.bindVertexArray(vao);
 
