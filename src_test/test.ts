@@ -12,8 +12,6 @@ import { TerminalRenderer } from "./TerminalRenderer";
   const tr = new TerminalRenderer(gl);
   await tr.init();
 
-  // actual draw
-
   const render = () => {
     gl.clearColor(0, 0, 0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);

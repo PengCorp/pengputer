@@ -26,7 +26,9 @@ in uvec3 a_foregroundColor;
 
 flat out uvec3 v_backgroundColor;
 flat out uvec3 v_foregroundColor;
+
 out vec2 v_positionInCell;
+out vec4 v_clipPosition;
 
 vec2 screenToClip(vec2 screen) {
   return vec2(
@@ -53,6 +55,7 @@ void main() {
 
   vec2 position = screenToClip(screenPosition);
   gl_Position = vec4(position.xy, 0.0, 1.0);
+  v_clipPosition = gl_Position;
 
   v_backgroundColor = a_backgroundColor;
   v_foregroundColor = a_foregroundColor;
@@ -69,21 +72,19 @@ uniform uvec2 u_gridSize;
 flat in uvec3 v_backgroundColor;
 flat in uvec3 v_foregroundColor;
 in vec2 v_positionInCell;
+in vec4 v_clipPosition;
  
 out vec4 o_color;
- 
+
+vec3 rgbToColor(uvec3 rgb) {
+  vec3 rgbFloat = vec3(rgb);
+  return rgbFloat / 255.0;
+}
+
 void main() {
-  vec3 fgColor = vec3(
-    float(v_foregroundColor.r) / 255.0,
-    float(v_foregroundColor.g) / 255.0,
-    float(v_foregroundColor.b) / 255.0
-  );
-  vec3 bgColor = vec3(
-    float(v_backgroundColor.r) / 255.0,
-    float(v_backgroundColor.g) / 255.0,
-    float(v_backgroundColor.b) / 255.0
-  );
-  o_color = mix(vec4(bgColor.rgb, 1.0), vec4(fgColor.rgb, 1.0), v_positionInCell.y);
+  vec3 fgColor = rgbToColor(v_foregroundColor);
+  vec3 bgColor = rgbToColor(v_backgroundColor);
+  o_color = mix(mix(vec4(bgColor.rgb, 1.0), vec4(fgColor.rgb, 1.0), v_positionInCell.y * v_positionInCell.x), vec4(1.0, 1.0, 1.0, 1.0), v_clipPosition.x);
 }
 `;
 
@@ -107,10 +108,10 @@ class TerminalCellBuffer {
     this.backgroundColorData = new Uint32Array();
     this.gridSize = { w: 0, h: 0 };
 
-    this.setSize({ w: 80, h: 25 });
+    this.__setSize({ w: 80, h: 25 });
   }
 
-  public setSize(newGridSize: Size) {
+  public __setSize(newGridSize: Size) {
     this.gridSize = newGridSize;
 
     const offsets = [];
@@ -182,6 +183,11 @@ export class TerminalRenderer {
     this.gl = gl;
 
     this.cellBuffer = new TerminalCellBuffer();
+  }
+
+  public setSize(size: Size) {
+    this.cellBuffer.__setSize(size);
+    this.updateFromCellBuffer(true);
   }
 
   public async init() {
@@ -274,6 +280,29 @@ export class TerminalRenderer {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindVertexArray(null);
+
+    this.updateFromCellBuffer(true);
+  }
+
+  public updateFromCellBuffer(replace: boolean) {
+    const { gl } = this;
+
+    const targets = [
+      [this.originsBuffer, this.cellBuffer.getOriginsData()],
+      [this.backgroundColorsBuffer, this.cellBuffer.getBackgroundColorData()],
+      [this.foregroundColorsBuffer, this.cellBuffer.getForegroundColorData()],
+    ] as const;
+
+    for (const target of targets) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, target[0]);
+      if (replace) {
+        gl.bufferData(gl.ARRAY_BUFFER, target[1], gl.STATIC_DRAW);
+      } else {
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, target[1]);
+      }
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
   public render() {
