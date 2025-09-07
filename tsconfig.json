@@ -35,5 +35,5 @@
       "@src_test/*": ["src_test/*"]
     }
   },
-  "include": ["src/**/*", "src_test/**/*"]
+  "include": ["src/**/*", "src_test/**/*", "vite.env.d.ts"]
 }

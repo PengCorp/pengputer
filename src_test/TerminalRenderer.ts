@@ -1,6 +1,8 @@
 import type { Size } from "@src/types";
 import cp437_9x16Url from "./cp437_9x16.png";
 import { loadTexture, createShader, createProgram } from "./util";
+import vss from "./Character.vert?raw";
+import fss from "./Character.frag?raw";
 
 // prettier-ignore
 const quad = [
@@ -12,81 +14,6 @@ const quad = [
   1.0, 1.0,
   -1.0, 1.0,
 ];
-
-const vss = `#version 300 es
- 
-uniform uvec2 u_gridSize;
-uniform uvec2 u_characterSize;
-
-in vec2 a_position;
-
-in uvec2 a_origin;
-in uvec3 a_backgroundColor;
-in uvec3 a_foregroundColor;
-
-flat out uvec3 v_backgroundColor;
-flat out uvec3 v_foregroundColor;
-
-out vec2 v_positionInCell;
-out vec4 v_clipPosition;
-
-vec2 screenToClip(vec2 screen) {
-  return vec2(
-    screen.x * 2.0 - 1.0,
-    1.0 - screen.y * 2.0
-  );
-}
-
-vec2 clipToScreen(vec2 clip) {
-  return vec2(
-    (clip.x + 1.0) * 0.5,
-    (1.0 - clip.y) * 0.5
-  );
-}
- 
-void main() {
-  uvec2 resolution = u_gridSize * u_characterSize;
-  vec2 pixelSize = 1.0 / vec2(resolution);
-  vec2 cellSize = vec2(u_characterSize) * pixelSize;
-
-  vec2 screenOrigin = vec2(a_origin) * cellSize;
-
-  vec2 screenPosition = screenOrigin + clipToScreen(a_position) * cellSize;
-
-  vec2 position = screenToClip(screenPosition);
-  gl_Position = vec4(position.xy, 0.0, 1.0);
-  v_clipPosition = gl_Position;
-
-  v_backgroundColor = a_backgroundColor;
-  v_foregroundColor = a_foregroundColor;
-  v_positionInCell = clipToScreen(a_position);
-}
-`;
-
-const fss = `#version 300 es
-
-precision highp float;
-
-uniform uvec2 u_gridSize;
-
-flat in uvec3 v_backgroundColor;
-flat in uvec3 v_foregroundColor;
-in vec2 v_positionInCell;
-in vec4 v_clipPosition;
- 
-out vec4 o_color;
-
-vec3 rgbToColor(uvec3 rgb) {
-  vec3 rgbFloat = vec3(rgb);
-  return rgbFloat / 255.0;
-}
-
-void main() {
-  vec3 fgColor = rgbToColor(v_foregroundColor);
-  vec3 bgColor = rgbToColor(v_backgroundColor);
-  o_color = mix(mix(vec4(bgColor.rgb, 1.0), vec4(fgColor.rgb, 1.0), v_positionInCell.y * v_positionInCell.x), vec4(1.0, 1.0, 1.0, 1.0), v_clipPosition.x);
-}
-`;
 
 const aPositionLocation = 0;
 const aOriginLocation = 1;
