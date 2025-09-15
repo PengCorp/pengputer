@@ -1,9 +1,14 @@
 import type { Size } from "@src/types";
 import cp437_9x16Url from "./cp437_9x16.png";
+import cp437_9x16_megaUrl from "./cp437_9x16_mega.png";
 import { loadTexture, createShader, createProgram } from "./util";
 import vss from "./Character.vert?raw";
 import fss from "./Character.frag?raw";
 import type { ImageTexture } from "./types";
+import tc from "tinycolor2";
+import { charMap } from "./CharMap";
+import { CgaColors } from "@Color/types";
+import { CGA_PALETTE_DICT } from "@Color/cgaPalette";
 
 // prettier-ignore
 const quad = [
@@ -37,11 +42,23 @@ const uniforms = [
 ] as const;
 type Uniform = (typeof uniforms)[number];
 
+interface TerminalRendererFont {
+  characterSize: Size;
+  texture: ImageTexture;
+}
+
+const colorCache: Record<string, tc.ColorFormats.RGBA> = {};
+
 class TerminalCellBuffer {
+  /** Positions of each cell in cell coordinates (default screen is 80x25 cells). */
   private originsData: Uint32Array;
+  /** Foreground color of cell, triplets of (r, g, b). */
   private foregroundColorData: Uint32Array;
+  /** Background color of cell, triplets of (r, g, b). */
   private backgroundColorData: Uint32Array;
+  /** Atlas position from which to take character, in cell coordinates (1 cell is 1 character on atlas). */
   private atlasPositionData: Uint32Array;
+
   private gridSize: Size;
 
   public constructor() {
@@ -57,14 +74,14 @@ class TerminalCellBuffer {
   public __setSize(newGridSize: Size) {
     this.gridSize = newGridSize;
 
-    const offsets = [];
+    const origins = [];
     const backgroundColor = [];
     const foregroundColor = [];
     const atlasPosition = [];
 
     for (let y = 0; y < this.gridSize.h; y += 1) {
       for (let x = 0; x < this.gridSize.w; x += 1) {
-        offsets.push(x, y);
+        origins.push(x, y);
         backgroundColor.push(
           (y / this.gridSize.h) * 255,
           (x / this.gridSize.w) * 255,
@@ -75,11 +92,11 @@ class TerminalCellBuffer {
           (y / this.gridSize.h) * 255,
           (x / this.gridSize.w) * 255,
         );
-        atlasPosition.push(x % 32, y % 8);
+        atlasPosition.push(x % 32, y % 24);
       }
     }
 
-    this.originsData = new Uint32Array(offsets);
+    this.originsData = new Uint32Array(origins);
     this.backgroundColorData = new Uint32Array(backgroundColor);
     this.foregroundColorData = new Uint32Array(foregroundColor);
     this.atlasPositionData = new Uint32Array(atlasPosition);
@@ -107,6 +124,44 @@ class TerminalCellBuffer {
 
   public getAtlasPositionData() {
     return this.atlasPositionData;
+  }
+
+  private _getRgb(color: string) {
+    if (colorCache[color]) {
+      return colorCache[color];
+    }
+    const rgb = tc(color).toRgb();
+    colorCache[color] = rgb;
+    return rgb;
+  }
+
+  public setForegroundColorAt(color: string, x: number, y: number) {
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    const idx = (y * this.gridSize.w + x) * 3;
+    let rgb = this._getRgb(color);
+    this.foregroundColorData[idx + 0] = rgb.r;
+    this.foregroundColorData[idx + 1] = rgb.g;
+    this.foregroundColorData[idx + 2] = rgb.b;
+  }
+
+  public setBackgroundColorAt(color: string, x: number, y: number) {
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    const idx = (y * this.gridSize.w + x) * 3;
+    let rgb = this._getRgb(color);
+    this.backgroundColorData[idx + 0] = rgb.r;
+    this.backgroundColorData[idx + 1] = rgb.g;
+    this.backgroundColorData[idx + 2] = rgb.b;
+  }
+
+  public setCharacterAt(char: string, x: number, y: number) {
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    const idx = (y * this.gridSize.w + x) * 2;
+    const position = charMap[char];
+    if (position) {
+      const { x, y } = position;
+      this.atlasPositionData[idx + 0] = x;
+      this.atlasPositionData[idx + 1] = y;
+    }
   }
 }
 
@@ -136,15 +191,23 @@ export class TerminalRenderer {
     this.cellBuffer = new TerminalCellBuffer();
   }
 
-  public setSize(size: Size) {
+  public getCellBuffer() {
+    return this.cellBuffer;
+  }
+
+  public setBufferSize(size: Size) {
     this.cellBuffer.__setSize(size);
     this.updateFromCellBuffer(true);
+  }
+
+  public setCharacterSize(size: Size) {
+    this.characterSize = [size.w, size.h];
   }
 
   public async init() {
     const { gl } = this;
 
-    const charTex = await loadTexture(gl, cp437_9x16Url);
+    const charTex = await loadTexture(gl, cp437_9x16_megaUrl);
     this.charTex = charTex;
 
     const vs = createShader(gl, gl.VERTEX_SHADER, vss);
@@ -249,6 +312,18 @@ export class TerminalRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindVertexArray(null);
 
+    this.cellBuffer.setBackgroundColorAt(
+      CGA_PALETTE_DICT[CgaColors.Black],
+      0,
+      0,
+    );
+    this.cellBuffer.setForegroundColorAt(
+      CGA_PALETTE_DICT[CgaColors.LightGray],
+      0,
+      0,
+    );
+    this.cellBuffer.setCharacterAt("W", 0, 0);
+
     this.updateFromCellBuffer(true);
   }
 
@@ -259,6 +334,7 @@ export class TerminalRenderer {
       [this.originsBuffer, this.cellBuffer.getOriginsData()],
       [this.backgroundColorsBuffer, this.cellBuffer.getBackgroundColorData()],
       [this.foregroundColorsBuffer, this.cellBuffer.getForegroundColorData()],
+      [this.atlasPositionBuffer, this.cellBuffer.getAtlasPositionData()],
     ] as const;
 
     for (const target of targets) {
@@ -284,7 +360,9 @@ export class TerminalRenderer {
       // uniforms
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.charTex.texture);
+
       gl.uniform1i(this.uniforms["u_atlas"]!, 0);
+
       gl.uniform2ui(
         this.uniforms["u_atlasSize"]!,
         this.charTex.width,
@@ -293,6 +371,7 @@ export class TerminalRenderer {
 
       const gridSize = this.cellBuffer.getSize();
       gl.uniform2ui(this.uniforms["u_gridSize"]!, gridSize.w, gridSize.h);
+
       gl.uniform2ui(
         this.uniforms["u_characterSize"]!,
         this.characterSize[0],
@@ -305,7 +384,7 @@ export class TerminalRenderer {
     gl.drawArraysInstanced(
       gl.TRIANGLES,
       0,
-      quad.length / 2,
+      quad.length / 2, // (x, y)
       this.cellBuffer.getNumberOfCells(),
     );
 

@@ -11,7 +11,7 @@ import { type charArray } from "../types";
 
 // 32 characters wide, 8 characters high
 const cp437CharacterValueMap: charArray[] = [
-  " ☺︎☻♥︎♦︎♣︎♠︎•◘○◙♂︎♀︎♪♫☼►◄↕︎‼︎¶§▬↨↑↓→←∟↔︎▲▼",
+  " ☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼",
   " !\"#$%&'()*+,-./0123456789:;<=>?",
   "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
   "`abcdefghijklmnopqrstuvwxyz{|}~⌂",

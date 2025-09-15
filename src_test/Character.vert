@@ -20,6 +20,7 @@ flat out uvec2 v_atlasPosition;
 out vec2 v_positionInCell;
 out vec4 v_clipPosition;
 
+// Converts from screen (0 to 1 y-negative) to clip (-1 to 1, y-positive).
 vec2 screenToClip(vec2 screen) {
   return vec2(
     screen.x * 2.0 - 1.0,
@@ -27,6 +28,7 @@ vec2 screenToClip(vec2 screen) {
   );
 }
 
+// Converts from clip (-1 to 1, y-positive) to screen (0 to 1 y-negative).
 vec2 clipToScreen(vec2 clip) {
   return vec2(
     (clip.x + 1.0) * 0.5,
