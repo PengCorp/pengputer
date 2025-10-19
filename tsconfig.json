@@ -28,9 +28,6 @@
 
     "baseUrl": ".", // relative to tsconfig.json
     "paths": {
-      "@Toolbox/*": ["src/Toolbox/*"],
-      "@Color/*": ["src/Color/*"],
-      "@FileSystem/*": ["src/FileSystem/*"],
       "@src/*": ["src/*"]
     }
   },
