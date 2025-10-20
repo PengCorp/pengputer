@@ -327,6 +327,9 @@ export class TerminalRenderer {
     this.updateFromCellBuffer(true);
   }
 
+  /**
+   * @param replace should data buffers be replaced completely or just updated. Use replace when size of buffers changes.
+   */
   public updateFromCellBuffer(replace: boolean) {
     const { gl } = this;
 

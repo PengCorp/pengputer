@@ -20,13 +20,13 @@ export function createShader(
   gl.compileShader(shader);
 
   const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-  if (compiled) {
-    return shader;
+  if (!compiled) {
+    console.log(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    throw new Error("Failed to compile shader");
   }
 
-  console.log(gl.getShaderInfoLog(shader));
-  gl.deleteShader(shader);
-  throw new Error("Failed to compile shader");
+  return shader;
 }
 
 /**
@@ -50,13 +50,13 @@ export function createProgram(
   gl.linkProgram(program);
 
   const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-  if (linked) {
-    return program;
+  if (!linked) {
+    console.log(gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    throw new Error("Failed to link program");
   }
 
-  console.log(gl.getProgramInfoLog(program));
-  gl.deleteProgram(program);
-  throw new Error("Failed to link program");
+  return program;
 }
 
 /**
