@@ -35,17 +35,11 @@ export function createShader(
 export function createProgram(
   gl: WebGL2RenderingContext,
   shaders: WebGLShader[],
-  beforeLink: (
-    gl: WebGL2RenderingContext,
-    program: WebGLProgram,
-  ) => void = () => undefined,
 ) {
   const program = gl.createProgram();
   shaders.forEach(function (shader) {
     gl.attachShader(program, shader);
   });
-
-  beforeLink(gl, program);
 
   gl.linkProgram(program);
 
