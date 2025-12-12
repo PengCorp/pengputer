@@ -1,6 +1,6 @@
 import type { Size } from "@src/types";
 import tc from "tinycolor2";
-import { charMap } from "./CharMap";
+import type { Font } from "./Font";
 
 const colorCache: Record<string, tc.ColorFormats.RGBA> = {};
 
@@ -13,7 +13,10 @@ export class TerminalCellBuffer {
   private backgroundColorData: Uint32Array;
   /** Atlas position from which to take character, in cell coordinates (1 cell is 1 character on atlas). */
   private atlasPositionData: Uint32Array;
+  /** Array of characters at each respective cell. */
+  private characterData: string[];
 
+  private font: Font | null = null;
   private gridSize: Size;
 
   public constructor() {
@@ -22,8 +25,14 @@ export class TerminalCellBuffer {
     this.backgroundColorData = new Uint32Array();
     this.atlasPositionData = new Uint32Array();
     this.gridSize = { w: 0, h: 0 };
+    this.characterData = [];
 
     this.__setSize({ w: 80, h: 25 });
+  }
+
+  public setFont(font: Font) {
+    this.font = font;
+    // TODO: update atlasPositionData
   }
 
   public __setSize(newGridSize: Size) {
@@ -33,6 +42,7 @@ export class TerminalCellBuffer {
     const backgroundColor = [];
     const foregroundColor = [];
     const atlasPosition = [];
+    const characters: string[] = [];
 
     for (let y = 0; y < this.gridSize.h; y += 1) {
       for (let x = 0; x < this.gridSize.w; x += 1) {
@@ -47,7 +57,8 @@ export class TerminalCellBuffer {
           (y / this.gridSize.h) * 255,
           (x / this.gridSize.w) * 255,
         );
-        atlasPosition.push(x % 32, y % 24);
+        atlasPosition.push(0, 0);
+        characters.push("\x00");
       }
     }
 
@@ -55,6 +66,7 @@ export class TerminalCellBuffer {
     this.backgroundColorData = new Uint32Array(backgroundColor);
     this.foregroundColorData = new Uint32Array(foregroundColor);
     this.atlasPositionData = new Uint32Array(atlasPosition);
+    this.characterData = characters;
   }
 
   public getNumberOfCells() {
@@ -79,6 +91,13 @@ export class TerminalCellBuffer {
 
   public getAtlasPositionData() {
     return this.atlasPositionData;
+  }
+
+  public getFont() {
+    if (!this.font) {
+      throw new Error("No font assigned.");
+    }
+    return this.font;
   }
 
   private _getRgb(color: string) {
@@ -109,13 +128,19 @@ export class TerminalCellBuffer {
   }
 
   public setCharacterAt(char: string, x: number, y: number) {
+    if (!this.font) {
+      throw new Error("Cannot set character without first setting a font.");
+    }
+
     if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
-    const idx = (y * this.gridSize.w + x) * 2;
-    const position = charMap[char];
+    const idx = y * this.gridSize.w + x;
+    const idx2 = idx * 2;
+    const position = this.font.charMap[char];
     if (position) {
       const { x, y } = position;
-      this.atlasPositionData[idx + 0] = x;
-      this.atlasPositionData[idx + 1] = y;
+      this.atlasPositionData[idx2 + 0] = x;
+      this.atlasPositionData[idx2 + 1] = y;
+      this.characterData[idx] = char;
     }
   }
 }

@@ -1,16 +1,15 @@
 import "./test.scss";
-import cp437_9x16Url from "./cp437_9x16.png";
-import { loadTexture, createShader, createProgram } from "./util";
 import { TerminalRenderer } from "./TerminalRenderer";
 
 (async () => {
   const canvas = document.getElementById("c") as HTMLCanvasElement;
   const gl = canvas.getContext("webgl2");
 
-  if (!gl) return;
+  if (!gl) {
+    throw new Error("Failed to get webgl2 context.");
+  }
 
-  const tr = new TerminalRenderer(gl);
-  await tr.init();
+  const tr = await TerminalRenderer.create(canvas, gl);
 
   const render = () => {
     tr.render();

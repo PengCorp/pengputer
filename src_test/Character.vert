@@ -9,12 +9,8 @@ uniform uvec2 u_characterSize;
 in vec2 a_position;
 
 in uvec2 a_origin;
-in uvec3 a_backgroundColor;
-in uvec3 a_foregroundColor;
 in uvec2 a_atlasPosition;
 
-flat out uvec3 v_backgroundColor;
-flat out uvec3 v_foregroundColor;
 flat out uvec2 v_atlasPosition;
 
 out vec2 v_positionInCell;
@@ -46,9 +42,6 @@ void main() {
 
   vec2 position = screenToNdc(screenPosition);
   gl_Position = vec4(position.xy, 0.0, 1.0);
-
-  v_backgroundColor = a_backgroundColor;
-  v_foregroundColor = a_foregroundColor;
   v_atlasPosition = a_atlasPosition;
   v_positionInCell = ndcToScreen(a_position);
 }

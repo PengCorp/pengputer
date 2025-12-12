@@ -1,10 +1,15 @@
+import { Font } from "./Font";
+
 import { splitStringIntoCharacters } from "@Toolbox/String";
+
+import cp437_9x16_megaUrl from "./cp437_9x16_mega.png";
+import type { Coord } from "@src/types";
 
 /* cSpell:disable */
 
 // prettier-ignore
 const charMapArray = [
-  splitStringIntoCharacters(" !\"#$%&'()*+,-./0123456789:;<=>?🬀🬁🬂🬃🬄🬅🬆🬇🬈🬉🬊🬋🬌🬍🬎🬏"),
+  splitStringIntoCharacters("\x00!\"#$%&'()*+,-./0123456789:;<=>?🬀🬁🬂🬃🬄🬅🬆🬇🬈🬉🬊🬋🬌🬍🬎🬏"),
   splitStringIntoCharacters("@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_🬐🬑🬒🬓🬔🬕🬖🬗🬘🬙🬚🬛🬜🬝🬞🬟"),
   splitStringIntoCharacters("`abcdefghijklmnopqrstuvwxyz{|}~⌂🬠🬡🬢🬣🬤🬥🬦🬧🬨🬩🬪🬫🬬🬭🬮🬯"),
   splitStringIntoCharacters(" ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿🬰🬱🬲🬳🬴🬵🬶🬷🬸🬹🬺🬻🬼🬽🬾🬿"),
@@ -68,7 +73,7 @@ const charMapArray = [
 
 /* cSpell:enable */
 
-const charMap: Record<string, { x: number; y: number }> = {};
+const charMap: Record<string, Coord> = {};
 
 for (let y = 0; y < charMapArray.length; y += 1) {
   const row = charMapArray[y];
@@ -77,4 +82,11 @@ for (let y = 0; y < charMapArray.length; y += 1) {
   }
 }
 
-export { charMap };
+export const loadFont9x16 = async (gl: WebGL2RenderingContext) => {
+  const font = await Font.load(gl, cp437_9x16_megaUrl, charMap, {
+    w: 9,
+    h: 16,
+  });
+
+  return font;
+};
