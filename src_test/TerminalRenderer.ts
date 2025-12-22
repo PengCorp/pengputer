@@ -34,22 +34,20 @@ export class TerminalRenderer {
   public render() {
     const { gl, cellBuffer } = this;
 
-    // previous + current = next
-
     gl.disable(gl.DEPTH_TEST);
 
-    {
-      // demo update to set a gray W at 0,0
-      cellBuffer.setBackgroundColorAt(CGA_PALETTE_DICT[CgaColors.Black], 0, 0);
-      cellBuffer.setForegroundColorAt(
-        CGA_PALETTE_DICT[CgaColors.LightGray],
-        0,
-        0,
-      );
-      cellBuffer.setCharacterAt("W", 0, 0);
-    }
+    cellBuffer.setBackgroundColorAt(CGA_PALETTE_DICT[CgaColors.Black], 0, 0);
+    cellBuffer.setForegroundColorAt(
+      CGA_PALETTE_DICT[CgaColors.LightGray],
+      0,
+      0,
+    );
+    cellBuffer.setCharacterAt("W", 0, 0);
 
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    const width = gl.canvas.width;
+    const height = gl.canvas.height;
+
+    gl.viewport(0, 0, width, height);
 
     gl.clearColor(0, 0, 0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -58,14 +56,6 @@ export class TerminalRenderer {
       originsData: this.cellBuffer.getOriginsData(),
       atlasPositionData: this.cellBuffer.getAtlasPositionData(),
       numberOfCells: this.cellBuffer.getNumberOfCells(),
-      gridSize: this.cellBuffer.getSize(),
-      font: this.cellBuffer.getFont(),
-    });
-
-    this.characterProgram.render({
-      originsData: Uint32Array.from([0, 1]),
-      atlasPositionData: Uint32Array.from([3, 1]),
-      numberOfCells: 1,
       gridSize: this.cellBuffer.getSize(),
       font: this.cellBuffer.getFont(),
     });

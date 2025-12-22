@@ -39,6 +39,7 @@ export class CharacterProgram {
   private uGridSize: WebGLUniformLocation | null = null;
   private uCharacterSize: WebGLUniformLocation | null = null;
   private uAtlas: WebGLUniformLocation | null = null;
+  private uAttrAtlas: WebGLUniformLocation | null = null;
   private uAtlasSize: WebGLUniformLocation | null = null;
 
   private constructor() {}
@@ -58,6 +59,7 @@ export class CharacterProgram {
     this.uGridSize = gl.getUniformLocation(program, "u_gridSize");
     this.uCharacterSize = gl.getUniformLocation(program, "u_characterSize");
     this.uAtlas = gl.getUniformLocation(program, "u_atlas");
+    this.uAttrAtlas = gl.getUniformLocation(program, "u_attrAtlas");
     this.uAtlasSize = gl.getUniformLocation(program, "u_atlasSize");
 
     // attrib locations
@@ -172,6 +174,10 @@ export class CharacterProgram {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, font.texture.texture);
       gl.uniform1i(this.uAtlas, 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, font.attrTexture.texture);
+      gl.uniform1i(this.uAttrAtlas, 1);
 
       gl.uniform2ui(this.uAtlasSize, font.texture.width, font.texture.height);
 

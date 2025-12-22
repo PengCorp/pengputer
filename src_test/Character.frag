@@ -5,6 +5,7 @@ precision highp int;
 
 uniform uvec2 u_characterSize;
 uniform sampler2D u_atlas;
+uniform sampler2D u_attrAtlas;
 uniform uvec2 u_atlasSize;
 
 flat in uvec2 v_atlasPosition;

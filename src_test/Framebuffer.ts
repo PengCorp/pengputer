@@ -1,13 +1,14 @@
-interface DoubleBufferFBO {
+export interface Framebuffer {
   fbo: WebGLFramebuffer;
   texture: WebGLTexture;
+  delete: () => void;
 }
 
-const createFBO = (
+export const createFBO = (
   gl: WebGL2RenderingContext,
   width: number,
   height: number,
-): DoubleBufferFBO => {
+): Framebuffer => {
   const fbo = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
@@ -42,18 +43,12 @@ const createFBO = (
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
 
-  return { fbo, texture };
+  return {
+    fbo,
+    texture,
+    delete: () => {
+      gl.deleteTexture(texture);
+      gl.deleteFramebuffer(fbo);
+    },
+  };
 };
-
-export class DoubleBuffer {
-  private gl: WebGL2RenderingContext;
-  private fboA: DoubleBufferFBO;
-  private fboB: DoubleBufferFBO;
-
-  constructor(gl: WebGL2RenderingContext) {
-    this.gl = gl;
-
-    this.fboA = createFBO(gl, gl.canvas.width, gl.canvas.height);
-    this.fboB = createFBO(gl, gl.canvas.width, gl.canvas.height);
-  }
-}

@@ -2,7 +2,8 @@ import { Font } from "./Font";
 
 import { splitStringIntoCharacters } from "@Toolbox/String";
 
-import cp437_9x16_megaUrl from "./cp437_9x16_mega.png";
+import cp437_9x16Url from "./cp437_9x16.png";
+import cp437_9x16AttrUrl from "./cp437_9x16_attr.png";
 import type { Coord } from "@src/types";
 
 /* cSpell:disable */
@@ -83,7 +84,7 @@ for (let y = 0; y < charMapArray.length; y += 1) {
 }
 
 export const loadFont9x16 = async (gl: WebGL2RenderingContext) => {
-  const font = await Font.load(gl, cp437_9x16_megaUrl, charMap, {
+  const font = await Font.load(gl, cp437_9x16Url, cp437_9x16AttrUrl, charMap, {
     w: 9,
     h: 16,
   });
