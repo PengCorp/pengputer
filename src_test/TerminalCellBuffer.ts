@@ -13,6 +13,8 @@ export class TerminalCellBuffer {
   private backgroundColorData: Uint32Array;
   /** Atlas position from which to take character, in cell coordinates (1 cell is 1 character on atlas). */
   private atlasPositionData: Uint32Array;
+  /** Attribute data. */
+  private attributeData: Uint32Array;
   /** Array of characters at each respective cell. */
   private characterData: string[];
 
@@ -24,6 +26,8 @@ export class TerminalCellBuffer {
     this.foregroundColorData = new Uint32Array();
     this.backgroundColorData = new Uint32Array();
     this.atlasPositionData = new Uint32Array();
+    this.attributeData = new Uint32Array();
+
     this.gridSize = { w: 0, h: 0 };
     this.characterData = [];
 
@@ -42,6 +46,7 @@ export class TerminalCellBuffer {
     const backgroundColor = [];
     const foregroundColor = [];
     const atlasPosition = [];
+    const attributes = [];
     const characters: string[] = [];
 
     for (let y = 0; y < this.gridSize.h; y += 1) {
@@ -58,6 +63,7 @@ export class TerminalCellBuffer {
           (x / this.gridSize.w) * 255,
         );
         atlasPosition.push(0, 0);
+        attributes.push(0);
         characters.push("\x00");
       }
     }
@@ -66,6 +72,7 @@ export class TerminalCellBuffer {
     this.backgroundColorData = new Uint32Array(backgroundColor);
     this.foregroundColorData = new Uint32Array(foregroundColor);
     this.atlasPositionData = new Uint32Array(atlasPosition);
+    this.attributeData = new Uint32Array(attributes);
     this.characterData = characters;
   }
 
@@ -93,6 +100,10 @@ export class TerminalCellBuffer {
     return this.atlasPositionData;
   }
 
+  public getAttributeData() {
+    return this.attributeData;
+  }
+
   public getFont() {
     if (!this.font) {
       throw new Error("No font assigned.");
@@ -104,13 +115,17 @@ export class TerminalCellBuffer {
     if (colorCache[color]) {
       return colorCache[color];
     }
+
     const rgb = tc(color).toRgb();
     colorCache[color] = rgb;
     return rgb;
   }
 
   public setForegroundColorAt(color: string, x: number, y: number) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
+      throw new Error("Setting foreground color out of bounds.");
+    }
+
     const idx = (y * this.gridSize.w + x) * 3;
     let rgb = this._getRgb(color);
     this.foregroundColorData[idx + 0] = rgb.r;
@@ -119,7 +134,10 @@ export class TerminalCellBuffer {
   }
 
   public setBackgroundColorAt(color: string, x: number, y: number) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
+      throw new Error("Setting background color out of bounds.");
+    }
+
     const idx = (y * this.gridSize.w + x) * 3;
     let rgb = this._getRgb(color);
     this.backgroundColorData[idx + 0] = rgb.r;
@@ -132,7 +150,10 @@ export class TerminalCellBuffer {
       throw new Error("Cannot set character without first setting a font.");
     }
 
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) return;
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
+      throw new Error("Setting character out of bounds.");
+    }
+
     const idx = y * this.gridSize.w + x;
     const idx2 = idx * 2;
     const position = this.font.charMap[char];
@@ -142,5 +163,14 @@ export class TerminalCellBuffer {
       this.atlasPositionData[idx2 + 1] = y;
       this.characterData[idx] = char;
     }
+  }
+
+  public setAttributesAt(attr: number, x: number, y: number) {
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
+      throw new Error("Setting attributes out of bounds.");
+    }
+
+    const idx = y * this.gridSize.w + x;
+    this.attributeData[idx] = attr;
   }
 }

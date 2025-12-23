@@ -31,10 +31,16 @@ export class CharacterProgram {
   private quadBuffer!: WebGLBuffer;
   private originsBuffer!: WebGLBuffer;
   private atlasPositionBuffer!: WebGLBuffer;
+  private foregroundColorBuffer!: WebGLBuffer;
+  private backgroundColorBuffer!: WebGLBuffer;
+  private attributeBuffer!: WebGLBuffer;
 
   private aPosition: number = -1;
   private aOrigin: number = -1;
   private aAtlasPosition: number = -1;
+  private aForegroundColor: number = -1;
+  private aBackgroundColor: number = -1;
+  private aAttributes: number = -1;
 
   private uGridSize: WebGLUniformLocation | null = null;
   private uCharacterSize: WebGLUniformLocation | null = null;
@@ -67,6 +73,9 @@ export class CharacterProgram {
     this.aPosition = gl.getAttribLocation(program, "a_position");
     this.aOrigin = gl.getAttribLocation(program, "a_origin");
     this.aAtlasPosition = gl.getAttribLocation(program, "a_atlasPosition");
+    this.aForegroundColor = gl.getAttribLocation(program, "a_foregroundColor");
+    this.aBackgroundColor = gl.getAttribLocation(program, "a_backgroundColor");
+    this.aAttributes = gl.getAttribLocation(program, "a_attributes");
   }
 
   public static async create(gl: WebGL2RenderingContext) {
@@ -130,6 +139,54 @@ export class CharacterProgram {
       gl.vertexAttribDivisor(characterProgram.aAtlasPosition, 1);
     }
 
+    {
+      // attributes
+      const attributeBuffer = gl.createBuffer();
+      characterProgram.attributeBuffer = attributeBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, attributeBuffer);
+      gl.enableVertexAttribArray(characterProgram.aAttributes);
+      gl.vertexAttribIPointer(
+        characterProgram.aAttributes,
+        1,
+        gl.UNSIGNED_INT,
+        0,
+        0,
+      );
+      gl.vertexAttribDivisor(characterProgram.aAttributes, 1);
+    }
+
+    {
+      // foreground color
+      const foregroundColorBuffer = gl.createBuffer();
+      characterProgram.foregroundColorBuffer = foregroundColorBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, foregroundColorBuffer);
+      gl.enableVertexAttribArray(characterProgram.aForegroundColor);
+      gl.vertexAttribIPointer(
+        characterProgram.aForegroundColor,
+        3,
+        gl.UNSIGNED_INT,
+        0,
+        0,
+      );
+      gl.vertexAttribDivisor(characterProgram.aForegroundColor, 1);
+    }
+
+    {
+      // background color
+      const backgroundColorBuffer = gl.createBuffer();
+      characterProgram.backgroundColorBuffer = backgroundColorBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, backgroundColorBuffer);
+      gl.enableVertexAttribArray(characterProgram.aBackgroundColor);
+      gl.vertexAttribIPointer(
+        characterProgram.aBackgroundColor,
+        3,
+        gl.UNSIGNED_INT,
+        0,
+        0,
+      );
+      gl.vertexAttribDivisor(characterProgram.aBackgroundColor, 1);
+    }
+
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindVertexArray(null);
 
@@ -139,12 +196,18 @@ export class CharacterProgram {
   public render({
     originsData,
     atlasPositionData,
+    foregroundColorData,
+    backgroundColorData,
+    attributeData,
     numberOfCells,
     gridSize,
     font,
   }: {
     originsData: Uint32Array;
     atlasPositionData: Uint32Array;
+    foregroundColorData: Uint32Array;
+    backgroundColorData: Uint32Array;
+    attributeData: Uint32Array;
     numberOfCells: number;
     gridSize: Size;
     font: Font;
@@ -157,6 +220,9 @@ export class CharacterProgram {
       const targets = [
         [this.originsBuffer, originsData],
         [this.atlasPositionBuffer, atlasPositionData],
+        [this.foregroundColorBuffer, foregroundColorData],
+        [this.backgroundColorBuffer, backgroundColorData],
+        [this.attributeBuffer, attributeData],
       ] as const;
 
       for (const target of targets) {

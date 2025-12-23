@@ -36,13 +36,10 @@ export class TerminalRenderer {
 
     gl.disable(gl.DEPTH_TEST);
 
-    cellBuffer.setBackgroundColorAt(CGA_PALETTE_DICT[CgaColors.Black], 0, 0);
-    cellBuffer.setForegroundColorAt(
-      CGA_PALETTE_DICT[CgaColors.LightGray],
-      0,
-      0,
-    );
-    cellBuffer.setCharacterAt("W", 0, 0);
+    cellBuffer.setForegroundColorAt(CGA_PALETTE_DICT[CgaColors.Blue], 0, 0);
+    cellBuffer.setBackgroundColorAt(CGA_PALETTE_DICT[CgaColors.Green], 0, 0);
+    cellBuffer.setCharacterAt("W", 40, 10);
+    cellBuffer.setAttributesAt(0b0000_0000_0111_0000, 40, 10);
 
     const width = gl.canvas.width;
     const height = gl.canvas.height;
@@ -55,6 +52,9 @@ export class TerminalRenderer {
     this.characterProgram.render({
       originsData: this.cellBuffer.getOriginsData(),
       atlasPositionData: this.cellBuffer.getAtlasPositionData(),
+      foregroundColorData: this.cellBuffer.getForegroundColorData(),
+      backgroundColorData: this.cellBuffer.getBackgroundColorData(),
+      attributeData: this.cellBuffer.getAttributeData(),
       numberOfCells: this.cellBuffer.getNumberOfCells(),
       gridSize: this.cellBuffer.getSize(),
       font: this.cellBuffer.getFont(),
