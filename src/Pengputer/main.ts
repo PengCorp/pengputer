@@ -16,7 +16,6 @@ import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
 import { PengerShell } from "./PengerShell";
 
-import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
 import { Std } from "../Std";
