@@ -70,6 +70,12 @@ const charMapArray = [
   splitStringIntoCharacters("┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦"),
   splitStringIntoCharacters("╧╨╩╪╫╬▀▁▄█▌▐░▒▓■□▪▫▬▲►▼◄◊○●◘◙◦☺☻"),
   splitStringIntoCharacters("☼♀♂♠♣♥♦♪♫✓ﬁﬂ�"),
+  splitStringIntoCharacters(""),
+  ["energyStar00", "energyStar01", "energyStar02", "energyStar03", "energyStar04", "energyStar05", "energyStar06", "energyStar07", "energyStar08", "energyStar09", "energyStar0A", "energyStar0B", "energyStar0C", "energyStar0D", "energyStar0E"],
+  ["energyStar10", "energyStar11", "energyStar12", "energyStar13", "energyStar14", "energyStar15", "energyStar16", "energyStar17", "energyStar18", "energyStar19", "energyStar1A", "energyStar1B", "energyStar1C", "energyStar1D", "energyStar1E"],
+  ["energyStar20", "energyStar21", "energyStar22", "energyStar23", "energyStar24", "energyStar25", "energyStar26", "energyStar27", "energyStar28", "energyStar29", "energyStar2A", "energyStar2B", "energyStar2C", "energyStar2D", "energyStar2E"],
+  ["energyStar30", "energyStar31", "energyStar32", "energyStar33", "energyStar34", "energyStar35", "energyStar36", "energyStar37", "energyStar38", "energyStar39", "energyStar3A", "energyStar3B", "energyStar3C", "energyStar3D", "energyStar3E"],
+  ["energyStar40", "energyStar41", "energyStar42", "energyStar43", "energyStar44", "energyStar45", "energyStar46", "energyStar47", "energyStar48", "energyStar49", "energyStar4A", "energyStar4B", "energyStar4C", "energyStar4D", "energyStar4E"],
 ];
 
 /* cSpell:enable */

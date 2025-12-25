@@ -235,10 +235,17 @@ class PengOS {
       std.setIsConsoleCursorVisible(false);
       std.drawConsoleImage(await loadImageBitmapFromUrl(energyStar), -135, 0);
 
-      std.writeConsole("    Penger Modular BIOS v5.22, An Energy Star Ally\n");
-      std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
+      std.writeConsoleCharacter("penger00");
+      std.writeConsoleCharacter("penger01");
+      std.writeConsoleCharacter("penger02");
+      std.writeConsole(" Penger Modular BIOS v5.22, An Energy Star Ally\n");
+
+      std.writeConsoleCharacter("penger10");
+      std.writeConsoleCharacter("penger11");
+      std.writeConsoleCharacter("penger12");
+      std.writeConsole(" Copyright (C) 1982-85, PengCorp\n");
+
       std.writeConsole("\n");
-      std.drawConsoleImage(await loadImageBitmapFromUrl(biosPenger), 0, 0);
       const curPos = std.getConsoleCursorPosition();
       std.setConsoleCursorPosition({ x: 0, y: 24 });
       std.writeConsole("05/02/1984-ALADDIN5-P2B");
