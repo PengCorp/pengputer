@@ -21,7 +21,7 @@ export function createShader(
 
   const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (!compiled) {
-    console.log(gl.getShaderInfoLog(shader));
+    console.error(gl.getShaderInfoLog(shader));
     gl.deleteShader(shader);
     throw new Error("Failed to compile shader");
   }
@@ -45,7 +45,7 @@ export function createProgram(
 
   const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
   if (!linked) {
-    console.log(gl.getProgramInfoLog(program));
+    console.error(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
     throw new Error("Failed to link program");
   }
@@ -57,29 +57,13 @@ export function createProgram(
  * Loads a texture from a file.
  */
 export async function loadTexture(gl: WebGL2RenderingContext, url: string) {
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // Put a 1x1 pixel placeholder while loading
-  const pixel = new Uint8Array([0, 0, 255, 255]); // blue pixel
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    1,
-    1,
-    0,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    pixel,
-  );
-
   // Load the actual image
   const image = new Image();
   image.crossOrigin = "anonymous";
 
   return new Promise<ImageTexture>((resolve, reject) => {
     image.onload = () => {
+      const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(
         gl.TEXTURE_2D,
