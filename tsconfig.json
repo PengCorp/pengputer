@@ -31,9 +31,8 @@
       "@Toolbox/*": ["src/Toolbox/*"],
       "@Color/*": ["src/Color/*"],
       "@FileSystem/*": ["src/FileSystem/*"],
-      "@src/*": ["src/*"],
-      "@src_test/*": ["src_test/*"]
+      "@src/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "src_test/**/*", "vite.env.d.ts"]
+  "include": ["src/**/*", "vite.env.d.ts"]
 }
