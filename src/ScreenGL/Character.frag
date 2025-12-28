@@ -8,7 +8,7 @@ uniform sampler2D u_atlas;
 uniform sampler2D u_attrAtlas;
 uniform uvec2 u_atlasSize;
 
-flat in uvec2 v_atlasPosition;
+flat in uvec3 v_atlasPosition;
 flat in uvec3 v_foregroundColor;
 flat in uvec3 v_backgroundColor;
 flat in uint v_attributes;
@@ -79,7 +79,7 @@ uint applyBorder(uint index, uint borderIndex) {
 }
 
 void main() {
-  vec4 atlasColor = texture(u_atlas, getTexturePositionForAtlasPosition(v_atlasPosition));
+  vec4 atlasColor = texture(u_atlas, getTexturePositionForAtlasPosition(v_atlasPosition.xy));
 
   uint index = 0u;
 
