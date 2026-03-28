@@ -11,8 +11,6 @@ export class TerminalRenderer {
 
   private characterProgram!: CharacterProgram;
 
-  private font!: Font;
-
   private constructor() {}
 
   public static async create(
@@ -25,12 +23,11 @@ export class TerminalRenderer {
     renderer.gl = gl;
 
     renderer.characterProgram = await CharacterProgram.create(gl);
-    renderer.font = await loadFont9x16(renderer.gl);
 
     return renderer;
   }
 
-  public render(cellBuffer: TerminalCellBuffer) {
+  public render(cellBuffer: TerminalCellBuffer, font: Font) {
     const { gl } = this;
 
     gl.disable(gl.DEPTH_TEST);
@@ -38,7 +35,7 @@ export class TerminalRenderer {
     cellBuffer.setForegroundColorAt(CGA_PALETTE_DICT[CgaColors.Blue], 0, 0);
     cellBuffer.setBackgroundColorAt(CGA_PALETTE_DICT[CgaColors.Green], 0, 0);
     {
-      const { x, y } = this.font.charMap["W"];
+      const { x, y } = font.charMap["W"];
       cellBuffer.setRuneAt(40, 10, "W", 0, x, y);
     }
     cellBuffer.setAttributesAt(0b0000_0000_0111_0000, 40, 10);
@@ -59,7 +56,7 @@ export class TerminalRenderer {
       attributeData: cellBuffer.getAttributeData(),
       numberOfCells: cellBuffer.getNumberOfCells(),
       gridSize: cellBuffer.getSize(),
-      font: this.font,
+      font: font,
     });
   }
 }

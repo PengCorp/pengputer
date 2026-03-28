@@ -97,6 +97,14 @@ export class TerminalCellBuffer {
     return this.attributeData;
   }
 
+  public getRuneAt(x: number, y: number) {
+    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
+      throw new Error("Getting character out of bounds.");
+    }
+    const idx = y * this.gridSize.w + x;
+    return this.runeData[idx];
+  }
+
   private _getRgb(color: string) {
     if (colorCache[color]) {
       return colorCache[color];

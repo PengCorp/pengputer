@@ -297,10 +297,4 @@ export class Std {
   async waitForNextKeyboardEvent() {
     return await this.keyboard.waitForNextEvent();
   }
-
-  /* ===================== MOUSE ========================= */
-
-  addMouseScreenClickListener(listener: ClickListener) {
-    return this.screen.addMouseClickListener(listener);
-  }
 }

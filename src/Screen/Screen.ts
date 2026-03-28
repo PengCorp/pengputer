@@ -775,21 +775,4 @@ export class Screen {
 
     return { x: Math.floor(x), y: Math.floor(y) };
   }
-
-  addMouseClickListener(listener: ClickListener) {
-    const fn = (ev: MouseEvent) => {
-      const charSize = this.getCharacterSize();
-      listener({
-        position: vectorDivideComponents(this.getMousePosition(ev), {
-          x: charSize.w,
-          y: charSize.h,
-        }),
-        mouseButton: ev.button,
-      });
-    };
-    this.canvas.addEventListener("mousedown", fn);
-    return () => {
-      this.canvas.removeEventListener("mousedown", fn);
-    };
-  }
 }
