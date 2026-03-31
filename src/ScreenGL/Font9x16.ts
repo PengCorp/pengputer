@@ -89,11 +89,17 @@ for (let y = 0; y < charMapArray.length; y += 1) {
   }
 }
 
+let font9x16: Font | null = null;
+
 export const loadFont9x16 = async (gl: WebGL2RenderingContext) => {
-  const font = await Font.load(gl, cp437_9x16Url, cp437_9x16AttrUrl, charMap, {
+  if (font9x16) {
+    return font9x16;
+  }
+
+  font9x16 = await Font.load(gl, cp437_9x16Url, cp437_9x16AttrUrl, charMap, {
     w: 9,
     h: 16,
   });
 
-  return font;
+  return font9x16;
 };

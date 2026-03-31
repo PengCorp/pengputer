@@ -269,19 +269,6 @@ export class Screen {
   /** Resets screen attributes and parameters to sensible defaults. */
   public reset() {
     this.showCursor();
-    this.setCursorSize(this.characterHeight - 2, this.characterHeight - 1);
-  }
-
-  public setAreGraphicsEnabled(areGraphicsEnabled: boolean) {
-    this.areGraphicsEnabled = areGraphicsEnabled;
-
-    if (areGraphicsEnabled) {
-      this.canvas.width = GRAPHICS_WIDTH;
-      this.canvas.height = GRAPHICS_HEIGHT;
-    } else {
-      this.canvas.width = this.widthInPixels;
-      this.canvas.height = this.heightInPixels;
-    }
   }
 
   draw(dt: number) {
@@ -505,13 +492,6 @@ export class Screen {
     };
   }
 
-  getSizeInPixels(): Size {
-    return {
-      w: this.widthInPixels,
-      h: this.heightInPixels,
-    };
-  }
-
   getCharacterSize(): Size {
     return {
       w: this.characterWidth,
@@ -698,15 +678,6 @@ export class Screen {
     this.curDisplay = false;
   }
 
-  getCursorSize() {
-    return { start: this.curStart, end: this.curEnd };
-  }
-
-  setCursorSize(start: number, end: number) {
-    this.curStart = start;
-    this.curEnd = end;
-  }
-
   getCharacterAt(pos: Vector) {
     const { x, y } = pos;
     return this.screenBuffer[this._getScreenBufferIndex(x, y)];
@@ -803,22 +774,5 @@ export class Screen {
     const y = cssY * scaleY;
 
     return { x: Math.floor(x), y: Math.floor(y) };
-  }
-
-  addMouseClickListener(listener: ClickListener) {
-    const fn = (ev: MouseEvent) => {
-      const charSize = this.getCharacterSize();
-      listener({
-        position: vectorDivideComponents(this.getMousePosition(ev), {
-          x: charSize.w,
-          y: charSize.h,
-        }),
-        mouseButton: ev.button,
-      });
-    };
-    this.canvas.addEventListener("mousedown", fn);
-    return () => {
-      this.canvas.removeEventListener("mousedown", fn);
-    };
   }
 }

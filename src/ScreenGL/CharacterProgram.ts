@@ -131,7 +131,7 @@ export class CharacterProgram {
       gl.enableVertexAttribArray(characterProgram.aAtlasPosition);
       gl.vertexAttribIPointer(
         characterProgram.aAtlasPosition,
-        2,
+        3,
         gl.UNSIGNED_INT,
         0,
         0,

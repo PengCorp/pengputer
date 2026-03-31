@@ -443,12 +443,7 @@ export class PengerShell implements Executable {
         std.clearConsole();
         const image = await fileEntry.data.load();
         if (image) {
-          std.drawConsoleImage(image, 0, 0);
-          const characterSize = std.getConsoleCharacterSize();
-          std.moveConsoleCursorBy({
-            x: 0,
-            y: Math.ceil(image.height / characterSize.h),
-          });
+          std.writeConsole(`Not supported\n`);
         }
         std.writeConsole("Press ENTER to continue...");
         await std.readConsoleLine();

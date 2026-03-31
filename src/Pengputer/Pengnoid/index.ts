@@ -1,1 +1,0 @@
-export { Pengnoid } from "./Pengnoid";

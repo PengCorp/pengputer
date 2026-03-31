@@ -9,12 +9,12 @@ uniform uvec2 u_characterSize;
 in vec2 a_position;
 
 in uvec2 a_origin;
-in uvec2 a_atlasPosition;
+in uvec3 a_atlasPosition;
 in uint a_attributes;
 in uvec3 a_foregroundColor;
 in uvec3 a_backgroundColor;
 
-flat out uvec2 v_atlasPosition;
+flat out uvec3 v_atlasPosition;
 flat out uint v_attributes;
 flat out uvec3 v_foregroundColor;
 flat out uvec3 v_backgroundColor;
