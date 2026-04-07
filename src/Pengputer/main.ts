@@ -1,7 +1,6 @@
 import { padStart } from "lodash";
 import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
-import { Screen } from "../Screen";
-import { loadFont9x16 } from "../Screen/font9x16";
+import { Screen } from "../ScreenGL/Screen";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
@@ -15,9 +14,6 @@ import {
 import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
 import { PengerShell } from "./PengerShell";
-
-import biosPenger from "./res/biosPenger.png";
-import energyStar from "./res/energyStar.png";
 
 import { Std } from "../Std";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
@@ -40,11 +36,8 @@ import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 import { FileTransferTest } from "./FileTransferTest";
-import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
-
-const PATH_SEPARATOR = "/";
 
 declare global {
   interface Window {
@@ -233,12 +226,18 @@ class PengOS {
       window.startupNoise.volume = 0.7;
       window.startupNoise.play();
       std.setIsConsoleCursorVisible(false);
-      std.drawConsoleImage(await loadImageBitmapFromUrl(energyStar), -135, 0);
 
-      std.writeConsole("    Penger Modular BIOS v5.22, An Energy Star Ally\n");
-      std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
+      std.writeConsoleCharacter("penger00");
+      std.writeConsoleCharacter("penger01");
+      std.writeConsoleCharacter("penger02");
+      std.writeConsole(" Penger Modular BIOS v5.22, An Energy Star Ally\n");
+
+      std.writeConsoleCharacter("penger10");
+      std.writeConsoleCharacter("penger11");
+      std.writeConsoleCharacter("penger12");
+      std.writeConsole(" Copyright (C) 1982-85, PengCorp\n");
+
       std.writeConsole("\n");
-      std.drawConsoleImage(await loadImageBitmapFromUrl(biosPenger), 0, 0);
       const curPos = std.getConsoleCursorPosition();
       std.setConsoleCursorPosition({ x: 0, y: 24 });
       std.writeConsole("05/02/1984-ALADDIN5-P2B");
@@ -301,11 +300,9 @@ class PengOS {
 }
 
 (async () => {
-  await loadFont9x16();
-  await loadFont9x8();
-
-  const screen = new Screen();
-  await screen.init(document.getElementById("screen-container")!);
+  const screen = await Screen.create(
+    document.getElementById("screen-container")!,
+  );
 
   const keyboard = new Keyboard();
   const physicalKeyboard = new PhysicalKeyboard(keyboard);
@@ -314,7 +311,7 @@ class PengOS {
   keyboard.addSource(screenKeyboard);
 
   const textBuffer = new TextBuffer({
-    pageSize: screen.getSizeInCharacters(),
+    pageSize: { w: 80, h: 25 },
     scrollbackLength: 0,
   });
 
@@ -327,19 +324,21 @@ class PengOS {
     lastTime = performance.now();
     const start = performance.now();
 
-    screen.update(textBuffer);
-    screen.draw(dt);
+    screen.draw(dt, textBuffer);
 
     const end = performance.now();
 
-    window.timeSamples = window.timeSamples ?? [];
-    window.timeSamples.push(end - start);
-    while (window.timeSamples.length > 60) {
-      window.timeSamples.shift();
+    {
+      // track frame time
+      window.timeSamples = window.timeSamples ?? [];
+      window.timeSamples.push(end - start);
+      while (window.timeSamples.length > 60) {
+        window.timeSamples.shift();
+      }
+      window.avg =
+        window.timeSamples.reduce((acc, v) => acc + v, 0) /
+        window.timeSamples.length;
     }
-    window.avg =
-      window.timeSamples.reduce((acc, v) => acc + v, 0) /
-      window.timeSamples.length;
 
     keyboard.update(dt);
     requestAnimationFrame(cb);

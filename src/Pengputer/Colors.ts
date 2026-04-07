@@ -160,6 +160,16 @@ export class Colors implements Executable {
     std.resetConsoleAttributes();
     std.writeConsole(" and no reverse\n");
 
+    std.updateConsoleAttributes({ strikethrough: true });
+    std.writeConsole("Strikethrough");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no strikethrough\n");
+
+    std.updateConsoleAttributes({ overline: true });
+    std.writeConsole("Overline");
+    std.resetConsoleAttributes();
+    std.writeConsole(" and no overline\n");
+
     std.updateConsoleAttributes({ underline: true });
     std.writeConsole("Underline");
     std.resetConsoleAttributes();

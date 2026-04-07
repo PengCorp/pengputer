@@ -6,7 +6,7 @@ import {
   uniqueColors,
 } from "@Color/ansi";
 import { type Color, ColorType } from "@Color/Color";
-import { type ClickListener } from "../Screen/Screen";
+import { type ClickListener } from "../ScreenGL/Screen";
 import { Signal } from "@Toolbox/Signal";
 import { State, StateManager } from "@Toolbox/StateManager";
 import {
@@ -117,7 +117,7 @@ class Pengsweeper extends State {
     super.onEnter();
 
     const { std } = this.pc;
-    const clickListener: ClickListener = ({ position }) => {
+    const clickListener: ClickListener = ({ position, mouseButton }) => {
       const boardPosition = vectorSubtract(position, this.getFieldOrigin());
       if (
         getIsVectorInRect(
@@ -132,10 +132,17 @@ class Pengsweeper extends State {
           x: Math.floor(boardPosition.x / CELL_SIZE.w),
           y: Math.floor(boardPosition.y / CELL_SIZE.h),
         };
+
+        if (mouseButton === 0) {
+          this.openCell(this.cursor);
+        } else if (mouseButton === 2) {
+          this.toggleCellFlag(this.cursor);
+        }
+
         this.needsRedraw = true;
       }
     };
-    this.unsubscribeFromClicks = std.addMouseScreenClickListener(clickListener);
+    this.unsubscribeFromClicks = std.addClickListener(clickListener);
   }
 
   override onLeave() {

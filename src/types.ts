@@ -2,6 +2,7 @@ import { type Vector } from "@Toolbox/Vector";
 
 export type Rect = { x: number; y: number; w: number; h: number };
 export type Size = { w: number; h: number };
+export type Coord = { x: number; y: number };
 
 export const getRectFromVectorAndSize = (vec: Vector, size: Size) => {
   return {

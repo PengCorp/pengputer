@@ -39,6 +39,8 @@
     "dedup",
     "freesound",
     "fscommit",
+    "glsl",
+    "highp",
     "Kutepov",
     "makedir",
     "Pajitnov",
@@ -55,6 +57,8 @@
     "sennahojx",
     "SGCI",
     "Tetris",
-    "unsub"
-  ]
+    "unsub",
+    "uvec"
+  ],
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
