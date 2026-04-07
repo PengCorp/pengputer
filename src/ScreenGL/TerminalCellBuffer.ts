@@ -35,38 +35,25 @@ export class TerminalCellBuffer {
   public __setSize(newGridSize: Size) {
     this.gridSize = newGridSize;
 
-    const origins = [];
-    const backgroundColor = [];
-    const foregroundColor = [];
-    const atlasPosition = [];
-    const attributes = [];
-    const runes: string[] = [];
+    const numCells = newGridSize.w * newGridSize.h;
 
-    for (let y = 0; y < this.gridSize.h; y += 1) {
-      for (let x = 0; x < this.gridSize.w; x += 1) {
-        origins.push(x, y);
-        backgroundColor.push(
-          (y / this.gridSize.h) * 255,
-          (x / this.gridSize.w) * 255,
-          0,
-        );
-        foregroundColor.push(
-          0,
-          (y / this.gridSize.h) * 255,
-          (x / this.gridSize.w) * 255,
-        );
-        atlasPosition.push(0, 0, 0);
-        attributes.push(0);
-        runes.push("\x00");
+    this.originsData = new Uint32Array(numCells * 2);
+    this.backgroundColorData = new Uint32Array(numCells * 3);
+    this.foregroundColorData = new Uint32Array(numCells * 3);
+    this.atlasPositionData = new Uint32Array(numCells * 3);
+    this.attributeData = new Uint32Array(numCells);
+    this.runeData = new Array<string>(numCells).fill("\x00");
+
+    for (let y = 0; y < newGridSize.h; y += 1) {
+      for (let x = 0; x < newGridSize.w; x += 1) {
+        const idx = y * newGridSize.w + x;
+        this.originsData[idx * 2] = x;
+        this.originsData[idx * 2 + 1] = y;
+        this.foregroundColorData[idx * 3] = 255;
+        this.foregroundColorData[idx * 3 + 1] = 255;
+        this.foregroundColorData[idx * 3 + 2] = 255;
       }
     }
-
-    this.originsData = new Uint32Array(origins);
-    this.backgroundColorData = new Uint32Array(backgroundColor);
-    this.foregroundColorData = new Uint32Array(foregroundColor);
-    this.atlasPositionData = new Uint32Array(atlasPosition);
-    this.attributeData = new Uint32Array(attributes);
-    this.runeData = runes;
   }
 
   public getNumberOfCells() {
@@ -116,25 +103,17 @@ export class TerminalCellBuffer {
   }
 
   public setForegroundColorAt(color: string, x: number, y: number) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
-      throw new Error("Setting foreground color out of bounds.");
-    }
-
     const idx = (y * this.gridSize.w + x) * 3;
-    let rgb = this._getRgb(color);
-    this.foregroundColorData[idx + 0] = rgb.r;
+    const rgb = this._getRgb(color);
+    this.foregroundColorData[idx] = rgb.r;
     this.foregroundColorData[idx + 1] = rgb.g;
     this.foregroundColorData[idx + 2] = rgb.b;
   }
 
   public setBackgroundColorAt(color: string, x: number, y: number) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
-      throw new Error("Setting background color out of bounds.");
-    }
-
     const idx = (y * this.gridSize.w + x) * 3;
-    let rgb = this._getRgb(color);
-    this.backgroundColorData[idx + 0] = rgb.r;
+    const rgb = this._getRgb(color);
+    this.backgroundColorData[idx] = rgb.r;
     this.backgroundColorData[idx + 1] = rgb.g;
     this.backgroundColorData[idx + 2] = rgb.b;
   }
@@ -147,24 +126,15 @@ export class TerminalCellBuffer {
     atlasX: number,
     atlasY: number,
   ) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
-      throw new Error("Setting character out of bounds.");
-    }
-
     const idx = y * this.gridSize.w + x;
     const idx3 = idx * 3;
     this.runeData[idx] = rune;
-    this.atlasPositionData[idx3 + 0] = atlasX;
+    this.atlasPositionData[idx3] = atlasX;
     this.atlasPositionData[idx3 + 1] = atlasY;
     this.atlasPositionData[idx3 + 2] = atlasIdx;
   }
 
   public setAttributesAt(attr: number, x: number, y: number) {
-    if (x < 0 || x >= this.gridSize.w || y < 0 || y >= this.gridSize.h) {
-      throw new Error("Setting attributes out of bounds.");
-    }
-
-    const idx = y * this.gridSize.w + x;
-    this.attributeData[idx] = attr;
+    this.attributeData[y * this.gridSize.w + x] = attr;
   }
 }

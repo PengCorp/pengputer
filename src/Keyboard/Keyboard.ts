@@ -162,7 +162,9 @@ export class Keyboard implements KeyboardSource {
     return null;
   }
 
-  public flushEventBuffer() {}
+  public flushEventBuffer() {
+    this._eventBuffer.length = 0;
+  }
 
   public async waitForNextEvent(): Promise<PengKeyboardEvent> {
     await this._eventSignal.getPromise();

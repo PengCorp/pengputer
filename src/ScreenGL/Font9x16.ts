@@ -85,7 +85,9 @@ const charMap: Record<string, Coord> = {};
 for (let y = 0; y < charMapArray.length; y += 1) {
   const row = charMapArray[y];
   for (let x = 0; x < row.length; x += 1) {
-    charMap[row[x]] = { x, y };
+    if (!charMap[row[x]]) {
+      charMap[row[x]] = { x, y };
+    }
   }
 }
 

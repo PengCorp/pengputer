@@ -1,9 +1,6 @@
 import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { Screen } from "../ScreenGL/Screen";
-import { font9x16 } from "../Screen/font9x16";
-import { font9x8 } from "../Screen/font9x8";
-import { type ClickListener } from "../Screen/Screen";
+import { Screen, type ClickListener } from "../ScreenGL/Screen";
 import {
   BOXED,
   BOXED_BOTTOM,
@@ -16,7 +13,7 @@ import {
 } from "../TextBuffer";
 import { type Vector, vectorAdd } from "@Toolbox/Vector";
 import { type Rect } from "../types";
-import { ScreenMode } from "./constants";
+import { CursorStyle, ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 import _ from "lodash";
 
@@ -68,14 +65,14 @@ export class Std {
       case ScreenMode.mode80x25_9x16:
         {
           const size = { w: 80, h: 25 };
-          this.screen.setScreenMode(size, font9x16);
+          this.screen.setScreenMode(size);
           this.textBuffer.setPageSize(size);
         }
         break;
       case ScreenMode.mode80x50_9x8:
         {
           const size = { w: 80, h: 50 };
-          this.screen.setScreenMode(size, font9x8);
+          this.screen.setScreenMode(size);
           this.textBuffer.setPageSize(size);
         }
         break;
@@ -92,6 +89,14 @@ export class Std {
     } else {
       this.screen.hideCursor();
     }
+  }
+
+  setConsoleCursorStyle(style: CursorStyle) {
+    this.screen.setCursorStyle(style);
+  }
+
+  getConsoleCursorStyle(): CursorStyle {
+    return this.screen.getCursorStyle();
   }
 
   getConsoleCursorPosition(): Vector {
@@ -296,5 +301,11 @@ export class Std {
 
   async waitForNextKeyboardEvent() {
     return await this.keyboard.waitForNextEvent();
+  }
+
+  /* ===================== MOUSE ========================= */
+
+  addClickListener(listener: ClickListener): () => void {
+    return this.screen.addClickListener(listener);
   }
 }

@@ -1,7 +1,6 @@
 import { padStart } from "lodash";
 import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
 import { Screen } from "../ScreenGL/Screen";
-import { loadFont9x16 } from "../Screen/font9x16";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
@@ -37,7 +36,6 @@ import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 import { FileTransferTest } from "./FileTransferTest";
-import { loadFont9x8 } from "../Screen/font9x8";
 import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
@@ -302,9 +300,6 @@ class PengOS {
 }
 
 (async () => {
-  await loadFont9x16();
-  await loadFont9x8();
-
   const screen = await Screen.create(
     document.getElementById("screen-container")!,
   );
