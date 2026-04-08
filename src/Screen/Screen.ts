@@ -401,8 +401,8 @@ export class Screen {
       const cursorPosition = this.cursor.getPosition();
       if (
         getIsVectorInZeroAlignedRect(cursorPosition, {
-          w: this.widthInPixels,
-          h: this.heightInPixels,
+          w: this.widthInCharacters,
+          h: this.heightInCharacters,
         })
       ) {
         const curW = this.characterWidth;
