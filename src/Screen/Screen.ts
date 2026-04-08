@@ -684,7 +684,12 @@ export class Screen {
     }
 
     // fill attribute
-    if (isCharacterVisible) {
+    const hasDecoration =
+      bufferCharacter.attributes.underline ||
+      bufferCharacter.attributes.overline ||
+      bufferCharacter.attributes.strikethrough ||
+      bufferCharacter.attributes.boxed;
+    if (isCharacterVisible || hasDecoration) {
       attributeCtx.globalCompositeOperation = "source-over";
       attributeCtx.fillStyle = fgColor;
       attributeCtx.fillRect(
