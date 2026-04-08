@@ -29,6 +29,10 @@ export class Screen {
   private cursorBlinkDuration: number = 600;
   private cursorBlinkCounter: number = 600;
 
+  private charBlinkState: boolean = true;
+  private charBlinkDuration: number = 600;
+  private charBlinkCounter: number = 600;
+
   private clickListeners: Set<ClickListener> = new Set();
   private spaceCoord!: Coord;
 
@@ -128,6 +132,12 @@ export class Screen {
       this.cursorBlinkState = !this.cursorBlinkState;
     }
 
+    this.charBlinkCounter -= dt;
+    while (this.charBlinkCounter <= 0) {
+      this.charBlinkCounter += this.charBlinkDuration;
+      this.charBlinkState = !this.charBlinkState;
+    }
+
     this._updateFromTextBuffer(textBuffer);
 
     this.tr.render(this.tb, this.font);
@@ -179,8 +189,9 @@ export class Screen {
         this.tb.setBackgroundColorAt(bgColor, x, y);
 
         const rune = cell.rune;
+        const blinkHidden = screenAttr.blink && !this.charBlinkState;
         const charCoord =
-          rune === "\x00"
+          rune === "\x00" || blinkHidden
             ? this.spaceCoord
             : (this.font.charMap[rune] ?? this.spaceCoord);
         this.tb.setRuneAt(x, y, rune, 0, charCoord.x, charCoord.y);
