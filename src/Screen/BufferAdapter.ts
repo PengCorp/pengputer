@@ -49,8 +49,6 @@ export const getScreenCharacterAttributesFromTermCellAttributes = (
     blink: cellAttr.blink,
     reverseVideo: cellAttr.reverseVideo,
     underline: cellAttr.underline,
-    overline: cellAttr.overline,
-    strikethrough: cellAttr.strikethrough,
     halfBright: cellAttr.halfBright,
     boxed: cellAttr.boxed,
   };

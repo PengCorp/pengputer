@@ -1,2 +1,2 @@
 export { Std } from "./Std";
-export { CursorStyle, ScreenMode } from "./constants";
+export { ScreenMode } from "./constants";

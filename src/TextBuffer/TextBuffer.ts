@@ -1,6 +1,6 @@
 import { classicColors } from "@Color/ansi";
 import { type Color, ColorType } from "@Color/Color";
-import { getIsPrintable } from "./getIsPrintable";
+import { getIsPrintable } from "../Screen/getIsPrintable";
 import { RingBuffer } from "@Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { type Vector } from "@Toolbox/Vector";
@@ -14,8 +14,6 @@ export interface CellAttributes {
   bold: boolean;
   reverseVideo: boolean;
   underline: boolean;
-  overline: boolean;
-  strikethrough: boolean;
   halfBright: boolean;
   /** A bitfield for the character being boxed. */
   boxed: number;
@@ -29,8 +27,6 @@ const cloneCellAttributes = (attr: CellAttributes): CellAttributes => {
     bold: attr.bold,
     reverseVideo: attr.reverseVideo,
     underline: attr.underline,
-    overline: attr.overline,
-    strikethrough: attr.strikethrough,
     halfBright: attr.halfBright,
     boxed: attr.boxed,
   };
@@ -43,8 +39,6 @@ const DEFAULT_ATTRIBUTES: CellAttributes = {
   bold: false,
   reverseVideo: false,
   underline: false,
-  overline: false,
-  strikethrough: false,
   halfBright: false,
   boxed: BOXED_NO_BOX,
 };

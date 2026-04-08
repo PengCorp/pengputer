@@ -1,6 +1,10 @@
 import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
-import { Screen, type ClickListener } from "../ScreenGL/Screen";
+import { type KeyCode } from "../Keyboard/types";
+import { Screen } from "../Screen";
+import { font9x16 } from "../Screen/font9x16";
+import { font9x8 } from "../Screen/font9x8";
+import { type ClickListener } from "../Screen/Screen";
 import {
   BOXED,
   BOXED_BOTTOM,
@@ -13,7 +17,7 @@ import {
 } from "../TextBuffer";
 import { type Vector, vectorAdd } from "@Toolbox/Vector";
 import { type Rect } from "../types";
-import { CursorStyle, ScreenMode } from "./constants";
+import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 import _ from "lodash";
 
@@ -42,6 +46,7 @@ export class Std {
 
   /** Clears screen buffer with current attributes, resets cursor to start of screen. */
   clearConsole() {
+    this.screen.clear();
     this.textBuffer.eraseScreen();
     this.textBuffer.cursor.setPosition({ x: 0, y: 0 });
   }
@@ -56,6 +61,14 @@ export class Std {
     return this.screen.getSizeInCharacters();
   }
 
+  getConsoleSizeInPixels() {
+    return this.screen.getSizeInPixels();
+  }
+
+  getConsoleCharacterSize() {
+    return this.screen.getCharacterSize();
+  }
+
   getConsoleScreenMode() {
     return this.screenMode;
   }
@@ -65,14 +78,14 @@ export class Std {
       case ScreenMode.mode80x25_9x16:
         {
           const size = { w: 80, h: 25 };
-          this.screen.setScreenMode(size);
+          this.screen.setScreenMode(size, font9x16);
           this.textBuffer.setPageSize(size);
         }
         break;
       case ScreenMode.mode80x50_9x8:
         {
           const size = { w: 80, h: 50 };
-          this.screen.setScreenMode(size);
+          this.screen.setScreenMode(size, font9x8);
           this.textBuffer.setPageSize(size);
         }
         break;
@@ -91,12 +104,12 @@ export class Std {
     }
   }
 
-  setConsoleCursorStyle(style: CursorStyle) {
-    this.screen.setCursorStyle(style);
+  getConsoleCursorSize() {
+    return this.screen.getCursorSize();
   }
 
-  getConsoleCursorStyle(): CursorStyle {
-    return this.screen.getCursorStyle();
+  setConsoleCursorSize(start: number, end: number) {
+    return this.screen.setCursorSize(start, end);
   }
 
   getConsoleCursorPosition(): Vector {
@@ -263,6 +276,16 @@ export class Std {
     this.writeConsole("\n\n", { reset: true });
   }
 
+  /* ===================== GRAPHICS ========================= */
+
+  setAreGraphicsEnabled(areGraphicsEnabled: boolean) {
+    this.screen.setAreGraphicsEnabled(areGraphicsEnabled);
+  }
+
+  getGraphics() {
+    return this.screen.graphics;
+  }
+
   /* ===================== CONSOLE SCROLLING ========================= */
 
   /** Scrolls the whole console. Positive values scroll down, negative values scroll up. */
@@ -277,14 +300,20 @@ export class Std {
     }
   }
 
+  /* ===================== CONSOLE IMAGE SUPPORT ========================= */
+
+  drawConsoleImage(image: CanvasImageSource, dx: number, dy: number) {
+    this.screen.drawImageAt(image, dx, dy);
+  }
+
   /* ===================== KEYBOARD ========================= */
 
   readConsoleLine(
-    ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
+    ...args: Parameters<typeof readLine> extends [any, any, any, ...infer R]
       ? R
       : never
   ) {
-    return readLine(this.keyboard, this.textBuffer, ...args);
+    return readLine(this.screen, this.keyboard, this.textBuffer, ...args);
   }
 
   readConsoleKey() {
@@ -305,7 +334,7 @@ export class Std {
 
   /* ===================== MOUSE ========================= */
 
-  addClickListener(listener: ClickListener): () => void {
-    return this.screen.addClickListener(listener);
+  addMouseScreenClickListener(listener: ClickListener) {
+    return this.screen.addMouseClickListener(listener);
   }
 }
