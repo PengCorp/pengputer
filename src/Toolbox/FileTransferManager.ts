@@ -1,14 +1,14 @@
 class FileTransferManager {
-  static #actionInProgress: boolean = false;
+  private static _actionInProgress: boolean = false;
 
-  static #isUploadOpen: boolean = false;
+  private static _isUploadOpen: boolean = false;
 
   public static presentDownload(text: string, filename: string) {
-    if (this.#actionInProgress) {
+    if (this._actionInProgress) {
       throw new Error("FileTransferManager is busy.");
     }
 
-    this.#actionInProgress = true;
+    this._actionInProgress = true;
     return new Promise<void>((resolve, reject) => {
       const blob = new Blob([text], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
@@ -20,7 +20,7 @@ class FileTransferManager {
 
       resolve();
     }).finally(() => {
-      this.#actionInProgress = false;
+      this._actionInProgress = false;
     });
   }
 
@@ -28,13 +28,13 @@ class FileTransferManager {
     extension: string = "flp",
     mime: string = "text/plain",
   ) {
-    if (this.#actionInProgress) {
+    if (this._actionInProgress) {
       throw new Error("FileTransferManager is busy.");
     }
 
-    this.#actionInProgress = true;
+    this._actionInProgress = true;
     return new Promise<{ text: string; name: string }>((resolve, reject) => {
-      this.#isUploadOpen = false;
+      this._isUploadOpen = false;
 
       const input = document.createElement("input");
       input.type = "file";
@@ -50,22 +50,22 @@ class FileTransferManager {
       });
 
       const windowFocusListener = () => {
-        if (this.#isUploadOpen) {
+        if (this._isUploadOpen) {
           setTimeout(() => {
             if (!input.files?.length) {
               reject();
             }
             window.removeEventListener("focus", windowFocusListener);
-            this.#isUploadOpen = false;
+            this._isUploadOpen = false;
           }, 500);
         }
       };
       window.addEventListener("focus", windowFocusListener);
 
-      this.#isUploadOpen = true;
+      this._isUploadOpen = true;
       input.click();
     }).finally(() => {
-      this.#actionInProgress = false;
+      this._actionInProgress = false;
     });
   }
 }

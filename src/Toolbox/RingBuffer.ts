@@ -62,7 +62,14 @@ export class RingBuffer<T> {
     let nextItem = this.items[idx];
     this.items[idx] = item;
     if (offsetIdx < 0) {
-      for (; (offsetIdx += 1), (idx = this.moveIdx(idx, 1)), offsetIdx < 0; ) {
+      while (true) {
+        offsetIdx += 1;
+        idx = this.moveIdx(idx, +1);
+
+        if (offsetIdx >= 0) {
+          break;
+        }
+
         let removedItem = this.items[idx];
         this.items[idx] = nextItem;
         nextItem = removedItem;

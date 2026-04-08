@@ -1,18 +1,18 @@
 /** Class to track elapsed time and count ticks of defined length. */
 export class Timer {
-  #length: number;
-  #time: number;
+  private _length: number;
+  private _time: number;
 
   constructor(length: number) {
-    this.#length = length;
-    this.#time = 0;
+    this._length = length;
+    this._time = 0;
   }
 
   /**
    * @param time elapsed time to add to timer.
    */
   public tick(time: number) {
-    this.#time += time;
+    this._time += time;
   }
 
   /**
@@ -20,8 +20,8 @@ export class Timer {
    * @returns `true` if timer wrapped. Check this in a loop to process all ticks.
    */
   public checkWrap() {
-    if (this.#time >= this.#length) {
-      this.#time -= this.#length;
+    if (this._time >= this._length) {
+      this._time -= this._length;
       return true;
     }
 
@@ -30,10 +30,10 @@ export class Timer {
 
   /** Resets the timer to 0. */
   public restart() {
-    this.#time = 0;
+    this._time = 0;
   }
 
   public getLength() {
-    return this.#length;
+    return this._length;
   }
 }

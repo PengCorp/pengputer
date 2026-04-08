@@ -1,5 +1,3 @@
-import { first } from "lodash";
-
 /**
  * Runs an animation loop.
  * Callback is called with delta time since last render and total time loop was running.

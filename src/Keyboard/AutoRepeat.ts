@@ -1,47 +1,47 @@
 import { type KeyCode } from "../Keyboard";
 
 export class AutoRepeat {
-  #countdownTime: number;
-  #countdown: number;
+  private _countdownTime: number;
+  private _countdown: number;
 
-  #intervalTime: number;
-  #interval: number;
+  private _intervalTime: number;
+  private _interval: number;
 
-  #keyCode: KeyCode | null;
+  private _keyCode: KeyCode | null;
 
   constructor(countdownTime: number, interval: number) {
-    this.#countdownTime = this.#countdown = countdownTime;
-    this.#intervalTime = this.#interval = interval;
-    this.#keyCode = null;
+    this._countdownTime = this._countdown = countdownTime;
+    this._intervalTime = this._interval = interval;
+    this._keyCode = null;
   }
 
   public reset() {
-    this.#countdown = this.#countdownTime;
-    this.#interval = this.#intervalTime;
-    this.#keyCode = null;
+    this._countdown = this._countdownTime;
+    this._interval = this._intervalTime;
+    this._keyCode = null;
   }
 
   public setCode(code: KeyCode | null) {
     this.reset();
-    this.#keyCode = code;
+    this._keyCode = code;
   }
 
   public getCode(): KeyCode | null {
-    return this.#keyCode;
+    return this._keyCode;
   }
 
   public update(deltaTime: number): boolean {
-    if (!this.#keyCode) return false;
+    if (!this._keyCode) return false;
 
-    if (this.#countdown > 0) {
-      this.#countdown -= deltaTime;
+    if (this._countdown > 0) {
+      this._countdown -= deltaTime;
       return false;
     } else {
       let ret = false;
-      this.#interval -= deltaTime;
-      while (this.#interval < 0) {
+      this._interval -= deltaTime;
+      while (this._interval < 0) {
         ret = true;
-        this.#interval += this.#intervalTime;
+        this._interval += this._intervalTime;
       }
 
       return ret;
