@@ -122,6 +122,8 @@ export class Screen {
           bold: false,
           reverseVideo: false,
           underline: false,
+          overline: false,
+          strikethrough: false,
           halfBright: false,
           boxed: BOXED_NO_BOX,
         },
@@ -233,6 +235,8 @@ export class Screen {
           bold: false,
           reverseVideo: false,
           underline: false,
+          overline: false,
+          strikethrough: false,
           halfBright: false,
           boxed: BOXED_NO_BOX,
         },
@@ -641,15 +645,41 @@ export class Screen {
         this.characterWidth,
         this.characterHeight,
       );
-    } else if (bufferCharacter.attributes.underline) {
+    }
+
+    if (bufferCharacter.attributes.underline) {
       charCtx.globalCompositeOperation = "xor";
       charCtx.fillStyle = "#ffffff";
-      const underlineHeight = Math.floor(this.characterHeight / 8);
+      const lineHeight = Math.floor(this.characterHeight / 8);
       charCtx.fillRect(
         x * this.characterWidth,
-        (y + 1) * this.characterHeight - underlineHeight,
+        (y + 1) * this.characterHeight - lineHeight,
         this.characterWidth,
-        underlineHeight,
+        lineHeight,
+      );
+    }
+
+    if (bufferCharacter.attributes.overline) {
+      charCtx.globalCompositeOperation = "xor";
+      charCtx.fillStyle = "#ffffff";
+      const lineHeight = Math.floor(this.characterHeight / 8);
+      charCtx.fillRect(
+        x * this.characterWidth,
+        y * this.characterHeight,
+        this.characterWidth,
+        lineHeight,
+      );
+    }
+
+    if (bufferCharacter.attributes.strikethrough) {
+      charCtx.globalCompositeOperation = "xor";
+      charCtx.fillStyle = "#ffffff";
+      const lineHeight = Math.floor(this.characterHeight / 8);
+      charCtx.fillRect(
+        x * this.characterWidth,
+        y * this.characterHeight + Math.floor(this.characterHeight / 2),
+        this.characterWidth,
+        lineHeight,
       );
     }
 

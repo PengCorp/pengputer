@@ -5,6 +5,8 @@ export interface ScreenCharacterAttributes {
   bold: boolean;
   reverseVideo: boolean;
   underline: boolean;
+  overline: boolean;
+  strikethrough: boolean;
   halfBright: boolean;
   boxed: number;
 }
@@ -20,6 +22,8 @@ export const compareScreenCharacterAttributes = (
     a.bold === b.bold &&
     a.reverseVideo === b.reverseVideo &&
     a.underline === b.underline &&
+    a.overline === b.overline &&
+    a.strikethrough === b.strikethrough &&
     a.halfBright === b.halfBright &&
     a.boxed === b.boxed
   );
