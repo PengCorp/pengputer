@@ -26,12 +26,12 @@ export class Screen {
   private cursorVisible: boolean = true;
   private cursorStyle: CursorStyle = CursorStyle.Underscore;
   private cursorBlinkState: boolean = true;
-  private cursorBlinkDuration: number = 600;
-  private cursorBlinkCounter: number = 600;
+  private cursorBlinkDuration: number = 267;
+  private cursorBlinkCounter: number = 267;
 
   private charBlinkState: boolean = true;
-  private charBlinkDuration: number = 600;
-  private charBlinkCounter: number = 600;
+  private charBlinkDuration: number = 267;
+  private charBlinkCounter: number = 267;
 
   private clickListeners: Set<ClickListener> = new Set();
   private spaceCoord!: Coord;
