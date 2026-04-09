@@ -239,14 +239,22 @@ class PengOS {
       std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
       std.writeConsole("\n");
       std.drawConsoleImage(await loadImageBitmapFromUrl(biosPenger), 0, 0);
+
       const curPos = std.getConsoleCursorPosition();
-      std.setConsoleCursorPosition({ x: 0, y: 24 });
-      std.writeConsole("05/02/1984-ALADDIN5-P2B");
+      std.setConsoleCursorPosition({ x: 0, y: 23 });
+      std.writeConsole("Press ");
+      std.updateConsoleAttributes({ bold: true });
+      std.writeConsole("PENG");
+      std.resetConsoleAttributes();
+      std.writeConsole(" to enter SETUP\n");
+      std.writeConsole("05/02/1984-ALADDIN5-P2B-6733F1-9268");
       std.setConsoleCursorPosition(curPos);
       await waitFor(1000);
+
       std.writeConsole("AMD-K6(rm)-III/450 Processor\n");
       std.writeConsole("Memory Test :        ");
       await waitFor(500);
+
       await runAnimationLoop((dt, tt) => {
         const mem = Math.round(262144 * (Math.min(tt, 2500) / 2500));
         std.moveConsoleCursorBy({ x: -7, y: 0 });
@@ -254,13 +262,17 @@ class PengOS {
         return mem === 262144;
       });
       await waitFor(500);
+
       std.writeConsole(` OK\n`);
       std.writeConsole("\n");
       await waitFor(750);
+
       std.writeConsole("Initialize Plug and Play Cards...\n");
       await waitFor(1000);
+
       std.writeConsole("PNP Init Completed");
       await waitFor(2500);
+
       std.clearConsole();
       std.writeConsole(
         "╔═══════════════════════════════════════════════════════════════════════════╗\n",
