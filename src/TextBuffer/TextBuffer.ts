@@ -372,10 +372,7 @@ export class TextBuffer {
 
   public scrollUpBy(numRows: number): void {
     for (let i = 0; i < numRows; i += 1) {
-      this.buffer.insertAtWithDiscard(
-        -(this.pageSize.h - 1),
-        new Line(this.pageSize.w, this.currentAttributes),
-      );
+      this.buffer.unshift(new Line(this.pageSize.w, this.currentAttributes));
     }
     this.isDirty = true;
     this.linesScrolled -= 1;
