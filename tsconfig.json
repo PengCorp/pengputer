@@ -26,12 +26,11 @@
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
 
-    "baseUrl": ".", // relative to tsconfig.json
     "paths": {
-      "@Toolbox/*": ["src/Toolbox/*"],
-      "@Color/*": ["src/Color/*"],
-      "@FileSystem/*": ["src/FileSystem/*"],
-      "@src/*": ["src/*"]
+      "@Toolbox/*": ["./src/Toolbox/*"],
+      "@Color/*": ["./src/Color/*"],
+      "@FileSystem/*": ["./src/FileSystem/*"],
+      "@src/*": ["./src/*"]
     }
   },
   "include": ["src/**/*", "vite.env.d.ts"]

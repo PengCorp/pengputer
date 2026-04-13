@@ -89,12 +89,18 @@ const getToken = (argsString: string, index: number): TokenData | null => {
 export const argparse = (argsString: string) => {
   let i = 0;
   let args = [];
-  let token = getToken(argsString, i);
-  while (token) {
+
+  while (true) {
+    let token = getToken(argsString, i);
+
+    if (!token) {
+      break;
+    }
+
     const { end, token: tokenData } = token;
     i = end;
     args.push(tokenData);
-    token = getToken(argsString, i);
   }
+
   return args;
 };
