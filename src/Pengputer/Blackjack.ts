@@ -457,12 +457,7 @@ export class Blackjack implements Executable {
       const canSplit = player.getCanSplit();
 
       std.writeConsole(
-        `${[
-          "[h]it",
-          "[s]tand",
-          canDouble && "[d]double",
-          canSplit && "[/]split",
-        ]
+        `${["[h]it", "[s]tand", canDouble && "[d]ouble", canSplit && "[/]split"]
           .filter(Boolean)
           .join(", ")}? `,
       );
