@@ -2,19 +2,19 @@ export class AudioFile {
   private url: string;
   private audio: HTMLAudioElement | undefined;
 
-  constructor(url: string) {
+  public constructor(url: string) {
     this.url = url;
     this.audio = undefined;
   }
 
-  play() {
+  public play() {
     if (!this.audio) {
       this.audio = new Audio(this.url);
     }
     this.audio.play();
   }
 
-  stop() {
+  public stop() {
     if (this.audio) {
       this.audio.pause();
       this.audio.currentTime = 0;

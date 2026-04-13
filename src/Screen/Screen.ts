@@ -12,7 +12,7 @@ import {
 import {
   BOXED_BOTTOM,
   BOXED_LEFT,
-  BOXED_NO_BOX,
+  BOXED_NONE,
   BOXED_RIGHT,
   BOXED_TOP,
   TextBuffer,
@@ -125,7 +125,7 @@ export class Screen {
           overline: false,
           strikethrough: false,
           halfBright: false,
-          boxed: BOXED_NO_BOX,
+          boxed: BOXED_NONE,
         },
       };
     }
@@ -238,7 +238,7 @@ export class Screen {
           overline: false,
           strikethrough: false,
           halfBright: false,
-          boxed: BOXED_NO_BOX,
+          boxed: BOXED_NONE,
         },
       };
     }

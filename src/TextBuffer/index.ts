@@ -6,5 +6,5 @@ export {
   BOXED_RIGHT,
   BOXED_TOP,
   BOXED_BOTTOM,
-  BOXED_NO_BOX,
+  BOXED_NONE,
 } from "./constants";

@@ -1,7 +1,7 @@
 export class BinaryFile {
-  data: string;
+  public data: string;
 
-  constructor(data: string) {
+  public constructor(data: string) {
     this.data = data;
   }
 }

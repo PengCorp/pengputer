@@ -5,7 +5,7 @@ import { RingBuffer } from "@Toolbox/RingBuffer";
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { type Vector } from "@Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, type Size } from "../types";
-import { BOXED_NO_BOX } from "./constants";
+import { BOXED_NONE } from "./constants";
 
 export interface CellAttributes {
   fgColor: Color;
@@ -46,7 +46,7 @@ const DEFAULT_ATTRIBUTES: CellAttributes = {
   overline: false,
   strikethrough: false,
   halfBright: false,
-  boxed: BOXED_NO_BOX,
+  boxed: BOXED_NONE,
 };
 
 class Cell {

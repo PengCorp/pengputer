@@ -1,19 +1,19 @@
 export class TextFile {
   private data: string;
 
-  constructor() {
+  public constructor() {
     this.data = "";
   }
 
-  getText() {
+  public getText() {
     return this.data;
   }
 
-  append(text: string) {
+  public append(text: string) {
     this.data = `${this.data}${text}`;
   }
 
-  replace(text: string) {
+  public replace(text: string) {
     this.data = text;
   }
 }

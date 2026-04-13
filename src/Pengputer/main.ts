@@ -255,11 +255,12 @@ class PengOS {
       std.writeConsole("Memory Test :        ");
       await waitFor(500);
 
+      const totalMem = 262144;
       await runAnimationLoop((dt, tt) => {
-        const mem = Math.round(262144 * (Math.min(tt, 2500) / 2500));
+        const mem = Math.round(totalMem * (Math.min(tt, 2500) / 2500));
         std.moveConsoleCursorBy({ x: -7, y: 0 });
         std.writeConsole(`${padStart(String(mem), 6, " ")}K`);
-        return mem === 262144;
+        return mem === totalMem;
       });
       await waitFor(500);
 

@@ -4,4 +4,4 @@ export const BOXED_LEFT = 4;
 export const BOXED_RIGHT = 8;
 
 export const BOXED = BOXED_TOP | BOXED_BOTTOM | BOXED_LEFT | BOXED_RIGHT;
-export const BOXED_NO_BOX = 0;
+export const BOXED_NONE = 0;

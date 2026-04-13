@@ -4,12 +4,12 @@ export class ImageFile {
   private src: string;
   private bitmap: ImageBitmap | undefined;
 
-  constructor(src: string) {
+  public constructor(src: string) {
     this.src = src;
     this.bitmap = undefined;
   }
 
-  async load() {
+  public async load() {
     if (this.bitmap) {
       return this.bitmap;
     }

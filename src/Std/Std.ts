@@ -9,7 +9,7 @@ import {
   BOXED,
   BOXED_BOTTOM,
   BOXED_LEFT,
-  BOXED_NO_BOX,
+  BOXED_NONE,
   BOXED_RIGHT,
   BOXED_TOP,
   type CellAttributes,
@@ -239,7 +239,7 @@ export class Std {
     if (length === 1) {
       this.textBuffer.updateCurrentAttributes({ boxed: BOXED });
       this.textBuffer.printAttributes(1);
-      this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
+      this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NONE });
       return;
     }
 
@@ -259,7 +259,7 @@ export class Std {
       boxed: BOXED_TOP | BOXED_RIGHT | BOXED_BOTTOM,
     });
     this.textBuffer.printAttributes(1);
-    this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NO_BOX });
+    this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NONE });
   }
 
   writeConsoleError(e: any) {
