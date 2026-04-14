@@ -6,7 +6,7 @@
 
 export class RingBuffer<T> {
   /** Total number of slots for items. */
-  private size: number;
+  private capacity: number;
 
   /** Implementation array holding items. */
   private items: (T | null)[];
@@ -17,9 +17,9 @@ export class RingBuffer<T> {
   /** Number of items in the buffer. Less or eq to items array length. */
   private length: number;
 
-  constructor(size: number) {
-    this.size = size;
-    this.items = new Array(size).fill(null);
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.items = new Array(capacity).fill(null);
     this.nextIdx = 0;
     this.length = 0;
   }
@@ -28,23 +28,29 @@ export class RingBuffer<T> {
   private shiftIdx(idx: number, delta: number) {
     idx += delta;
     while (idx < 0) {
-      idx += this.size;
+      idx += this.capacity;
     }
-    while (idx >= this.size) {
-      idx -= this.size;
+    while (idx >= this.capacity) {
+      idx -= this.capacity;
     }
     return idx;
   }
 
+  private getIdxFromOffset(offset: number) {
+    return this.shiftIdx(this.nextIdx, -1 + offset);
+  }
+
   /** Retrieve last item in buffer. */
   public peek() {
-    return this.items[this.nextIdx];
+    return this.items[this.shiftIdx(this.nextIdx, -1)];
   }
 
   /** Remove and return last item in buffer. */
   public pop() {
-    const cell = this.items[this.nextIdx];
-    this.nextIdx = this.shiftIdx(this.nextIdx, -1);
+    const newNext = this.shiftIdx(this.nextIdx, -1);
+    const cell = this.items[newNext];
+    this.items[newNext] = null;
+    this.nextIdx = newNext;
     this.length = Math.max(this.length - 1, 0);
     return cell;
   }
@@ -53,77 +59,52 @@ export class RingBuffer<T> {
   public push(item: T) {
     this.items[this.nextIdx] = item;
     this.nextIdx = this.shiftIdx(this.nextIdx, +1);
-    this.length = Math.min(this.length + 1, this.size);
+    this.length = Math.min(this.length + 1, this.capacity);
   }
 
-  /** Adds item to start of buffer, shifts rest of items right. Last item is lost. */
+  /** Adds item to start of buffer. If space available - expands buffer. Else last item is lost. */
   public unshift(item: T) {
-    this.insertShiftRight(-(this.length - 1), item);
+    if (this.length < this.capacity) {
+      const idx = this.shiftIdx(this.nextIdx, -this.length - 1);
+      this.items[idx] = item;
+      this.length += 1;
+    } else {
+      this.nextIdx = this.shiftIdx(this.nextIdx, -1);
+      this.items[this.nextIdx] = item;
+    }
   }
 
   /** Retrieve a contiguous array of items from buffer. 0 refers to last added item, -1 to previous last, etc. */
-  public slice(start: number, end: number): (T | null)[] {
+  public slice(
+    start: number = -(this.length - 1),
+    end: number = 0,
+  ): (T | null)[] {
+    start = Math.max(start, -(this.length - 1));
+    end = Math.min(end, 0);
+
+    if (end < start) {
+      throw new Error("End cannot come before start");
+    }
+
     const result = [];
-    let idx = this.nextIdx;
-    idx = this.shiftIdx(idx, start);
-    for (let i = start; i < end; i += 1) {
+    let offset = start;
+    while (offset <= end) {
+      const idx = this.getIdxFromOffset(offset);
       result.push(this.items[idx]);
-      idx = this.shiftIdx(idx, +1);
+      offset += 1;
     }
     return result;
-  }
-
-  /** Inserts item at the provided offset from the last item. 0 refers to the last item. Following items are shifted right. Newest item is lost. */
-  public insertShiftRight(offset: number, item: T) {
-    if (offset > 0 || offset < -(this.size - 1)) {
-      throw new Error(`Cannot insert to ring buffer at index ${offset}`);
-    }
-
-    let leftToShift = 0 - offset;
-    let currentIdx = this.shiftIdx(this.nextIdx, -1 + offset);
-    let savedItem: T | null = item;
-
-    while (leftToShift > 0) {
-      let removed = this.items[currentIdx];
-      this.items[currentIdx] = savedItem;
-      savedItem = removed;
-
-      leftToShift -= 1;
-      currentIdx = this.shiftIdx(currentIdx, 1);
-    }
-    this.items[currentIdx] = savedItem;
-  }
-
-  /** Inserts item at the provided offset from the last item. 0 refers to the last item. Preceeding items are shifted left. Oldest item is lost. */
-  public insertShiftLeft(offset: number, item: T) {
-    if (offset > 0 || offset < -(this.size - 1)) {
-      throw new Error(`Cannot insert to ring buffer at index ${offset}`);
-    }
-
-    let leftToShift = this.length + offset - 1;
-    let currentIdx = this.shiftIdx(this.nextIdx, -1 + offset);
-    let savedItem: T | null = item;
-
-    while (leftToShift > 0) {
-      let removed = this.items[currentIdx];
-      this.items[currentIdx] = savedItem;
-      savedItem = removed;
-
-      leftToShift -= 1;
-      currentIdx = this.shiftIdx(currentIdx, -1);
-    }
-    this.items[currentIdx] = savedItem;
   }
 
   public getLength() {
     return this.length;
   }
 
-  public getSize() {
-    return this.size;
+  public getCapacity() {
+    return this.capacity;
   }
 
-  public __log() {
-    console.log(this.items);
+  public __getItems() {
+    return this.items;
   }
 }
