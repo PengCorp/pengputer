@@ -30,6 +30,10 @@
     "lodash": "4.18.1",
     "tinycolor2": "1.6.0"
   },
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11"
+  },
   "lint-staged": {
     "src/**/*.{js,ts,jsx,tsx,html,css,scss}": [
       "prettier --write --ignore-unknown"
