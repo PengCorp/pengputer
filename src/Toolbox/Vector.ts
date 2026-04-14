@@ -82,7 +82,7 @@ export const getDoRectsIntersect = (a: Rect, b: Rect) => {
   const bx1 = b.x + b.w;
   const by1 = b.y + b.h;
 
-  return ax0 < bx1 && ay0 < by1 && ax1 >= bx0 && ay1 >= by0;
+  return ax0 < bx1 && ay0 < by1 && ax1 > bx0 && ay1 > by0;
 };
 
 export const getRectWithPosition = (r: Rect, p: Vector) => {

@@ -19,7 +19,7 @@ export class Timer {
    * Rewinds time by a single tick if elapsed time exceeds or matches length.
    * @returns `true` if timer wrapped. Check this in a loop to process all ticks.
    */
-  public checkWrap() {
+  public consumeTick() {
     if (this._time >= this._length) {
       this._time -= this._length;
       return true;

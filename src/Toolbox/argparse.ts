@@ -14,7 +14,11 @@ const getCharacter = (
 
   const curChar = argsString[index];
 
-  if (index < argsString.length - 1 && curChar === "\\") {
+  if (curChar === "\\") {
+    if (argsString.length <= index + 1) {
+      throw new Error("Trailing escape character");
+    }
+
     const nextChar = argsString[index + 1];
     if (nextChar === '"') {
       return { character: '"', nextIndex: index + 2, isEscape: true };

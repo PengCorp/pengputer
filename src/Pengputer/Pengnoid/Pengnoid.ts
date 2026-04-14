@@ -200,7 +200,7 @@ class Game extends State {
 
   private doLogic(dt: number) {
     this.tickTimer.tick(dt);
-    while (this.tickTimer.checkWrap()) {
+    while (this.tickTimer.consumeTick()) {
       this.paddle.tick();
       this.ball.tick();
 
