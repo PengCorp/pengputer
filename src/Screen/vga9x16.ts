@@ -1,16 +1,16 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { Font } from "./Font";
-import cp437 from "./cp437_9x16.png";
-import cp437plus from "./cp437plus_9x16.png";
-import cp437legacy from "./cp437legacy_9x16.png";
-import cp437patterns from "./cp437patterns_9x16.png";
-import cp437custom from "./cp437custom_9x16.png";
+import cp437 from "./vga9x16.png";
+import cp437plus from "./vga9x16_plus.png";
+import cp437legacy from "./vga9x16_legacy.png";
+import cp437patterns from "./vga9x16_patterns.png";
+import cp437custom from "./vga9x16_custom.png";
 import { type charArray } from "../types";
 
 /* cSpell:disable */
 
 // 32 characters wide, 8 characters high
-const cp437CharacterValueMap: charArray[] = [
+const vgaCharacterValueMap: charArray[] = [
   " ☺︎☻♥︎♦︎♣︎♠︎•◘○◙♂︎♀︎♪♫☼►◄↕︎‼︎¶§▬↨↑↓→←∟↔︎▲▼",
   " !\"#$%&'()*+,-./0123456789:;<=>?",
   "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_",
@@ -23,7 +23,7 @@ const cp437CharacterValueMap: charArray[] = [
 
 // Sourced from: https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_9x16
 // 74 characters wide, 11 characters high
-export const cp437plusCharacterValueMap: charArray[] = [
+export const vgaPlusCharacterValueMap: charArray[] = [
   " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghi",
   "jklmnopqrstuvwxyz{|}~⌂ ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ",
   "ÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝ",
@@ -37,7 +37,7 @@ export const cp437plusCharacterValueMap: charArray[] = [
   "♣♥♦♪♫✓ﬁﬂ�",
 ].map((l) => splitStringIntoCharacters(l));
 
-export const cp437legacyCharacterValueMap: charArray[] = [
+export const vgaLegacyCharacterValueMap: charArray[] = [
   "🬀🬁🬂🬃🬄🬅🬆🬇🬈🬉🬊🬋🬌🬍🬎🬏",
   "🬐🬑🬒🬓🬔🬕🬖🬗🬘🬙🬚🬛🬜🬝🬞🬟",
   "🬠🬡🬢🬣🬤🬥🬦🬧🬨🬩🬪🬫🬬🬭🬮🬯",
@@ -58,13 +58,13 @@ export const cp437legacyCharacterValueMap: charArray[] = [
 
 /* cSpell:enable */
 
-export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
+export const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
   (l) => splitStringIntoCharacters(l),
 );
 
-export const font9x16 = new Font(9, 16, "░▒▓");
+export const vga9x16 = new Font(9, 16, "░▒▓");
 
-export const loadFont9x16 = async () => {
+export const loadVga9x16 = async () => {
   // await font9x16.loadAtlas(
   //   "cp437patterns",
   //   cp437patterns,
@@ -72,14 +72,14 @@ export const loadFont9x16 = async () => {
   //   1,
   //   4,
   // );
-  await font9x16.loadAtlas("cp437", cp437, cp437CharacterValueMap);
-  await font9x16.loadAtlas("cp437plus", cp437plus, cp437plusCharacterValueMap);
-  await font9x16.loadAtlas(
+  await vga9x16.loadAtlas("cp437", cp437, vgaCharacterValueMap);
+  await vga9x16.loadAtlas("cp437plus", cp437plus, vgaPlusCharacterValueMap);
+  await vga9x16.loadAtlas(
     "cp437legacy",
     cp437legacy,
-    cp437legacyCharacterValueMap,
+    vgaLegacyCharacterValueMap,
   );
-  await font9x16.loadAtlas("cp437custom", cp437custom, [
+  await vga9x16.loadAtlas("cp437custom", cp437custom, [
     [
       "penger00",
       "penger01",

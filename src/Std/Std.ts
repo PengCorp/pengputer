@@ -2,8 +2,6 @@ import { classicColors } from "@Color/ansi";
 import { Keyboard } from "../Keyboard";
 import { type KeyCode } from "../Keyboard/types";
 import { Screen } from "../Screen";
-import { font9x16 } from "../Screen/font9x16";
-import { font9x8 } from "../Screen/font9x8";
 import { type ClickListener } from "../Screen/Screen";
 import {
   BOXED,
@@ -20,6 +18,10 @@ import { type Rect } from "../types";
 import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 import _ from "lodash";
+
+import { vga9x16 } from "../Screen/vga9x16";
+import { vga9x8 } from "../Screen/vga9x8";
+import { terminus6x12 } from "../Screen/terminus6x12";
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
   reset?: boolean;
@@ -78,14 +80,21 @@ export class Std {
       case ScreenMode.mode80x25_9x16:
         {
           const size = { w: 80, h: 25 };
-          this.screen.setScreenMode(size, font9x16);
+          this.screen.setScreenMode(size, vga9x16);
           this.textBuffer.setPageSize(size);
         }
         break;
       case ScreenMode.mode80x50_9x8:
         {
           const size = { w: 80, h: 50 };
-          this.screen.setScreenMode(size, font9x8);
+          this.screen.setScreenMode(size, vga9x8);
+          this.textBuffer.setPageSize(size);
+        }
+        break;
+      case ScreenMode.mode106x36_6x12:
+        {
+          const size = { w: 106, h: 36 };
+          this.screen.setScreenMode(size, terminus6x12);
           this.textBuffer.setPageSize(size);
         }
         break;

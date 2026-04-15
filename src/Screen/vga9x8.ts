@@ -1,13 +1,12 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
 import { Font } from "./Font";
-import cp437 from "./cp437_9x8.png";
-import cp437patterns from "./cp437patterns_9x8.png";
-import cp437custom from "./cp437custom_9x8.png";
+import cp437 from "./vga9x8.png";
+import cp437custom from "./vga9x8_custom.png";
 import { type charArray } from "../types";
 
 /* cSpell:disable */
 
-export const cp437plusCharacterValueMap: charArray[] = [
+export const vgaPlusCharacterValueMap: charArray[] = [
   " !\"#$%&'()*+,-./",
   "0123456789:;<=>?",
   "@ABCDEFGHIJKLMNO",
@@ -59,13 +58,13 @@ export const cp437plusCharacterValueMap: charArray[] = [
 
 /* cSpell:enable */
 
-export const cp437patternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
+export const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
   (l) => splitStringIntoCharacters(l),
 );
 
-export const font9x8 = new Font(9, 8, "░▒▓");
+export const vga9x8 = new Font(9, 8, "░▒▓");
 
-export const loadFont9x8 = async () => {
+export const loadVga9x8 = async () => {
   // await font9x8.loadAtlas(
   //   "cp437patterns",
   //   cp437patterns,
@@ -73,8 +72,8 @@ export const loadFont9x8 = async () => {
   //   2,
   //   5,
   // );
-  await font9x8.loadAtlas("cp437plus", cp437, cp437plusCharacterValueMap);
-  await font9x8.loadAtlas("cp437custom", cp437custom, [
+  await vga9x8.loadAtlas("cp437plus", cp437, vgaPlusCharacterValueMap);
+  await vga9x8.loadAtlas("cp437custom", cp437custom, [
     [
       "penger00",
       "penger01",

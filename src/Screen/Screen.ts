@@ -3,7 +3,7 @@ import { getBoldColorIndex, namedColors } from "@Color/ansi";
 import { type Vector, vectorDivideComponents } from "@Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, type Rect, type Size } from "../types";
 import { Cursor } from "./Cursor";
-import { font9x16 } from "./font9x16";
+import { vga9x16 } from "./vga9x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
 import {
   compareScreenBufferCharacter,
@@ -85,7 +85,7 @@ export class Screen {
   private font: Font;
 
   constructor() {
-    this.font = font9x16;
+    this.font = vga9x16;
     this.widthInCharacters = 80;
     this.heightInCharacters = 25;
     this.totalCharacters = this.widthInCharacters * this.heightInCharacters;
@@ -182,7 +182,7 @@ export class Screen {
     this.tempCtx = this.tempCanvas.getContext("2d")!;
     this.tempCtx.imageSmoothingEnabled = false;
 
-    this.setScreenMode({ w: 80, h: 25 }, font9x16);
+    this.setScreenMode({ w: 80, h: 25 }, vga9x16);
   }
 
   private initCanvas(containerEl: HTMLElement) {
