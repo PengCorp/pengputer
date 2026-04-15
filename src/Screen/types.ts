@@ -1,54 +1,54 @@
 export interface ScreenCharacterAttributes {
-  fgColor: string;
-  bgColor: string;
-  blink: boolean;
-  bold: boolean;
-  reverseVideo: boolean;
-  underline: boolean;
-  overline: boolean;
-  strikethrough: boolean;
-  halfBright: boolean;
-  boxed: number;
+    fgColor: string;
+    bgColor: string;
+    blink: boolean;
+    bold: boolean;
+    reverseVideo: boolean;
+    underline: boolean;
+    overline: boolean;
+    strikethrough: boolean;
+    halfBright: boolean;
+    boxed: number;
 }
 
 export const compareScreenCharacterAttributes = (
-  a: ScreenCharacterAttributes,
-  b: ScreenCharacterAttributes,
+    a: ScreenCharacterAttributes,
+    b: ScreenCharacterAttributes,
 ) => {
-  return (
-    a.fgColor === b.fgColor &&
-    a.bgColor === b.bgColor &&
-    a.blink === b.blink &&
-    a.bold === b.bold &&
-    a.reverseVideo === b.reverseVideo &&
-    a.underline === b.underline &&
-    a.overline === b.overline &&
-    a.strikethrough === b.strikethrough &&
-    a.halfBright === b.halfBright &&
-    a.boxed === b.boxed
-  );
+    return (
+        a.fgColor === b.fgColor &&
+        a.bgColor === b.bgColor &&
+        a.blink === b.blink &&
+        a.bold === b.bold &&
+        a.reverseVideo === b.reverseVideo &&
+        a.underline === b.underline &&
+        a.overline === b.overline &&
+        a.strikethrough === b.strikethrough &&
+        a.halfBright === b.halfBright &&
+        a.boxed === b.boxed
+    );
 };
 
 export interface ScreenBufferCharacter {
-  character: string;
-  attributes: ScreenCharacterAttributes;
+    character: string;
+    attributes: ScreenCharacterAttributes;
 }
 
 export const cloneScreenBufferCharacter = (
-  a: ScreenBufferCharacter,
+    a: ScreenBufferCharacter,
 ): ScreenBufferCharacter => {
-  return {
-    character: a.character,
-    attributes: { ...a.attributes },
-  };
+    return {
+        character: a.character,
+        attributes: { ...a.attributes },
+    };
 };
 
 export const compareScreenBufferCharacter = (
-  a: ScreenBufferCharacter,
-  b: ScreenBufferCharacter,
+    a: ScreenBufferCharacter,
+    b: ScreenBufferCharacter,
 ) => {
-  return (
-    a.character === b.character &&
-    compareScreenCharacterAttributes(a.attributes, b.attributes)
-  );
+    return (
+        a.character === b.character &&
+        compareScreenCharacterAttributes(a.attributes, b.attributes)
+    );
 };

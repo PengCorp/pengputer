@@ -1,8 +1,8 @@
 export {
-  type DriveLabel,
-  isDriveLabel,
-  PATH_SEPARATOR,
-  LSKEY_FLOPPIES,
+    type DriveLabel,
+    isDriveLabel,
+    PATH_SEPARATOR,
+    LSKEY_FLOPPIES,
 } from "./constants";
 export { FilePath } from "./FilePath";
 export { FileSystemObjectType } from "./types";

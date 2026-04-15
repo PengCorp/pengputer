@@ -6,10 +6,10 @@ import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import {
-  FileInfoDirectory,
-  FilePath,
-  FileSystem,
-  FileSystemObjectType,
+    FileInfoDirectory,
+    FilePath,
+    FileSystem,
+    FileSystemObjectType,
 } from "../FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
@@ -25,10 +25,10 @@ import passportOgg from "./files/documents/music/PASSPORT.ogg";
 import macgerPng from "./files/documents/pengers/macger.png";
 import nerdgerPng from "./files/documents/pengers/nerdger.png";
 import {
-  AudioFile,
-  ImageFile,
-  LinkFile,
-  TextFile,
+    AudioFile,
+    ImageFile,
+    LinkFile,
+    TextFile,
 } from "@FileSystem/fileTypes";
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
@@ -49,319 +49,329 @@ import { loadTerminus6x12 } from "@src/Screen/terminus6x12";
 const PATH_SEPARATOR = "/";
 
 declare global {
-  interface Window {
-    startupNoise: HTMLAudioElement;
-  }
+    interface Window {
+        startupNoise: HTMLAudioElement;
+    }
 }
 
 class PengOS {
-  private pc: PC;
+    private pc: PC;
 
-  constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
-    const std = new Std(keyboard, textBuffer, screen);
-    this.pc = {
-      fileSystem: new FileSystem(),
-      std,
-      reboot: async () => {
-        localStorage.removeItem("hasStartedUp");
-      },
-    };
-  }
-
-  private async runShell() {
-    const { std } = this.pc;
-    const pengerShellExe = this.pc.fileSystem.getFileInfo(
-      FilePath.tryParse("C:/software/psh.exe"),
-    );
-    if (
-      pengerShellExe !== null &&
-      pengerShellExe.type === FileSystemObjectType.Executable
-    ) {
-      await pengerShellExe.createInstance().run([]);
-    } else {
-      throw new Error(
-        "Missing default PengerShell executable at 'C:/software/psh.exe'.",
-      );
-    }
-    std.clearConsole();
-  }
-
-  async startup() {
-    const rootDir = this.pc.fileSystem.getFileInfo(
-      FilePath.tryParse("C:/"),
-    )! as FileInfoDirectory;
-    if (!rootDir) {
-      throw new Error("Root dir is undefined.");
+    constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+        const std = new Std(keyboard, textBuffer, screen);
+        this.pc = {
+            fileSystem: new FileSystem(),
+            std,
+            reboot: async () => {
+                localStorage.removeItem("hasStartedUp");
+            },
+        };
     }
 
-    rootDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "date.exe",
-      createInstance: () => new DateApp(this.pc),
-    });
+    private async runShell() {
+        const { std } = this.pc;
+        const pengerShellExe = this.pc.fileSystem.getFileInfo(
+            FilePath.tryParse("C:/software/psh.exe"),
+        );
+        if (
+            pengerShellExe !== null &&
+            pengerShellExe.type === FileSystemObjectType.Executable
+        ) {
+            await pengerShellExe.createInstance().run([]);
+        } else {
+            throw new Error(
+                "Missing default PengerShell executable at 'C:/software/psh.exe'.",
+            );
+        }
+        std.clearConsole();
+    }
 
-    const pengOSDir = rootDir.mkdir("pengos"); // cspell:disable-line
-    const licenseTxt = new TextFile();
-    licenseTxt.replace(
-      "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
-        "BY VIEWING THIS FILE YOU ARE COMMITTING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
-        "XII OF THE PENGER CRIMINAL JUSTICE CODE",
-    );
-    pengOSDir.addItem({
-      type: FileSystemObjectType.TextFile,
-      data: licenseTxt,
-      name: "LICENSE.TXT",
-    });
-    const pplTxt = new TextFile();
-    pplTxt.replace(
-      `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
-    );
-    pengOSDir.addItem({
-      type: FileSystemObjectType.TextFile,
-      data: pplTxt,
-      name: "PPL.TXT",
-    });
+    async startup() {
+        const rootDir = this.pc.fileSystem.getFileInfo(
+            FilePath.tryParse("C:/"),
+        )! as FileInfoDirectory;
+        if (!rootDir) {
+            throw new Error("Root dir is undefined.");
+        }
 
-    const testDir = rootDir.mkdir("test");
-    testDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "colors.exe",
-      createInstance: () => new Colors(this.pc),
-    });
-    testDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "args.exe",
-      createInstance: () => new PrintArgs(this.pc),
-    });
-    testDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "hello.exe",
-      createInstance: () => new HelloWorld(this.pc),
-    });
-    testDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "transfer.exe",
-      createInstance: () => new FileTransferTest(this.pc),
-    });
+        rootDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "date.exe",
+            createInstance: () => new DateApp(this.pc),
+        });
 
-    const softwareDir = rootDir.mkdir("software");
+        const pengOSDir = rootDir.mkdir("pengos"); // cspell:disable-line
+        const licenseTxt = new TextFile();
+        licenseTxt.replace(
+            "(C) COPYRIGHT 1985 PENGER CORPORATION (PENGCORP)\n\n" +
+                "BY VIEWING THIS FILE YOU ARE COMMITTING A FELONY UNDER TITLE 2,239,132 SECTION\n" +
+                "XII OF THE PENGER CRIMINAL JUSTICE CODE",
+        );
+        pengOSDir.addItem({
+            type: FileSystemObjectType.TextFile,
+            data: licenseTxt,
+            name: "LICENSE.TXT",
+        });
+        const pplTxt = new TextFile();
+        pplTxt.replace(
+            `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
+        );
+        pengOSDir.addItem({
+            type: FileSystemObjectType.TextFile,
+            data: pplTxt,
+            name: "PPL.TXT",
+        });
 
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "8ball.exe",
-      createInstance: () => new EightBall(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "psh.exe",
-      createInstance: () => new PengerShell(this.pc),
-    });
-    softwareDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "pedlin.exe",
-      createInstance: () => new Pedlin(this.pc),
-    });
+        const testDir = rootDir.mkdir("test");
+        testDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "colors.exe",
+            createInstance: () => new Colors(this.pc),
+        });
+        testDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "args.exe",
+            createInstance: () => new PrintArgs(this.pc),
+        });
+        testDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "hello.exe",
+            createInstance: () => new HelloWorld(this.pc),
+        });
+        testDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "transfer.exe",
+            createInstance: () => new FileTransferTest(this.pc),
+        });
 
-    const gamesDir = rootDir.mkdir("games");
-    gamesDir.addItem({
-      type: FileSystemObjectType.Link,
-      name: "pongr.exe", // cspell:disable-line
-      data: new LinkFile("https://penger.city/pongerslair/"),
-      openType: "run",
-    });
-    gamesDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "pengtris.exe", // cspell:disable-line
-      createInstance: () => new TetrisApp(this.pc),
-    });
-    gamesDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "pengswp.exe", // cspell:disable-line
-      createInstance: () => new PengsweeperApp(this.pc),
-    });
-    gamesDir.addItem({
-      type: FileSystemObjectType.Executable,
-      name: "blakjack.exe", // cspell:disable-line
-      createInstance: () => new Blackjack(this.pc),
-    });
+        const softwareDir = rootDir.mkdir("software");
 
-    const documentsDir = rootDir.mkdir("documents");
-    const musicDir = documentsDir.mkdir("music");
-    musicDir.addItem({
-      type: FileSystemObjectType.Audio,
-      name: "CANYON.MID",
-      data: new AudioFile(canyonOgg),
-    });
-    musicDir.addItem({
-      type: FileSystemObjectType.Audio,
-      name: "PASSPORT.MID",
-      data: new AudioFile(passportOgg),
-    });
-    musicDir.addItem({
-      type: FileSystemObjectType.Audio,
-      name: "mountainking.mid", // cspell:disable-line
-      data: new AudioFile(mountainKingOgg),
-    });
+        softwareDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "8ball.exe",
+            createInstance: () => new EightBall(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "psh.exe",
+            createInstance: () => new PengerShell(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "pedlin.exe",
+            createInstance: () => new Pedlin(this.pc),
+        });
 
-    const pengersDir = documentsDir.mkdir("pengers");
-    pengersDir.addItem({
-      type: FileSystemObjectType.Image,
-      name: "macger.png", // cspell:disable-line
-      data: new ImageFile(macgerPng), // cspell:disable-line
-    });
-    pengersDir.addItem({
-      type: FileSystemObjectType.Image,
-      name: "nerdger.png", // cspell:disable-line
-      data: new ImageFile(nerdgerPng), // cspell:disable-line
-    });
+        const gamesDir = rootDir.mkdir("games");
+        gamesDir.addItem({
+            type: FileSystemObjectType.Link,
+            name: "pongr.exe", // cspell:disable-line
+            data: new LinkFile("https://penger.city/pongerslair/"),
+            openType: "run",
+        });
+        gamesDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "pengtris.exe", // cspell:disable-line
+            createInstance: () => new TetrisApp(this.pc),
+        });
+        gamesDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "pengswp.exe", // cspell:disable-line
+            createInstance: () => new PengsweeperApp(this.pc),
+        });
+        gamesDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "blakjack.exe", // cspell:disable-line
+            createInstance: () => new Blackjack(this.pc),
+        });
 
-    await this.runStartupAnimation();
-    do {
-      const { std } = this.pc;
+        const documentsDir = rootDir.mkdir("documents");
+        const musicDir = documentsDir.mkdir("music");
+        musicDir.addItem({
+            type: FileSystemObjectType.Audio,
+            name: "CANYON.MID",
+            data: new AudioFile(canyonOgg),
+        });
+        musicDir.addItem({
+            type: FileSystemObjectType.Audio,
+            name: "PASSPORT.MID",
+            data: new AudioFile(passportOgg),
+        });
+        musicDir.addItem({
+            type: FileSystemObjectType.Audio,
+            name: "mountainking.mid", // cspell:disable-line
+            data: new AudioFile(mountainKingOgg),
+        });
 
-      try {
-        await this.runShell();
+        const pengersDir = documentsDir.mkdir("pengers");
+        pengersDir.addItem({
+            type: FileSystemObjectType.Image,
+            name: "macger.png", // cspell:disable-line
+            data: new ImageFile(macgerPng), // cspell:disable-line
+        });
+        pengersDir.addItem({
+            type: FileSystemObjectType.Image,
+            name: "nerdger.png", // cspell:disable-line
+            data: new ImageFile(nerdgerPng), // cspell:disable-line
+        });
+
         await this.runStartupAnimation();
-      } catch (e) {
-        std.writeConsoleError(e);
-      }
-    } while (true);
-  }
+        do {
+            const { std } = this.pc;
 
-  private async runStartupAnimation() {
-    const { std } = this.pc;
-    std.clearConsole();
-    if (!localStorage.getItem("hasStartedUp")) {
-      window.startupNoise.volume = 0.7;
-      window.startupNoise.play();
-      std.setIsConsoleCursorVisible(false);
-      std.drawConsoleImage(await loadImageBitmapFromUrl(energyStar), -135, 0);
-
-      std.writeConsole("    Penger Modular BIOS v5.22, An Energy Star Ally\n");
-      std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
-      std.writeConsole("\n");
-      std.drawConsoleImage(await loadImageBitmapFromUrl(biosPenger), 0, 0);
-
-      const curPos = std.getConsoleCursorPosition();
-      std.setConsoleCursorPosition({ x: 0, y: 23 });
-      std.writeConsole("Press ");
-      std.updateConsoleAttributes({ bold: true });
-      std.writeConsole("PENG");
-      std.resetConsoleAttributes();
-      std.writeConsole(" to enter SETUP\n");
-      std.writeConsole("05/02/1984-ALADDIN5-P2B-6733F1-9268");
-      std.setConsoleCursorPosition(curPos);
-      await waitFor(1000);
-
-      std.writeConsole("AMD-K6(rm)-III/450 Processor\n");
-      std.writeConsole("Memory Test :        ");
-      await waitFor(500);
-
-      const totalMem = 262144;
-      await runAnimationLoop((dt, tt) => {
-        const mem = Math.round(totalMem * (Math.min(tt, 2500) / 2500));
-        std.moveConsoleCursorBy({ x: -7, y: 0 });
-        std.writeConsole(`${padStart(String(mem), 6, " ")}K`);
-        return mem === totalMem;
-      });
-      await waitFor(500);
-
-      std.writeConsole(` OK\n`);
-      std.writeConsole("\n");
-      await waitFor(750);
-
-      std.writeConsole("Initialize Plug and Play Cards...\n");
-      await waitFor(1000);
-
-      std.writeConsole("PNP Init Completed");
-      await waitFor(2500);
-
-      std.clearConsole();
-      std.writeConsole(
-        "╔═══════════════════════════════════════════════════════════════════════════╗\n",
-      );
-      std.writeConsole(
-        "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n",
-      );
-      std.writeConsole(
-        "╠═════════════════════════════════════╤═════════════════════════════════════╣\n",
-      );
-      std.writeConsole(
-        "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n",
-      );
-      std.writeConsole(
-        "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n",
-      );
-      std.writeConsole(
-        "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n",
-      ); // 1.44 MB, 3½"
-      std.writeConsole(
-        "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n",
-      );
-      std.writeConsole(
-        "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n",
-      );
-      std.writeConsole(
-        "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n",
-      );
-      std.writeConsole(
-        "╚═════════════════════════════════════╧═════════════════════════════════════╝\n",
-      );
-      await waitFor(1500);
-      std.writeConsole("Starting PengOS...\n\n");
-      await waitFor(1000);
-      localStorage.setItem("hasStartedUp", "yes");
+            try {
+                await this.runShell();
+                await this.runStartupAnimation();
+            } catch (e) {
+                std.writeConsoleError(e);
+            }
+        } while (true);
     }
-  }
+
+    private async runStartupAnimation() {
+        const { std } = this.pc;
+        std.clearConsole();
+        if (!localStorage.getItem("hasStartedUp")) {
+            window.startupNoise.volume = 0.7;
+            window.startupNoise.play();
+            std.setIsConsoleCursorVisible(false);
+            std.drawConsoleImage(
+                await loadImageBitmapFromUrl(energyStar),
+                -135,
+                0,
+            );
+
+            std.writeConsole(
+                "    Penger Modular BIOS v5.22, An Energy Star Ally\n",
+            );
+            std.writeConsole("    Copyright (C) 1982-85, PengCorp\n");
+            std.writeConsole("\n");
+            std.drawConsoleImage(
+                await loadImageBitmapFromUrl(biosPenger),
+                0,
+                0,
+            );
+
+            const curPos = std.getConsoleCursorPosition();
+            std.setConsoleCursorPosition({ x: 0, y: 23 });
+            std.writeConsole("Press ");
+            std.updateConsoleAttributes({ bold: true });
+            std.writeConsole("PENG");
+            std.resetConsoleAttributes();
+            std.writeConsole(" to enter SETUP\n");
+            std.writeConsole("05/02/1984-ALADDIN5-P2B-6733F1-9268");
+            std.setConsoleCursorPosition(curPos);
+            await waitFor(1000);
+
+            std.writeConsole("AMD-K6(rm)-III/450 Processor\n");
+            std.writeConsole("Memory Test :        ");
+            await waitFor(500);
+
+            const totalMem = 262144;
+            await runAnimationLoop((dt, tt) => {
+                const mem = Math.round(totalMem * (Math.min(tt, 2500) / 2500));
+                std.moveConsoleCursorBy({ x: -7, y: 0 });
+                std.writeConsole(`${padStart(String(mem), 6, " ")}K`);
+                return mem === totalMem;
+            });
+            await waitFor(500);
+
+            std.writeConsole(` OK\n`);
+            std.writeConsole("\n");
+            await waitFor(750);
+
+            std.writeConsole("Initialize Plug and Play Cards...\n");
+            await waitFor(1000);
+
+            std.writeConsole("PNP Init Completed");
+            await waitFor(2500);
+
+            std.clearConsole();
+            std.writeConsole(
+                "╔═══════════════════════════════════════════════════════════════════════════╗\n",
+            );
+            std.writeConsole(
+                "║            PBIOS System Configuration (C) 1982-1985, PengCorp             ║\n",
+            );
+            std.writeConsole(
+                "╠═════════════════════════════════════╤═════════════════════════════════════╣\n",
+            );
+            std.writeConsole(
+                "║ Main Processor     : AMD-K6-III     │ Base Memory Size   : 640 KB         ║\n",
+            );
+            std.writeConsole(
+                "║ Numeric Processor  : Present        │ Ext. Memory Size   : 261504 KB      ║\n",
+            );
+            std.writeConsole(
+                "║ Floppy Drive A:    : None           │ Hard Disk C: Type  : 47             ║\n",
+            ); // 1.44 MB, 3½"
+            std.writeConsole(
+                "║ Floppy Drive B:    : None           │ Hard Disk D: Type  : None           ║\n",
+            );
+            std.writeConsole(
+                "║ Display Type       : VGA/PGA/EGA    │ Serial Port(s)     : 3F8, 2F8       ║\n",
+            );
+            std.writeConsole(
+                "║ PBIOS Date         : 11/11/85       │ Parallel Port(s)   : 378            ║\n",
+            );
+            std.writeConsole(
+                "╚═════════════════════════════════════╧═════════════════════════════════════╝\n",
+            );
+            await waitFor(1500);
+            std.writeConsole("Starting PengOS...\n\n");
+            await waitFor(1000);
+            localStorage.setItem("hasStartedUp", "yes");
+        }
+    }
 }
 
 (async () => {
-  await loadVga9x16();
-  await loadVga9x8();
-  await loadTerminus6x12();
+    await loadVga9x16();
+    await loadVga9x8();
+    await loadTerminus6x12();
 
-  const screen = new Screen();
-  await screen.init(document.getElementById("screen-container")!);
+    const screen = new Screen();
+    await screen.init(document.getElementById("screen-container")!);
 
-  const keyboard = new Keyboard();
-  const physicalKeyboard = new PhysicalKeyboard(keyboard);
-  const screenKeyboard = new ScreenKeyboard(keyboard);
-  keyboard.addSource(physicalKeyboard);
-  keyboard.addSource(screenKeyboard);
+    const keyboard = new Keyboard();
+    const physicalKeyboard = new PhysicalKeyboard(keyboard);
+    const screenKeyboard = new ScreenKeyboard(keyboard);
+    keyboard.addSource(physicalKeyboard);
+    keyboard.addSource(screenKeyboard);
 
-  const textBuffer = new TextBuffer({
-    pageSize: screen.getSizeInCharacters(),
-    scrollbackLength: 0,
-  });
+    const textBuffer = new TextBuffer({
+        pageSize: screen.getSizeInCharacters(),
+        scrollbackLength: 0,
+    });
 
-  let lastTime = performance.now();
+    let lastTime = performance.now();
 
-  window.timeSamples = [];
+    window.timeSamples = [];
 
-  const cb = () => {
-    const dt = performance.now() - lastTime;
-    lastTime = performance.now();
-    const start = performance.now();
+    const cb = () => {
+        const dt = performance.now() - lastTime;
+        lastTime = performance.now();
+        const start = performance.now();
 
-    screen.update(textBuffer);
-    screen.draw(dt);
+        screen.update(textBuffer);
+        screen.draw(dt);
 
-    const end = performance.now();
+        const end = performance.now();
 
-    window.timeSamples = window.timeSamples ?? [];
-    window.timeSamples.push(end - start);
-    while (window.timeSamples.length > 60) {
-      window.timeSamples.shift();
-    }
-    window.avg =
-      window.timeSamples.reduce((acc, v) => acc + v, 0) /
-      window.timeSamples.length;
+        window.timeSamples = window.timeSamples ?? [];
+        window.timeSamples.push(end - start);
+        while (window.timeSamples.length > 60) {
+            window.timeSamples.shift();
+        }
+        window.avg =
+            window.timeSamples.reduce((acc, v) => acc + v, 0) /
+            window.timeSamples.length;
 
-    keyboard.update(dt);
+        keyboard.update(dt);
+        requestAnimationFrame(cb);
+    };
     requestAnimationFrame(cb);
-  };
-  requestAnimationFrame(cb);
 
-  const pengOS = new PengOS(keyboard, textBuffer, screen);
-  await pengOS.startup();
+    const pengOS = new PengOS(keyboard, textBuffer, screen);
+    await pengOS.startup();
 })();

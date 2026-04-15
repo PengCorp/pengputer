@@ -1,47 +1,47 @@
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 html,
 body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  padding: 0px;
-  margin: 0px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    padding: 0px;
+    margin: 0px;
 }
 
 body {
-  padding: 25px;
-  background: url("/Pengputer/images/curtain_pattern.png");
+    padding: 25px;
+    background: url("/Pengputer/images/curtain_pattern.png");
 }
 
 header {
-  position: absolute;
-  font-family: serif;
+    position: absolute;
+    font-family: serif;
 }
 
 header a {
-  color: white;
-  font-size: 20px;
-  background: black;
+    color: white;
+    font-size: 20px;
+    background: black;
 }
 
 #monitor {
-  margin: auto;
-  padding: 20px;
-  padding-bottom: 100px;
-  padding-right: 0px;
-  background: #aaaaaa;
-  border: 15px outset #aaa;
-  border-radius: 5px;
+    margin: auto;
+    padding: 20px;
+    padding-bottom: 100px;
+    padding-right: 0px;
+    background: #aaaaaa;
+    border: 15px outset #aaa;
+    border-radius: 5px;
 
-  width: fit-content;
-  display: flex;
-  align-items: stretch;
-  align-content: stretch;
+    width: fit-content;
+    display: flex;
+    align-items: stretch;
+    align-content: stretch;
 
-  /* background-image: url("logo.png");
+    /* background-image: url("logo.png");
     background-position-x: right 20px;
     background-position-y: bottom 40px;
     background-repeat: no-repeat;
@@ -49,38 +49,38 @@ header a {
 }
 
 #monitor-screen {
-  position: relative;
+    position: relative;
 }
 
 #controls {
-  width: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  flex-flow: column;
+    width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex-flow: column;
 }
 
 #controls img {
-  width: 100px;
-  padding: 5px;
-  padding-left: 12px;
-  padding-right: 12px;
-  border: 3px inset #999;
-  background: #a2a2a2;
-  height: auto;
+    width: 100px;
+    padding: 5px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border: 3px inset #999;
+    background: #a2a2a2;
+    height: auto;
 }
 
 #screen-box {
-  border: 10px inset #999;
-  padding: 24px;
-  background-color: black;
-  position: relative;
+    border: 10px inset #999;
+    padding: 24px;
+    background-color: black;
+    position: relative;
 }
 
 #screen {
-  aspect-ratio: 4/3;
-  width: calc((4 / 3) * 70vh - 100px);
+    aspect-ratio: 4/3;
+    width: calc((4 / 3) * 70vh - 100px);
 }
 
 /* #screen-scanLines {
@@ -97,137 +97,137 @@ header a {
 } */
 
 .keyboard-box-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .keyboard-box {
-  position: absolute;
-  bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    position: absolute;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .keyboard {
-  transform-origin: bottom;
-  transform: perspective(1000px) rotateX(45deg);
-  background-color: #999;
-  user-select: none;
-  padding: 10px;
-  display: flex;
-  gap: 40px;
-  border-radius: 2px;
+    transform-origin: bottom;
+    transform: perspective(1000px) rotateX(45deg);
+    background-color: #999;
+    user-select: none;
+    padding: 10px;
+    display: flex;
+    gap: 40px;
+    border-radius: 2px;
 }
 
 .keyboard-bottom {
-  height: 30px;
-  width: 100%;
-  background: #aaa;
-  box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
+    height: 30px;
+    width: 100%;
+    background: #aaa;
+    box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
 }
 
 .keyboard span {
-  display: inline-block;
-  width: 54px;
-  text-align: center;
-  padding: 5px;
-  font-family: sans-serif;
-  background: #bbb;
-  border: 5px outset #aaa;
-  box-sizing: border-box;
+    display: inline-block;
+    width: 54px;
+    text-align: center;
+    padding: 5px;
+    font-family: sans-serif;
+    background: #bbb;
+    border: 5px outset #aaa;
+    box-sizing: border-box;
 }
 
 .keyboard span:active,
 .keyboard span.key-down {
-  background: #aaa;
-  border: 4px solid #666;
-  padding-top: 10px;
+    background: #aaa;
+    border: 4px solid #666;
+    padding-top: 10px;
 }
 
 .keyboard .space {
-  flex-grow: 1;
+    flex-grow: 1;
 }
 
 .keyboard .small-text {
-  font-size: 13px;
-  padding: 2px;
+    font-size: 13px;
+    padding: 2px;
 }
 
 .keyboard .group {
-  /* background: #8d8d8d; */
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    /* background: #8d8d8d; */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .keyboard .row {
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  gap: 8px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    gap: 8px;
 }
 
 .keyboard .hidden-key {
-  visibility: hidden;
+    visibility: hidden;
 }
 
 .keyboard .tab {
-  min-width: 85px;
+    min-width: 85px;
 }
 
 .keyboard .capsLock {
-  min-width: 105px;
+    min-width: 105px;
 }
 
 .keyboard .left-shift {
-  min-width: 135px;
+    min-width: 135px;
 }
 
 .keyboard .ctrl {
-  min-width: 80px;
+    min-width: 80px;
 }
 
 .keyboard .zero {
-  min-width: 116px;
+    min-width: 116px;
 }
 
 .keyboard .enter {
-  position: relative;
-  top: -100%;
-  min-height: 200%;
+    position: relative;
+    top: -100%;
+    min-height: 200%;
 }
 
 .keyboard .fill {
-  flex-grow: 1;
+    flex-grow: 1;
 }
 
 .desk {
-  position: absolute;
-  left: 0px;
-  bottom: 0px;
-  width: 100%;
-  height: 25vh;
-  background: url("/Pengputer/images/wood.jpg");
-  z-index: -1;
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
+    height: 25vh;
+    background: url("/Pengputer/images/wood.jpg");
+    z-index: -1;
 }
 
 @keyframes blinker {
-  50% {
-    opacity: 0;
-  }
+    50% {
+        opacity: 0;
+    }
 }
 
 @media (width <= 1650px) {
-  .keyboard-box-container {
-    display: none;
-  }
+    .keyboard-box-container {
+        display: none;
+    }
 }
 
 @media (height <= 850px) {
-  .keyboard-box-container {
-    display: none;
-  }
+    .keyboard-box-container {
+        display: none;
+    }
 }

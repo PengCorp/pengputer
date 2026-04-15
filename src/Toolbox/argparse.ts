@@ -1,110 +1,112 @@
 interface TokenData {
-  start: number;
-  token: string;
-  end: number;
+    start: number;
+    token: string;
+    end: number;
 }
 
 const getCharacter = (
-  argsString: string,
-  index: number,
+    argsString: string,
+    index: number,
 ): { character: string; nextIndex: number; isEscape: boolean } | null => {
-  if (index < 0 || index >= argsString.length) {
-    return null;
-  }
-
-  const curChar = argsString[index];
-
-  if (curChar === "\\") {
-    if (argsString.length <= index + 1) {
-      throw new Error("Trailing escape character");
+    if (index < 0 || index >= argsString.length) {
+        return null;
     }
 
-    const nextChar = argsString[index + 1];
-    if (nextChar === '"') {
-      return { character: '"', nextIndex: index + 2, isEscape: true };
-    } else if (nextChar === " ") {
-      return { character: " ", nextIndex: index + 2, isEscape: true };
-    } else if (nextChar === "\\") {
-      return { character: "\\", nextIndex: index + 2, isEscape: true };
-    }
-  }
+    const curChar = argsString[index];
 
-  return {
-    character: curChar,
-    nextIndex: index + 1,
-    isEscape: false,
-  };
+    if (curChar === "\\") {
+        if (argsString.length <= index + 1) {
+            throw new Error("Trailing escape character");
+        }
+
+        const nextChar = argsString[index + 1];
+        if (nextChar === '"') {
+            return { character: '"', nextIndex: index + 2, isEscape: true };
+        } else if (nextChar === " ") {
+            return { character: " ", nextIndex: index + 2, isEscape: true };
+        } else if (nextChar === "\\") {
+            return { character: "\\", nextIndex: index + 2, isEscape: true };
+        }
+    }
+
+    return {
+        character: curChar,
+        nextIndex: index + 1,
+        isEscape: false,
+    };
 };
 
 const getToken = (argsString: string, index: number): TokenData | null => {
-  let tokenStartIndex = index;
-  let tokenEndIndex = index;
-  let tokenData = "";
+    let tokenStartIndex = index;
+    let tokenEndIndex = index;
+    let tokenData = "";
 
-  // trim start
-  while (
-    tokenStartIndex < argsString.length &&
-    argsString[tokenStartIndex] === " "
-  ) {
-    tokenStartIndex += 1;
-  }
-
-  tokenEndIndex = tokenStartIndex;
-
-  if (tokenEndIndex === argsString.length) {
-    return null;
-  }
-
-  if (argsString[tokenEndIndex] === '"') {
-    // parse string token
-
-    // skip double quotes
-    tokenEndIndex += 1;
-    let char = getCharacter(argsString, tokenEndIndex);
+    // trim start
     while (
-      char &&
-      (char.character !== '"' || (char.character === '"' && char.isEscape))
+        tokenStartIndex < argsString.length &&
+        argsString[tokenStartIndex] === " "
     ) {
-      tokenData += char.character;
-      tokenEndIndex = char.nextIndex;
-      char = getCharacter(argsString, tokenEndIndex);
+        tokenStartIndex += 1;
     }
-    // skip ending double quotes if any
-    tokenEndIndex = Math.min(tokenEndIndex + 1, argsString.length);
-  } else {
-    let char = getCharacter(argsString, tokenEndIndex);
-    while (
-      char &&
-      (char.character !== " " || (char.character === " " && char.isEscape))
-    ) {
-      tokenData += char.character;
-      tokenEndIndex = char.nextIndex;
-      char = getCharacter(argsString, tokenEndIndex);
-    }
-  }
 
-  return {
-    start: tokenStartIndex,
-    end: tokenEndIndex,
-    token: tokenData,
-  };
+    tokenEndIndex = tokenStartIndex;
+
+    if (tokenEndIndex === argsString.length) {
+        return null;
+    }
+
+    if (argsString[tokenEndIndex] === '"') {
+        // parse string token
+
+        // skip double quotes
+        tokenEndIndex += 1;
+        let char = getCharacter(argsString, tokenEndIndex);
+        while (
+            char &&
+            (char.character !== '"' ||
+                (char.character === '"' && char.isEscape))
+        ) {
+            tokenData += char.character;
+            tokenEndIndex = char.nextIndex;
+            char = getCharacter(argsString, tokenEndIndex);
+        }
+        // skip ending double quotes if any
+        tokenEndIndex = Math.min(tokenEndIndex + 1, argsString.length);
+    } else {
+        let char = getCharacter(argsString, tokenEndIndex);
+        while (
+            char &&
+            (char.character !== " " ||
+                (char.character === " " && char.isEscape))
+        ) {
+            tokenData += char.character;
+            tokenEndIndex = char.nextIndex;
+            char = getCharacter(argsString, tokenEndIndex);
+        }
+    }
+
+    return {
+        start: tokenStartIndex,
+        end: tokenEndIndex,
+        token: tokenData,
+    };
 };
 
 export const argparse = (argsString: string) => {
-  let i = 0;
-  let args = [];
+    let i = 0;
+    let args = [];
 
-  while (true) {
-    let token = getToken(argsString, i);
+    while (true) {
+        let token = getToken(argsString, i);
 
-    if (!token) {
-      break;
+        if (!token) {
+            break;
+        }
+
+        const { end, token: tokenData } = token;
+        i = end;
+        args.push(tokenData);
     }
 
-    const { end, token: tokenData } = token;
-    i = end;
-    args.push(tokenData);
-  }
-
-  return args;
+    return args;
 };
