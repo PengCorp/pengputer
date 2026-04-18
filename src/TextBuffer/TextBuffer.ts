@@ -141,9 +141,9 @@ export class Cursor {
 
     public getIsInPage(pageSize: Size): boolean {
         if (getIsVectorInZeroAlignedRect({ x: this.x, y: this.y }, pageSize)) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /** If cursor is outside of the page it is returned to the first available position. */

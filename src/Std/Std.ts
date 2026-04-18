@@ -79,6 +79,7 @@ export class Std {
         switch (screenMode) {
             case ScreenMode.mode80x25_9x16:
                 {
+                    this.screenMode = ScreenMode.mode80x25_9x16;
                     const size = { w: 80, h: 25 };
                     this.screen.setScreenMode(size, vga9x16);
                     this.textBuffer.setPageSize(size);
@@ -86,6 +87,7 @@ export class Std {
                 break;
             case ScreenMode.mode80x50_9x8:
                 {
+                    this.screenMode = ScreenMode.mode80x50_9x8;
                     const size = { w: 80, h: 50 };
                     this.screen.setScreenMode(size, vga9x8);
                     this.textBuffer.setPageSize(size);
@@ -93,6 +95,7 @@ export class Std {
                 break;
             case ScreenMode.mode106x36_6x12:
                 {
+                    this.screenMode = ScreenMode.mode106x36_6x12;
                     const size = { w: 106, h: 36 };
                     this.screen.setScreenMode(size, terminus6x12);
                     this.textBuffer.setPageSize(size);
@@ -310,7 +313,7 @@ export class Std {
         if (numberOfLines > 0) {
             this.textBuffer.scrollDownBy(numberOfLines);
         } else {
-            this.textBuffer.scrollUpBy(numberOfLines);
+            this.textBuffer.scrollUpBy(-numberOfLines);
         }
     }
 
