@@ -45,6 +45,8 @@ import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 import { loadVga9x16 } from "../Screen/vga9x16";
 import { loadVga9x8 } from "../Screen/vga9x8";
 import { loadTerminus6x12 } from "@src/Screen/terminus6x12";
+import { fullScreenLocalStorageKey } from "./constants";
+import { applyFullScreenState } from "./util";
 
 const PATH_SEPARATOR = "/";
 
@@ -371,6 +373,8 @@ class PengOS {
         requestAnimationFrame(cb);
     };
     requestAnimationFrame(cb);
+
+    applyFullScreenState();
 
     const pengOS = new PengOS(keyboard, textBuffer, screen);
     await pengOS.startup();

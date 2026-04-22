@@ -191,9 +191,6 @@ export class Screen {
     }
 
     private initCanvas(containerEl: HTMLElement) {
-        const canvasBox = document.createElement("div");
-        canvasBox.setAttribute("id", "screen-box");
-
         const canvas = document.createElement("canvas");
         this.canvas = canvas;
 
@@ -207,9 +204,7 @@ export class Screen {
 
         scanLines.setAttribute("id", "screen-scanLines");
 
-        canvasBox.appendChild(canvas);
-        canvasBox.appendChild(scanLines);
-        containerEl.replaceChildren(canvasBox);
+        containerEl.replaceChildren(canvas, scanLines);
     }
 
     public setScreenMode(screenSize: Size, font: Font) {

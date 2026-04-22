@@ -18,6 +18,8 @@ import { classicColors } from "@Color/ansi";
 
 import _ from "lodash";
 import type { Executable } from "@FileSystem/fileTypes";
+import { fullScreenLocalStorageKey } from "./constants";
+import { applyFullScreenState } from "./util";
 
 interface TakenProgram {
     path: FilePath;
@@ -104,6 +106,7 @@ export class PengerShell implements Executable {
             run: this.commandRun.bind(this),
             open: this.commandOpen.bind(this),
             clear: this.commandClear.bind(this),
+            fullscreen: this.commandFullScreen.bind(this),
             prompt: this.commandPrompt.bind(this),
             take: this.commandTake.bind(this),
             drop: this.commandDrop.bind(this),
@@ -156,6 +159,7 @@ export class PengerShell implements Executable {
                 "take",
                 "drop",
                 "reboot",
+                "fullscreen",
             ];
 
             const commandString =
@@ -608,6 +612,7 @@ export class PengerShell implements Executable {
         printEntry("drop", "Remove a program from the command list\n");
         printEntry("flp", "Manage floppy disks\n");
         printEntry("reboot", "Restart the system\n");
+        printEntry("fullscreen", "Toggles the full screen mode on and off");
 
         if (this.takenPrograms.length > 0) {
             std.writeConsole("\nAvailable programs:\n");
@@ -760,5 +765,15 @@ export class PengerShell implements Executable {
                 "Eject the floppy at drive <label>\n",
             );
         }
+    }
+
+    private commandFullScreen() {
+        const currentState = localStorage.getItem(fullScreenLocalStorageKey);
+        if (currentState === "true") {
+            localStorage.setItem(fullScreenLocalStorageKey, "false");
+        } else {
+            localStorage.setItem(fullScreenLocalStorageKey, "true");
+        }
+        applyFullScreenState();
     }
 }
