@@ -45,6 +45,7 @@ import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 import { loadVga9x16 } from "../Screen/vga9x16";
 import { loadVga9x8 } from "../Screen/vga9x8";
 import { loadTerminus6x12 } from "@src/Screen/terminus6x12";
+import { PengBASIC } from "./PengBASIC/PengBASIC";
 
 const PATH_SEPARATOR = "/";
 
@@ -160,6 +161,11 @@ class PengOS {
             type: FileSystemObjectType.Executable,
             name: "pedlin.exe",
             createInstance: () => new Pedlin(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "pbasic.exe",
+            createInstance: () => new PengBASIC(this.pc),
         });
 
         const gamesDir = rootDir.mkdir("games");
