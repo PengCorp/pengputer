@@ -58,8 +58,8 @@ export class Screen {
     private imagesCanvas!: HTMLCanvasElement;
     private imagesCtx!: CanvasRenderingContext2D;
 
-    private tempCanvas!: HTMLCanvasElement;
-    private tempCtx!: CanvasRenderingContext2D;
+    private boxCanvas!: HTMLCanvasElement;
+    private boxCtx!: CanvasRenderingContext2D;
 
     private areGraphicsEnabled: boolean = false;
     public graphics: Graphics;
@@ -181,11 +181,11 @@ export class Screen {
         this.imagesCtx = this.imagesCanvas.getContext("2d")!;
         this.imagesCtx.imageSmoothingEnabled = false;
 
-        this.tempCanvas = document.createElement("canvas");
-        this.tempCanvas.width = this.widthInPixels;
-        this.tempCanvas.height = this.heightInPixels;
-        this.tempCtx = this.tempCanvas.getContext("2d")!;
-        this.tempCtx.imageSmoothingEnabled = false;
+        this.boxCanvas = document.createElement("canvas");
+        this.boxCanvas.width = this.characterWidth;
+        this.boxCanvas.height = this.characterHeight;
+        this.boxCtx = this.boxCanvas.getContext("2d")!;
+        this.boxCtx.imageSmoothingEnabled = false;
 
         this.setScreenMode({ w: 80, h: 25 }, vga9x16);
     }
@@ -269,8 +269,8 @@ export class Screen {
         this.imagesCanvas.width = this.widthInPixels;
         this.imagesCanvas.height = this.heightInPixels;
 
-        this.tempCanvas.width = this.widthInPixels;
-        this.tempCanvas.height = this.heightInPixels;
+        this.boxCanvas.width = this.characterWidth;
+        this.boxCanvas.height = this.characterHeight;
 
         this.isDirty = true;
     }
@@ -616,17 +616,17 @@ export class Screen {
         if (bufferCharacter.attributes.boxed) {
             const boxedAttr = bufferCharacter.attributes.boxed;
 
-            const tempCtx = this.tempCtx;
-            tempCtx.reset();
+            const boxCtx = this.boxCtx;
+            boxCtx.reset();
 
             // Uncomment below to make the box rounder.
-            tempCtx.globalCompositeOperation = "xor";
+            boxCtx.globalCompositeOperation = "xor";
 
-            tempCtx.fillStyle = "#ffffff";
+            boxCtx.fillStyle = "#ffffff";
             const boxBorderWidth = 1;
 
             if (boxedAttr & BOXED_BOTTOM) {
-                tempCtx.fillRect(
+                boxCtx.fillRect(
                     0,
                     this.characterHeight - boxBorderWidth,
                     this.characterWidth,
@@ -635,15 +635,15 @@ export class Screen {
             }
 
             if (boxedAttr & BOXED_TOP) {
-                tempCtx.fillRect(0, 0, this.characterWidth, boxBorderWidth);
+                boxCtx.fillRect(0, 0, this.characterWidth, boxBorderWidth);
             }
 
             if (boxedAttr & BOXED_LEFT) {
-                tempCtx.fillRect(0, 0, 1, this.characterHeight);
+                boxCtx.fillRect(0, 0, 1, this.characterHeight);
             }
 
             if (boxedAttr & BOXED_RIGHT) {
-                tempCtx.fillRect(
+                boxCtx.fillRect(
                     this.characterWidth - boxBorderWidth,
                     0,
                     1,
@@ -653,7 +653,7 @@ export class Screen {
 
             charCtx.globalCompositeOperation = "xor";
             charCtx.drawImage(
-                this.tempCanvas,
+                this.boxCanvas,
                 0,
                 0,
                 this.characterWidth,
@@ -859,20 +859,18 @@ export class Screen {
     /*=============================== MOUSE ====================================*/
 
     private getMousePosition(event: MouseEvent): Vector {
-        const canvas = this.canvas;
-
-        const rect = canvas.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
 
         const cssX = event.clientX - rect.left;
         const cssY = event.clientY - rect.top;
 
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
+        const scaleX = this.widthInPixels / rect.width;
+        const scaleY = this.heightInPixels / rect.height;
 
-        const x = cssX * scaleX;
-        const y = cssY * scaleY;
-
-        return { x: Math.floor(x), y: Math.floor(y) };
+        return {
+            x: Math.floor(cssX * scaleX),
+            y: Math.floor(cssY * scaleY),
+        };
     }
 
     addMouseClickListener(listener: ClickListener) {
