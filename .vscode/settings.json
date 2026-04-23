@@ -29,6 +29,14 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.tabSize": 2
     },
+    "[plaintext]": {
+        "editor.tabCompletion": "off",
+        "editor.quickSuggestions": {
+            "other": "off",
+            "comments": "off",
+            "strings": "off"
+        }
+    },
     "cSpell.words": [
         "Alexey",
         "Autorepeat",

@@ -1,0 +1,31 @@
+Operators
+
+=       equality
+<>      inequality
+<       less-than
+>       greater-than
+<=      less-than-or-equal
+>=      greater-than-or-equal
+
+^       exponentiation
+-       negation
+*       multiplication
+/       floating-point division
++       addition
+-       subtraction
+
+Types
+
+a$      string
+a%      integer
+a!      single-precision
+a#      double-precision
+
+Constants
+
+string - "hello"
+integer - 123456789, no decimal points
+fixed-point - 123.01, has decimal point
+hexadecimal - &H123AF
+octal - &O347 &132
+
