@@ -19,7 +19,7 @@ import {
 } from "../TextBuffer";
 import { Font } from "./Font";
 import { Graphics } from "./Graphics";
-import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
+import { CRTRenderer } from "./CRTRenderer";
 
 export type ClickListener = (clickEvent: {
     position: Vector;
@@ -38,7 +38,7 @@ export class Screen {
     private heightInPixels: number;
 
     private canvas!: HTMLCanvasElement;
-    private ctx!: CanvasRenderingContext2D;
+    private crtRenderer!: CRTRenderer;
 
     private textCanvas!: HTMLCanvasElement;
     private textCtx!: CanvasRenderingContext2D;
@@ -198,13 +198,12 @@ export class Screen {
         canvas.width = 100;
         canvas.height = 100;
 
-        this.ctx = canvas.getContext("2d")!;
-
         const scanLines = document.createElement("div");
-
         scanLines.setAttribute("id", "screen-scanLines");
 
         containerEl.replaceChildren(canvas, scanLines);
+
+        this.crtRenderer = new CRTRenderer(canvas);
     }
 
     public setScreenMode(screenSize: Size, font: Font) {
@@ -243,9 +242,6 @@ export class Screen {
             };
         }
 
-        this.canvas.width = this.widthInPixels;
-        this.canvas.height = this.heightInPixels;
-
         this.textCanvas.width = this.widthInPixels;
         this.textCanvas.height = this.heightInPixels;
 
@@ -278,14 +274,6 @@ export class Screen {
 
     public setAreGraphicsEnabled(areGraphicsEnabled: boolean) {
         this.areGraphicsEnabled = areGraphicsEnabled;
-
-        if (areGraphicsEnabled) {
-            this.canvas.width = GRAPHICS_WIDTH;
-            this.canvas.height = GRAPHICS_HEIGHT;
-        } else {
-            this.canvas.width = this.widthInPixels;
-            this.canvas.height = this.heightInPixels;
-        }
     }
 
     draw(dt: number) {
@@ -303,26 +291,9 @@ export class Screen {
 
         // display graphics
         if (this.areGraphicsEnabled) {
-            const graphicsCanvas = this.graphics.getCanvas();
-            this.ctx.globalCompositeOperation = "copy";
-            this.ctx.drawImage(
-                graphicsCanvas,
-                0,
-                0,
-                graphicsCanvas.width,
-                graphicsCanvas.height,
-                0,
-                0,
-                this.canvas.width,
-                this.canvas.height,
-            );
-
+            this.crtRenderer.render(this.graphics.getCanvas());
             return;
         }
-
-        // clear screen
-        this.ctx.globalCompositeOperation = "source-over";
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.textCtx.globalCompositeOperation = "source-over";
         this.textCtx.clearRect(
@@ -467,18 +438,8 @@ export class Screen {
             this.textCanvas.height,
         );
 
-        // display text layer
-        this.ctx.drawImage(
-            this.textCanvas,
-            0,
-            0,
-            this.textCanvas.width,
-            this.textCanvas.height,
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height,
-        );
+        // display text layer through CRT shader
+        this.crtRenderer.render(this.textCanvas);
     }
 
     /** Clears screen using bgColor, resets fg color to current fgColor, clears char buffer. */
