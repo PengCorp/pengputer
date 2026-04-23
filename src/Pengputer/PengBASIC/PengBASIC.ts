@@ -11,7 +11,7 @@ interface ScannerCtx {
 }
 
 class Scanner {
-    private source: string;
+    private source: string = "";
     private tokens: Token[] = [];
 
     private start: number = 0;
@@ -21,8 +21,17 @@ class Scanner {
     private ctx: ScannerCtx;
 
     public constructor(source: string, ctx: ScannerCtx) {
-        this.source = source;
+        this.setSource(source);
         this.ctx = ctx;
+    }
+
+    public setSource(source: string) {
+        this.source = source;
+        this.tokens = [];
+
+        this.start = 0;
+        this.current = 0;
+        this.line = 1;
     }
 
     public scanTokens() {
