@@ -71,7 +71,7 @@ header a {
     height: auto;
 }
 
-#screen-box {
+#screen-container {
     border: 10px inset #999;
     padding: 24px;
     background-color: black;
@@ -204,7 +204,7 @@ header a {
     flex-grow: 1;
 }
 
-.desk {
+#desk {
     position: absolute;
     left: 0px;
     bottom: 0px;
@@ -229,5 +229,53 @@ header a {
 @media (height <= 850px) {
     .keyboard-box-container {
         display: none;
+    }
+}
+
+.full-screen {
+    padding: 0;
+    margin: 0;
+    border: 0;
+
+    #nav-header,
+    #keyboard,
+    #controls,
+    #desk {
+        display: none;
+    }
+
+    #monitor,
+    #monitor-screen,
+    #screen-container,
+    #screen-box,
+    #screen {
+        padding: 0;
+        margin: 0;
+        border: 0;
+    }
+
+    #screen-container {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #aaa;
+    }
+
+    #screen {
+        aspect-ratio: 4/3;
+        width: calc(min((4 / 3) * 100vh - 64px, 100vw - 64px));
+        position: relative;
+    }
+
+    #screen {
+        border: 10px inset #999;
+        padding: 24px;
+        background-color: black;
     }
 }
