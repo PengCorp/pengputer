@@ -100,16 +100,53 @@ class Scanner {
                 this.addToken(TokenType.GREATER);
                 break;
 
+            case " ":
+            case "\r":
+            case "\t":
+                break;
+
+            case "\n":
+                this.line += 1;
+                break;
+
+            case '"':
+                this.scanString();
+                break;
+
             default:
                 this.ctx.error(this.line, "Unexpected character.\n");
                 break;
         }
     }
 
+    private scanString() {
+        while (this.peek() !== '"' && this.peek() !== "\n" && !this.isAtEnd()) {
+            this.advance();
+        }
+
+        if (this.isAtEnd() || this.peek() === "\n") {
+            this.ctx.error(this.line, "Unterminated string.");
+            return;
+        }
+
+        this.advance();
+
+        const value: string = this.source.slice(
+            this.start + 1,
+            this.current - 1,
+        );
+        this.addToken(TokenType.STRING, value);
+    }
+
     private advance() {
         const char = this.source[this.current];
         this.current += 1;
         return char;
+    }
+
+    private peek() {
+        if (this.isAtEnd()) return "\0";
+        return this.source[this.current];
     }
 
     private addToken(type: TokenType, literal: Literal = null) {
