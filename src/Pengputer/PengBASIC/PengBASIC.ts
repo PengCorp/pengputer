@@ -114,7 +114,11 @@ class Scanner {
                 break;
 
             default:
-                this.ctx.error(this.line, "Unexpected character.\n");
+                if (this.isDigit(c)) {
+                    this.scanNumber();
+                } else {
+                    this.ctx.error(this.line, "Unexpected character.\n");
+                }
                 break;
         }
     }
@@ -136,6 +140,26 @@ class Scanner {
             this.current - 1,
         );
         this.addToken(TokenType.STRING, value);
+    }
+
+    private scanNumber() {
+        while (this.isDigit(this.peek())) this.advance();
+
+        if (this.peek() === "." && this.isDigit(this.peekNext())) {
+            this.advance();
+
+            while (this.isDigit(this.peek())) this.advance();
+
+            this.addToken(
+                TokenType.FLOAT,
+                parseFloat(this.source.slice(this.start, this.current)),
+            );
+        } else {
+            this.addToken(
+                TokenType.INTEGER,
+                parseInt(this.source.slice(this.start, this.current)),
+            );
+        }
     }
 
     private advance() {

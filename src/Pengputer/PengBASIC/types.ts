@@ -25,7 +25,8 @@ export enum TokenType {
     MOD,
 
     // literals
-    NUMBER,
+    INTEGER,
+    FLOAT,
     STRING,
     IDENTIFIER,
 
