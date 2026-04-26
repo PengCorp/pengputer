@@ -149,6 +149,11 @@ class Scanner {
         return this.source[this.current];
     }
 
+    private peekNext() {
+        if (this.current + 1 >= this.source.length) return "\0";
+        return this.source[this.current + 1];
+    }
+
     private addToken(type: TokenType, literal: Literal = null) {
         const text = this.source.slice(this.start, this.current);
         this.tokens.push(new Token(type, text, literal, this.line));
@@ -156,6 +161,10 @@ class Scanner {
 
     private isAtEnd(): boolean {
         return this.current >= this.source.length;
+    }
+
+    private isDigit(char: string): boolean {
+        return char >= "0" && char <= "9";
     }
 
     private match(expected: string): boolean {
