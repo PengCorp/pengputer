@@ -12,6 +12,7 @@ export enum TokenType {
     // operators
     PLUS,
     MINUS,
+    CARET,
     EQUAL,
     NOT_EQUAL,
     GREATER,
@@ -46,11 +47,6 @@ export enum TokenType {
     GOTO,
     RETURN,
     REM,
-
-    // interactive functions
-    LIST,
-    RENUM,
-    RUN,
 
     EOF,
 }

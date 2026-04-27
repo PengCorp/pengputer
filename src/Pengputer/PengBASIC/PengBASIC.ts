@@ -81,6 +81,9 @@ class Scanner {
             case "=":
                 this.addToken(TokenType.EQUAL);
                 break;
+            case "^":
+                this.addToken(TokenType.CARET);
+                break;
             case "<":
                 if (this.match(">")) {
                     this.addToken(TokenType.NOT_EQUAL);
@@ -116,6 +119,8 @@ class Scanner {
             default:
                 if (this.isDigit(c)) {
                     this.scanNumber();
+                } else if (this.isAlpha(c)) {
+                    this.scanIdentifier();
                 } else {
                     this.ctx.error(this.line, "Unexpected character.\n");
                 }
@@ -162,6 +167,14 @@ class Scanner {
         }
     }
 
+    private scanIdentifier() {
+        while (this.isAlphanumeric(this.peek())) this.advance();
+
+        const text = this.source.slice(this.start, this.current).toUpperCase();
+        const type = TokenType.IDENTIFIER;
+        this.addToken(type, text);
+    }
+
     private advance() {
         const char = this.source[this.current];
         this.current += 1;
@@ -189,6 +202,14 @@ class Scanner {
 
     private isDigit(char: string): boolean {
         return char >= "0" && char <= "9";
+    }
+
+    private isAlpha(c: string): boolean {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
+    }
+
+    private isAlphanumeric(c: string): boolean {
+        return this.isDigit(c) || this.isAlpha(c);
     }
 
     private match(expected: string): boolean {
