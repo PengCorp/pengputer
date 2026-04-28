@@ -171,6 +171,15 @@ class Scanner {
         while (this.isAlphanumeric(this.peek())) this.advance();
 
         const text = this.source.slice(this.start, this.current).toUpperCase();
+
+        if (text === 'REM') {
+            while(!this.isAtEnd() && this.peek() !== '\n') {
+                this.advance();
+            }
+            this.advance();
+            return;
+        }
+
         const type = TokenType.IDENTIFIER;
         this.addToken(type, text);
     }
