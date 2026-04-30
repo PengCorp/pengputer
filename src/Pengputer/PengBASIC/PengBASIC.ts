@@ -221,9 +221,16 @@ class Scanner {
         return this.isDigit(c) || this.isAlpha(c);
     }
 
-    private match(expected: string): boolean {
-        if (this.isAtEnd()) return false;
-        if (this.source[this.current] != expected) return false;
+    private isBoundary(c: string): boolean {
+        if (c === '\0' || c === '\t' || c === '\n' || c === ' ') {
+            return true;
+        }
+
+        return false;
+    }
+
+    private match(c: string): boolean {
+        if (this.peek() != c) return false;
 
         this.current += 1;
         return true;
