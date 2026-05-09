@@ -102,6 +102,9 @@ class Scanner {
                 }
                 this.addToken(TokenType.GREATER);
                 break;
+            case "'":
+                this.skipComment();
+                break;
 
             case " ":
             case "\r":
@@ -172,16 +175,20 @@ class Scanner {
 
         const text = this.source.slice(this.start, this.current).toUpperCase();
 
-        if (text === 'REM') {
-            while(!this.isAtEnd() && this.peek() !== '\n') {
-                this.advance();
-            }
-            this.advance();
+        if (text === "REM") {
+            this.skipComment();
             return;
         }
 
         const type = TokenType.IDENTIFIER;
         this.addToken(type, text);
+    }
+
+    private skipComment() {
+        while (!this.isAtEnd() && this.peek() !== "\n") {
+            this.advance();
+        }
+        this.advance();
     }
 
     private advance() {
@@ -214,7 +221,7 @@ class Scanner {
     }
 
     private isAlpha(c: string): boolean {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
+        return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_";
     }
 
     private isAlphanumeric(c: string): boolean {
@@ -222,7 +229,7 @@ class Scanner {
     }
 
     private isBoundary(c: string): boolean {
-        if (c === '\0' || c === '\t' || c === '\n' || c === ' ') {
+        if (c === "\0" || c === "\t" || c === "\n" || c === " ") {
             return true;
         }
 
