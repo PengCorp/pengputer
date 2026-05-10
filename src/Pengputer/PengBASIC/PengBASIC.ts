@@ -10,6 +10,9 @@ interface ScannerCtx {
     error: (line: number, message: string) => void;
 }
 
+const getIntegerRegex = () => /^[0-9]+$/gm;
+const getFloatRegex = () => /^[0-9]+(\.[0-9]+)?(E\-?[0-9]+)?$/gm;
+
 class Scanner {
     private source: string = "";
     private tokens: Token[] = [];
@@ -151,23 +154,21 @@ class Scanner {
     }
 
     private scanNumber() {
-        while (this.isDigit(this.peek())) this.advance();
+        while (!this.isBoundary(this.peek())) this.advance();
 
-        if (this.peek() === "." && this.isDigit(this.peekNext())) {
-            this.advance();
+        const text = this.source.slice(this.start, this.current);
 
-            while (this.isDigit(this.peek())) this.advance();
-
-            this.addToken(
-                TokenType.FLOAT,
-                parseFloat(this.source.slice(this.start, this.current)),
-            );
-        } else {
-            this.addToken(
-                TokenType.INTEGER,
-                parseInt(this.source.slice(this.start, this.current)),
-            );
+        if (getIntegerRegex().test(text)) {
+            this.addToken(TokenType.INTEGER, parseInt(text));
+            return;
         }
+
+        if (getFloatRegex().test(text)) {
+            this.addToken(TokenType.FLOAT, parseFloat(text));
+            return;
+        }
+
+        this.ctx.error(this.line, "Invalid number format.\n");
     }
 
     private scanIdentifier() {
