@@ -6,6 +6,7 @@
 import {
     FilePath,
     FileSystemObjectType,
+    isDriveLabel,
     PATH_SEPARATOR,
     type DriveLabel,
 } from "../FileSystem";
@@ -181,6 +182,8 @@ export class PengerShell implements Executable {
                 const knownTakenApp = this.takenPrograms.find(
                     (p) => p.name === commandName,
                 );
+                const driveSwitchMatch = commandName.match(/^([A-Za-z]):$/);
+
                 if (knownCommand) {
                     await knownCommand(args.slice(1));
                     std.resetConsole();
@@ -194,6 +197,14 @@ export class PengerShell implements Executable {
                             `Executable not found. Consider dropping`,
                         );
                     }
+                } else if (driveSwitchMatch) {
+                    const label = driveSwitchMatch[1].toUpperCase();
+                    if (isDriveLabel(label)) {
+                        this.commandSwitchDrive(label);
+                    } else {
+                        std.writeConsole(`Invalid drive label\n`);
+                    }
+                    std.resetConsole();
                 } else {
                     std.writeConsole("Unknown command: " + commandName + "\n");
                     std.writeConsole(
@@ -339,6 +350,18 @@ export class PengerShell implements Executable {
         } else {
             std.writeConsole("Does not exist\n");
         }
+    }
+
+    private commandSwitchDrive(label: DriveLabel) {
+        const { std, fileSystem } = this.pc;
+
+        if (!fileSystem.isMounted(label)) {
+            std.writeConsole(`Drive ${label}: is not available\n`);
+            return;
+        }
+
+        this.currentDrive = label;
+        std.writeConsole(`Now using ${this.workingDirectory.toString()}\n`);
     }
 
     private commandUp() {
@@ -601,6 +624,7 @@ export class PengerShell implements Executable {
         printEntry("look", "Display contents of current directory\n");
         printEntry("go", "Navigate directories\n");
         printEntry("up", "Navigate to parent directory\n");
+        printEntry("C: A:", "Switch to a mounted drive\n");
         printEntry("makedir", "Create a directory\n");
         printEntry("run", "Execute program\n");
         printEntry("open", "Display file\n");
@@ -634,7 +658,7 @@ export class PengerShell implements Executable {
             const summary = fileSystem.summarizeDrive(label)!;
             std.writeConsole(
                 `${formatRow([
-                    label,
+                    `${label}:`,
                     drive.kind,
                     drive.label,
                     String(summary.directoryCount),
