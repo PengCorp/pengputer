@@ -130,7 +130,6 @@ export class Keyboard implements KeyboardSource {
     }
 
     public getCharFromCode(code: KeyCode): string | null {
-        /* COPIED (and modified, it's bad ;] ); TODO: rewrite */
         const shift = (this._mods & Modifier.SHIFT) != 0;
         const capsLock = (this._mods & Modifier.CAPS_LOCK) != 0;
 
@@ -148,11 +147,8 @@ export class Keyboard implements KeyboardSource {
             }
         }
 
-        if (shift) {
-            if (shiftLayout && shiftLayout[code]) {
-                return shiftLayout[code];
-            }
-            return null;
+        if (shift && shiftLayout && shiftLayout[code]) {
+            return shiftLayout[code];
         }
 
         if (this._layout[code]) {
