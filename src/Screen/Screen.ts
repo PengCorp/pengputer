@@ -19,7 +19,11 @@ import {
 } from "../TextBuffer";
 import { Font } from "./Font";
 import { Graphics } from "./Graphics";
-import { GRAPHICS_HEIGHT, GRAPHICS_WIDTH } from "./constants";
+import {
+    CANVAS_EDGE_PADDING,
+    GRAPHICS_HEIGHT,
+    GRAPHICS_WIDTH,
+} from "./constants";
 
 export type ClickListener = (clickEvent: {
     position: Vector;
@@ -243,8 +247,8 @@ export class Screen {
             };
         }
 
-        this.canvas.width = this.widthInPixels;
-        this.canvas.height = this.heightInPixels;
+        this.canvas.width = this.widthInPixels + CANVAS_EDGE_PADDING * 2;
+        this.canvas.height = this.heightInPixels + CANVAS_EDGE_PADDING * 2;
 
         this.textCanvas.width = this.widthInPixels;
         this.textCanvas.height = this.heightInPixels;
@@ -280,11 +284,11 @@ export class Screen {
         this.areGraphicsEnabled = areGraphicsEnabled;
 
         if (areGraphicsEnabled) {
-            this.canvas.width = GRAPHICS_WIDTH;
-            this.canvas.height = GRAPHICS_HEIGHT;
+            this.canvas.width = GRAPHICS_WIDTH + CANVAS_EDGE_PADDING * 2;
+            this.canvas.height = GRAPHICS_HEIGHT + CANVAS_EDGE_PADDING * 2;
         } else {
-            this.canvas.width = this.widthInPixels;
-            this.canvas.height = this.heightInPixels;
+            this.canvas.width = this.widthInPixels + CANVAS_EDGE_PADDING * 2;
+            this.canvas.height = this.heightInPixels + CANVAS_EDGE_PADDING * 2;
         }
     }
 
@@ -305,16 +309,19 @@ export class Screen {
         if (this.areGraphicsEnabled) {
             const graphicsCanvas = this.graphics.getCanvas();
             this.ctx.globalCompositeOperation = "copy";
+            this.ctx.fillStyle = "black";
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.globalCompositeOperation = "source-over";
             this.ctx.drawImage(
                 graphicsCanvas,
                 0,
                 0,
                 graphicsCanvas.width,
                 graphicsCanvas.height,
-                0,
-                0,
-                this.canvas.width,
-                this.canvas.height,
+                CANVAS_EDGE_PADDING,
+                CANVAS_EDGE_PADDING,
+                graphicsCanvas.width,
+                graphicsCanvas.height,
             );
 
             return;
@@ -322,7 +329,8 @@ export class Screen {
 
         // clear screen
         this.ctx.globalCompositeOperation = "source-over";
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "black";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.textCtx.globalCompositeOperation = "source-over";
         this.textCtx.clearRect(
@@ -474,10 +482,10 @@ export class Screen {
             0,
             this.textCanvas.width,
             this.textCanvas.height,
-            0,
-            0,
-            this.canvas.width,
-            this.canvas.height,
+            CANVAS_EDGE_PADDING,
+            CANVAS_EDGE_PADDING,
+            this.textCanvas.width,
+            this.textCanvas.height,
         );
     }
 
@@ -859,12 +867,12 @@ export class Screen {
         const cssX = event.clientX - rect.left;
         const cssY = event.clientY - rect.top;
 
-        const scaleX = this.widthInPixels / rect.width;
-        const scaleY = this.heightInPixels / rect.height;
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
 
         return {
-            x: Math.floor(cssX * scaleX),
-            y: Math.floor(cssY * scaleY),
+            x: Math.floor(cssX * scaleX) - CANVAS_EDGE_PADDING,
+            y: Math.floor(cssY * scaleY) - CANVAS_EDGE_PADDING,
         };
     }
 
