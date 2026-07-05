@@ -157,25 +157,19 @@ class CommandTokenizer {
 
         this.shiftCharacter();
 
-        let isEscape = false;
-
         while (this.getHasCharacters()) {
             const nextChar = this.peekCharacter();
 
             if (nextChar === "\\") {
                 this.shiftCharacter();
-                isEscape = true;
+                if (this.getHasCharacters()) {
+                    result.push(this.shiftCharacter()!);
+                }
                 continue;
             }
 
             if (nextChar === '"') {
-                if (isEscape) {
-                    result.push(this.shiftCharacter()!);
-                    isEscape = false;
-                    continue;
-                }
-
-                this.shiftCharacter()!;
+                this.shiftCharacter();
                 break;
             }
 
@@ -226,6 +220,7 @@ enum CommandType {
     Page,
     NoOp,
     Delete,
+    Quit,
 }
 
 type CommandHelp = {
@@ -264,6 +259,8 @@ type CommandDelete = {
     toLine: number;
 };
 
+type CommandQuit = { type: CommandType.Quit };
+
 type Command =
     | CommandHelp
     | CommandInsert
@@ -271,7 +268,8 @@ type Command =
     | CommandEditLine
     | CommandPage
     | CommandNoop
-    | CommandDelete;
+    | CommandDelete
+    | CommandQuit;
 
 interface CommandParserContext {
     totalLines: number;
@@ -523,6 +521,10 @@ class CommandParser {
                 throw new Error("Entry error");
             }
 
+            if (fromLine >= this.totalLines) {
+                return { type: CommandType.NoOp };
+            }
+
             return {
                 type: CommandType.Delete,
                 fromLine: clamp(fromLine, 0, this.totalLines - 1),
@@ -533,6 +535,10 @@ class CommandParser {
         let toLine = lineNumbers[1];
 
         if (lineNumbers.length === 2) {
+            if (!isNil(fromLine) && fromLine >= this.totalLines) {
+                return { type: CommandType.NoOp };
+            }
+
             fromLine = clamp(fromLine ?? 0, 0, this.totalLines - 1);
             toLine = clamp(
                 toLine ?? this.totalLines - 1,
@@ -559,7 +565,7 @@ class CommandParser {
     }
 
     /** Returns next command or throws. Modifies the passed in tokens array. */
-    getNextCommand(tokens: Token[]): Command | null {
+    getNextCommand(tokens: Token[]): Command {
         const lineNumbers: (number | null)[] = [];
 
         let numberAdded = false;
@@ -627,9 +633,12 @@ class CommandParser {
             case "d": {
                 return this.parseDelete(lineNumbers);
             }
+            case "q": {
+                return { type: CommandType.Quit };
+            }
         }
 
-        return null;
+        throw new Error(`Unknown command: ${command}`);
     }
 
     updateContext({
@@ -666,7 +675,10 @@ export class Pedlin implements Executable {
         this.pc.std.writeConsole("New file\n");
         while (true) {
             try {
-                await this.readCommand();
+                const shouldQuit = await this.readCommand();
+                if (shouldQuit) {
+                    break;
+                }
             } catch (e: any) {
                 std.writeConsole(e.message);
                 std.writeConsole("\n");
@@ -802,13 +814,14 @@ export class Pedlin implements Executable {
         }
     }
 
-    async readCommand() {
+    /** Returns true if a quit command was processed. */
+    async readCommand(): Promise<boolean> {
         const { std } = this;
 
         std.writeConsole("*");
         const input = await std.readConsoleLine();
         if (isNil(input)) {
-            return;
+            return false;
         }
 
         const t = new CommandTokenizer(input ?? "");
@@ -823,7 +836,7 @@ export class Pedlin implements Executable {
             });
             const command = p.getNextCommand(tokens);
 
-            switch (command?.type) {
+            switch (command.type) {
                 case CommandType.List:
                     this.list(command.fromLine, command.toLine);
                     break;
@@ -848,11 +861,15 @@ export class Pedlin implements Executable {
                     this.currentLine = command.fromLine;
                     this.deleteLines(command.fromLine, command.toLine);
                     break;
+                case CommandType.Quit:
+                    return true;
             }
 
-            if (tokens.length === 0 || !command) {
+            if (tokens.length === 0) {
                 break;
             }
         }
+
+        return false;
     }
 }
