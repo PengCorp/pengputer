@@ -1,454 +1,138 @@
-import {
-    AudioFile,
-    ImageFile,
-    LinkFile,
-    type LinkOpenType,
-    TextFile,
-    BinaryFile,
-} from "./fileTypes";
-
-import _ from "lodash";
-import {
-    DriveLabelValues,
-    LSKEY_FLOPPIES,
-    PATH_SEPARATOR,
-    type DriveLabel,
-} from "./constants";
+import type { DriveLabel } from "./constants";
+import type { FilePath } from "./FilePath";
+import type { FileInfo, FileInfoDirectory } from "./FileInfo";
 import { FileSystemObjectType } from "./types";
-import { FilePath } from "./FilePath";
-import { FileInfoDirectory, type FileInfo } from "./FileInfo";
+import { TransientFileSystemDrive, type FileSystemDrive } from "./drives";
 
-enum FileSystemDriveKind {
-    Transient = "Transient",
-    Floppy = "Floppy",
+export interface DriveMount {
+    label: DriveLabel;
+    drive: FileSystemDrive;
 }
 
-interface FileSystemDriveInterface {
-    get rootEntry(): FileInfoDirectory;
+export interface DriveContentsSummary {
+    directoryCount: number;
+    fileCount: number;
 }
 
-type FileSystemDrive = TransientFileSystemDrive | FloppyFileSystemDrive;
+function summarizeContents(dir: FileInfoDirectory): DriveContentsSummary {
+    let directoryCount = 0;
+    let fileCount = 0;
 
-class TransientFileSystemDrive implements FileSystemDriveInterface {
-    type: FileSystemDriveKind.Transient = FileSystemDriveKind.Transient;
+    for (const entry of dir.entries) {
+        if (entry.type === FileSystemObjectType.Directory) {
+            directoryCount += 1;
 
-    #rootEntry: FileInfoDirectory;
-
-    constructor() {
-        this.#rootEntry = new FileInfoDirectory("/", []);
-    }
-
-    get rootEntry(): FileInfoDirectory {
-        return this.#rootEntry;
-    }
-}
-
-export type FloppyStorage = {
-    name: string;
-    drive: DriveLabel | null;
-    data: string;
-};
-
-export type FloppySerializedFile =
-    | {
-          type: FileSystemObjectType.TextFile;
-          name: string;
-          textData: string;
-      }
-    | {
-          type: FileSystemObjectType.Binary;
-          name: string;
-          binaryData: string;
-      }; // etc., soon
-
-export type FloppySerializedDirectory = {
-    type: FileSystemObjectType.Directory;
-    name: string;
-    entries: (FloppySerializedFile | FloppySerializedDirectory)[];
-};
-
-export type FloppySerialized = {
-    root: FloppySerializedDirectory;
-};
-
-class FloppyFileSystemDrive implements FileSystemDriveInterface {
-    type: FileSystemDriveKind.Floppy = FileSystemDriveKind.Floppy;
-
-    static fromSerialized(
-        floppyContents: FloppySerialized,
-    ): FloppyFileSystemDrive {
-        const rootEntry = FloppyFileSystemDrive.#deserializeDirectory(
-            floppyContents.root,
-        );
-        return new FloppyFileSystemDrive(rootEntry);
-    }
-
-    static #deserializeDirectory(
-        dir: FloppySerializedDirectory,
-    ): FileInfoDirectory {
-        const entries = dir.entries.map((e) =>
-            FloppyFileSystemDrive.#deserializeFile(e),
-        );
-        return new FileInfoDirectory(dir.name, entries);
-    }
-
-    static #deserializeFile(
-        file: FloppySerializedFile | FloppySerializedDirectory,
-    ): FileInfo {
-        if (file.type === FileSystemObjectType.Directory) {
-            return FloppyFileSystemDrive.#deserializeDirectory(file);
+            const nested = summarizeContents(entry);
+            directoryCount += nested.directoryCount;
+            fileCount += nested.fileCount;
+        } else {
+            fileCount += 1;
         }
-
-        if (file.type === FileSystemObjectType.TextFile) {
-            const textFile = new TextFile();
-            textFile.replace(file.textData);
-            return {
-                type: FileSystemObjectType.TextFile,
-                name: file.name,
-                data: textFile,
-            };
-        }
-
-        if (file.type === FileSystemObjectType.Binary) {
-            const binaryFile = new BinaryFile(file.binaryData);
-            return {
-                type: FileSystemObjectType.Binary,
-                name: file.name,
-                data: binaryFile,
-            };
-        }
-
-        throw new Error(
-            `Unrecognized or unsupported serialized file type: ${(<any>file).type}`,
-        );
     }
 
-    static #serializeDirectory(
-        dir: FileInfoDirectory,
-    ): FloppySerializedDirectory {
-        const entries = dir.entries.map((e) =>
-            FloppyFileSystemDrive.#serializeFile(e),
-        );
-        return {
-            type: FileSystemObjectType.Directory,
-            name: dir.name,
-            entries: entries,
-        };
-    }
-
-    static #serializeFile(
-        file: FileInfo,
-    ): FloppySerializedFile | FloppySerializedDirectory {
-        if (file.type === FileSystemObjectType.Directory) {
-            return FloppyFileSystemDrive.#serializeDirectory(file);
-        }
-
-        if (file.type === FileSystemObjectType.TextFile) {
-            return {
-                type: FileSystemObjectType.TextFile,
-                name: file.name,
-                textData: file.data.getText(),
-            };
-        }
-
-        if (file.type === FileSystemObjectType.Binary) {
-            return {
-                type: FileSystemObjectType.Binary,
-                name: file.name,
-                binaryData: file.data.data,
-            };
-        }
-
-        throw new Error(
-            `Unrecognized or unsupported file info type: ${(<any>file).type}`,
-        );
-    }
-
-    #rootEntry: FileInfoDirectory;
-
-    private constructor(rootEntry: FileInfoDirectory) {
-        this.#rootEntry = rootEntry;
-    }
-
-    get rootEntry(): FileInfoDirectory {
-        return this.#rootEntry;
-    }
-
-    serialize(): FloppySerialized {
-        return {
-            root: FloppyFileSystemDrive.#serializeDirectory(this.#rootEntry),
-        };
-    }
+    return { directoryCount, fileCount };
 }
 
 export class FileSystem {
-    private drives: { [id: DriveLabel]: FileSystemDrive } = {};
+    #drives = new Map<DriveLabel, FileSystemDrive>();
 
     constructor() {
-        this.mount("C", new TransientFileSystemDrive());
-
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-        for (let floppy of floppyData) {
-            if (floppy.drive === null) continue;
-            try {
-                this.#insertFloppyInternal(floppy.drive, floppy);
-            } catch (e) {
-                throw e;
-            }
-        }
-
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+        this.mount("C", new TransientFileSystemDrive(true, "SYSTEM"));
     }
 
     mount(label: DriveLabel, drive: FileSystemDrive): boolean {
-        if (label in this.drives) return false;
-        this.drives[label] = drive;
+        if (this.#drives.has(label)) return false;
+        this.#drives.set(label, drive);
         return true;
     }
 
-    unmount(label: DriveLabel) {
-        delete this.drives[label];
+    unmount(label: DriveLabel): void {
+        this.#drives.delete(label);
     }
 
-    commit() {
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-        for (let floppy of floppyData) {
-            if (floppy.drive === null) continue;
-            let drive = this.drives[floppy.drive];
-            if (drive.type !== FileSystemDriveKind.Floppy) {
-                floppy.drive = null;
-            } else {
-                floppy.data = JSON.stringify(drive.serialize());
-            }
-        }
-
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+    isMounted(label: DriveLabel): boolean {
+        return this.#drives.has(label);
     }
 
-    getFloppyInfos(): readonly { drive: DriveLabel | null; name: string }[] {
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES);
-        if (!floppyDataString) {
-            return [];
-        }
-
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-        floppyData.sort((a, b) => {
-            const stringCompare = (l: string, r: string) => {
-                if (l === r) return 0;
-                if (l < r) return -1;
-                return 1;
-            };
-
-            if (a.drive !== null && b.drive !== null) {
-                return stringCompare(a.drive, b.drive);
-            }
-
-            if (a.drive !== null) return -1;
-            if (b.drive !== null) return 1;
-
-            return stringCompare(a.name, b.name);
-        });
-
-        return floppyData.map((d) => {
-            return { drive: d.drive, name: d.name };
-        });
+    getDrive(label: DriveLabel): FileSystemDrive | undefined {
+        return this.#drives.get(label);
     }
 
-    spawnFloppy(name: string) {
-        if (!name.match(/^[a-zA-Z0-9_]+$/)) {
-            throw new Error("Invalid floppy name\n");
-        }
-
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-        const existing = _.find(floppyData, (d) => d.name === name);
-        if (existing) {
-            throw new Error(`Floppy '${name}' already exists\n`);
-        }
-
-        const floppyContents: FloppySerialized = {
-            root: {
-                type: FileSystemObjectType.Directory,
-                name: "/",
-                entries: [],
-            },
-        };
-
-        floppyData.push({
-            name: name,
-            drive: null,
-            data: JSON.stringify(floppyContents),
-        });
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
+    listDrives(): DriveMount[] {
+        return [...this.#drives.entries()]
+            .map(([label, drive]) => ({ label, drive }))
+            .sort((a, b) =>
+                a.label < b.label ? -1 : a.label > b.label ? 1 : 0,
+            );
     }
 
-    burnFloppy(name: string) {
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
+    summarizeDrive(label: DriveLabel): DriveContentsSummary | null {
+        const drive = this.#drives.get(label);
+        if (!drive) return null;
 
-        const floppyCount = floppyData.length;
-        const floppies = _.remove(floppyData, (d) => d.name === name);
-
-        if (floppies.length === 0) {
-            throw new Error("No floppy with that name");
-        }
-
-        const [floppy] = floppies;
-        if (floppy.drive !== null) {
-            this.unmount(floppy.drive);
-        }
-
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-    }
-
-    #insertFloppyInternal(label: DriveLabel, floppy: FloppyStorage) {
-        const floppyContents = JSON.parse(floppy.data) as FloppySerialized;
-
-        const drive = FloppyFileSystemDrive.fromSerialized(floppyContents);
-        if (drive === null) {
-            throw new Error("Failed to deserialize drive; can't mount it");
-        }
-
-        if (!this.mount(label, drive)) {
-            throw new Error("Failed to insert floppy; it might be corrupt");
-        }
-
-        floppy.drive = label;
-    }
-
-    insertFloppy(label: DriveLabel, floppyName: string) {
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-        const floppy = _.find(floppyData, (d) => d.name === floppyName);
-        if (!floppy) {
-            throw new Error("No floppy with that name");
-        }
-
-        this.#insertFloppyInternal(label, floppy);
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-    }
-
-    ejectFloppy(label: DriveLabel) {
-        if (!this.drives[label]) return;
-
-        const floppyDataString = localStorage.getItem(LSKEY_FLOPPIES) ?? "[]";
-        const floppyData = JSON.parse(floppyDataString) as FloppyStorage[];
-
-        const floppy = _.find(floppyData, (d) => d.drive === label);
-        if (!floppy) {
-            throw new Error("No floppy mounted to that drive");
-        }
-
-        this.unmount(label);
-
-        floppy.drive = null;
-        localStorage.setItem(LSKEY_FLOPPIES, JSON.stringify(floppyData));
-
-        console.dir(floppy);
-        console.dir(floppyData);
-    }
-
-    trySerializeFloppy(label: DriveLabel): string | null {
-        try {
-            const drive = this.drives[label];
-            if (!drive) return null;
-
-            if (drive.type !== FileSystemDriveKind.Floppy) {
-                return null;
-            }
-
-            return JSON.stringify(drive.serialize());
-        } catch (e) {
-            console.error(e);
-            return null;
-        }
+        return summarizeContents(drive.rootEntry);
     }
 
     getFileInfo(path: FilePath | null): FileInfo | null {
-        if (path === null) return null;
+        if (path === null || path.drive === null) return null;
 
-        const { drive, pieces } = path;
-        if (drive === null) return null;
+        const drive = this.#drives.get(path.drive);
+        if (!drive) return null;
 
-        const fsDrive: FileSystemDrive = this.drives[drive];
-        if (fsDrive === undefined) return null;
+        let entry: FileInfo = drive.rootEntry;
+        for (const name of path.pieces) {
+            if (entry.type !== FileSystemObjectType.Directory) return null;
 
-        const rootEntry = fsDrive.rootEntry;
-        if (pieces.length === 0) {
-            return rootEntry;
+            const next: FileInfo | undefined = entry.entries.find(
+                (e) => e.name === name,
+            );
+            if (!next) return null;
+
+            entry = next;
         }
 
-        let cur: FileInfoDirectory = rootEntry;
-        for (let i = 0; i < pieces.length - 1; i++) {
-            const pathName = pieces[i];
-
-            const entries = cur.entries;
-            const found =
-                entries.find(
-                    (e) =>
-                        e.type === FileSystemObjectType.Directory &&
-                        e.name === pathName,
-                ) ?? null;
-
-            if (found && found.type === FileSystemObjectType.Directory) {
-                cur = found;
-            } else return null;
-        }
-
-        const pathName = pieces[pieces.length - 1];
-
-        const entries = cur.entries;
-        return entries.find((e) => e.name === pathName) ?? null;
+        return entry;
     }
 
-    createDirectory(path: FilePath, wholePath: boolean = false) {
-        const pieces = path.pieces;
-        for (let pathIndex = 0; pathIndex < pieces.length; pathIndex++) {
-            const nextDirPath = FilePath.tryParse(
-                `${path.drive}:/${pieces.slice(0, pathIndex + 1).join("/")}`,
-            )!;
-            const nextDirEntry = this.getFileInfo(nextDirPath);
-
-            if (nextDirEntry === null) {
-                const prevDirEntry = this.getFileInfo(
-                    nextDirPath.parentDirectory(),
-                )!;
-                if (
-                    prevDirEntry !== null &&
-                    prevDirEntry.type === FileSystemObjectType.Directory
-                ) {
-                    prevDirEntry.mkdir(pieces[pathIndex]);
-                }
-            } else if (nextDirEntry.type !== FileSystemObjectType.Directory) {
-                throw new Error(
-                    `Path ${nextDirPath.toString()} is not a directory`,
-                );
+    createDirectory(path: FilePath): void {
+        let dir = this.#requireWritableDrive(path.drive).rootEntry;
+        for (const name of path.pieces) {
+            const existing = dir.entries.find((e) => e.name === name);
+            if (existing === undefined) {
+                dir = dir.mkdir(name);
+            } else if (existing.type === FileSystemObjectType.Directory) {
+                dir = existing;
+            } else {
+                throw new Error(`${name} is not a directory`);
             }
         }
     }
 
-    removeDirectory(path: FilePath, force: boolean = false) {
+    removeDirectory(path: FilePath, force: boolean = false): void {
+        this.#requireWritableDrive(path.drive);
+
+        const segments = path.pieces;
+        if (segments.length === 0) return; // a drive's root can't be removed
+
         const parentPath = path.parentDirectory();
-        const parentDir = this.getFileInfo(parentPath);
-        if (parentDir === null) {
+        const parent = this.getFileInfo(parentPath);
+        if (parent === null) {
             throw new Error(`${parentPath.toString()} does not exist`);
         }
-
-        if (parentDir.type !== FileSystemObjectType.Directory) {
+        if (parent.type !== FileSystemObjectType.Directory) {
             throw new Error(`${parentPath.toString()} is not a directory`);
         }
 
-        if (path.equals(parentPath)) {
-            return; // root always exists, and we were given root.
-        }
+        parent.rmdir(segments[segments.length - 1], force);
+    }
 
-        const pieces = path.pieces;
-        return parentDir.rmdir(pieces[pieces.length - 1], force);
+    #requireWritableDrive(label: DriveLabel | null): FileSystemDrive {
+        if (label === null) throw new Error("Path has no drive");
+
+        const drive = this.#drives.get(label);
+        if (!drive) throw new Error(`Drive ${label}: is not mounted`);
+        if (drive.readOnly) throw new Error(`Drive ${label}: is read-only`);
+
+        return drive;
     }
 }

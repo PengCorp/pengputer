@@ -1,61 +1,65 @@
 import { isDriveLabel, PATH_SEPARATOR, type DriveLabel } from "./constants";
 
+function collapseSegments(segments: string[], absolute: boolean): string[] {
+    const collapsed: string[] = [];
+
+    for (const segment of segments) {
+        if (segment.length === 0 || segment === ".") continue;
+
+        if (segment === "..") {
+            if (absolute) {
+                if (collapsed.length > 0) collapsed.pop();
+            } else {
+                collapsed.push(segment);
+            }
+            continue;
+        }
+
+        collapsed.push(segment);
+    }
+
+    return collapsed;
+}
+
 export class FilePath {
     static tryParse(
-        path: string,
+        input: string,
         defaultDrive: DriveLabel | null = null,
     ): FilePath | null {
-        if (path.length === 0) return new FilePath(null, [], false);
-        if (path === "/") return new FilePath(null, [], true);
-
+        let rest = input;
         let drive: DriveLabel | null = null;
 
-        const colonIndex = path.indexOf(":");
+        const colonIndex = rest.indexOf(":");
         if (colonIndex >= 0) {
-            const driveName = path.slice(0, colonIndex).toUpperCase();
-            // TODO(local): file info parse error
-            if (!isDriveLabel(driveName)) return null;
-            drive = driveName;
+            const label = rest.slice(0, colonIndex).toUpperCase();
+            if (!isDriveLabel(label)) return null;
 
-            path = path.slice(colonIndex + 1);
+            drive = label;
+            rest = rest.slice(colonIndex + 1);
         }
 
-        const isAbsolute = path.length === 0 || path[0] === "/";
-        if (isAbsolute) {
-            path = path.slice(1);
-            if (drive === null) drive = defaultDrive;
-        }
+        const rooted =
+            (drive !== null && rest.length === 0) ||
+            rest.startsWith(PATH_SEPARATOR);
+        if (rest.startsWith(PATH_SEPARATOR)) rest = rest.slice(1);
+        if (rooted && drive === null) drive = defaultDrive;
 
-        const pieces = path.split("/").filter((s) => s.length > 0);
-        return new FilePath(drive, pieces, isAbsolute);
+        const segments = rest.length === 0 ? [] : rest.split(PATH_SEPARATOR);
+        return new FilePath(drive, segments, rooted);
     }
 
     #drive: DriveLabel | null;
-    #pieces: string[];
-    #isAbsolute: boolean;
+    #segments: readonly string[];
+    #absolute: boolean;
 
     private constructor(
         drive: DriveLabel | null,
-        pieces: string[],
-        isAbsolute: boolean,
+        segments: string[],
+        absolute: boolean,
     ) {
-        isAbsolute = drive !== null || isAbsolute;
-
         this.#drive = drive;
-        this.#isAbsolute = isAbsolute;
-
-        this.#pieces = [];
-        for (let i = 0; i < pieces.length; i++) {
-            const piece = pieces[i];
-
-            if (piece === "..") {
-                if (isAbsolute) {
-                    if (this.#pieces.length !== 0) this.#pieces.pop();
-                } else this.#pieces.push("..");
-            } else if (piece === ".") {
-                continue;
-            } else this.#pieces.push(piece);
-        }
+        this.#absolute = absolute || drive !== null;
+        this.#segments = collapseSegments(segments, this.#absolute);
     }
 
     get drive(): DriveLabel | null {
@@ -63,66 +67,57 @@ export class FilePath {
     }
 
     get pieces(): readonly string[] {
-        return [...this.#pieces];
+        return [...this.#segments];
     }
 
-    hasDrive() {
-        return this.drive !== null;
+    hasDrive(): boolean {
+        return this.#drive !== null;
     }
 
-    isAbsolute() {
-        return this.#isAbsolute;
+    isAbsolute(): boolean {
+        return this.#absolute;
     }
 
-    isRelative() {
-        return !this.#isAbsolute;
+    isRelative(): boolean {
+        return !this.#absolute;
     }
 
     equals(other: FilePath): boolean {
-        if (this.drive !== other.drive) {
-            return false;
-        }
+        if (this.#drive !== other.#drive) return false;
+        if (this.#absolute !== other.#absolute) return false;
+        if (this.#segments.length !== other.#segments.length) return false;
 
-        const thisPieces = this.#pieces;
-        const otherPieces = other.#pieces;
-        if (thisPieces.length !== otherPieces.length) {
-            return false;
-        }
-
-        for (let i = 0; i < thisPieces.length; i++) {
-            if (thisPieces[i] !== otherPieces[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    combine(other: FilePath) {
-        if (other.isAbsolute()) return this;
-        return new FilePath(
-            this.#drive,
-            [...this.#pieces, ...other.#pieces],
-            this.#isAbsolute,
+        return this.#segments.every(
+            (segment, index) => segment === other.#segments[index],
         );
     }
 
-    toString() {
-        const pathPart = this.#pieces.join(PATH_SEPARATOR);
-        if (this.drive !== null) {
-            return `${this.drive}:${PATH_SEPARATOR}${pathPart}`;
-        } else if (this.#isAbsolute) {
-            return `${PATH_SEPARATOR}${pathPart}`;
-        } else return `.${PATH_SEPARATOR}${pathPart}`;
-    }
-
-    parentDirectory() {
-        const pieces = this.#pieces;
-        if (pieces.length === 0) return this;
+    combine(other: FilePath): FilePath {
+        if (other.isAbsolute()) return other;
         return new FilePath(
             this.#drive,
-            pieces.slice(0, pieces.length - 1),
-            this.#isAbsolute,
+            [...this.#segments, ...other.#segments],
+            this.#absolute,
         );
+    }
+
+    parentDirectory(): FilePath {
+        if (this.#segments.length === 0) return this;
+        return new FilePath(
+            this.#drive,
+            this.#segments.slice(0, -1),
+            this.#absolute,
+        );
+    }
+
+    toString(): string {
+        const tail = this.#segments.join(PATH_SEPARATOR);
+        if (this.#drive !== null) {
+            return `${this.#drive}:${PATH_SEPARATOR}${tail}`;
+        }
+        if (this.#absolute) {
+            return `${PATH_SEPARATOR}${tail}`;
+        }
+        return `.${PATH_SEPARATOR}${tail}`;
     }
 }

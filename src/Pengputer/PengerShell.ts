@@ -6,7 +6,6 @@
 import {
     FilePath,
     FileSystemObjectType,
-    isDriveLabel,
     PATH_SEPARATOR,
     type DriveLabel,
 } from "../FileSystem";
@@ -111,8 +110,7 @@ export class PengerShell implements Executable {
             take: this.commandTake.bind(this),
             drop: this.commandDrop.bind(this),
             reboot: this.commandReboot.bind(this),
-            flp: this.commandFloppy.bind(this),
-            fscommit: (args) => this.pc.fileSystem.commit(),
+            disk: this.commandDisk.bind(this),
         };
 
         this.isRunning = true;
@@ -376,7 +374,7 @@ export class PengerShell implements Executable {
             }
 
             try {
-                fileSystem.createDirectory(newDirPath, true);
+                fileSystem.createDirectory(newDirPath);
                 std.writeConsole(
                     `Directory ${newDirPath.toString()} created\n`,
                 );
@@ -610,7 +608,7 @@ export class PengerShell implements Executable {
         printEntry("prompt", "Change your command prompt text\n");
         printEntry("take", "Add a program to the command list\n");
         printEntry("drop", "Remove a program from the command list\n");
-        printEntry("flp", "Manage floppy disks\n");
+        printEntry("disk", "Manage drives and floppy disks\n");
         printEntry("reboot", "Restart the system\n");
         printEntry("zoom", "Toggles the full screen mode on and off");
 
@@ -622,106 +620,47 @@ export class PengerShell implements Executable {
         }
     }
 
-    private commandFloppy(args: string[]) {
+    private commandDiskList() {
+        const { std, fileSystem } = this.pc;
+
+        const formatRow = (cells: string[]) =>
+            cells.map((cell) => _.padEnd(cell, 8)).join("  ");
+
+        std.writeConsole(
+            `${formatRow(["Letter", "Type", "Label", "Dirs", "Files"])}\n`,
+        );
+
+        for (const { label, drive } of fileSystem.listDrives()) {
+            const summary = fileSystem.summarizeDrive(label)!;
+            std.writeConsole(
+                `${formatRow([
+                    label,
+                    drive.kind,
+                    drive.label,
+                    String(summary.directoryCount),
+                    String(summary.fileCount),
+                ])}\n`,
+            );
+        }
+    }
+
+    private commandDisk(args: string[]) {
         const { std } = this.pc;
-        const [command, ...rest] = args;
+        const [command] = args;
 
         if (command === "list") {
-            const floppies = this.pc.fileSystem.getFloppyInfos();
-            if (floppies.length === 0) {
-                std.writeConsole("You have no floppies\n");
-                return;
-            }
-
-            for (const floppy of floppies) {
-                if (floppy.drive) {
-                    std.writeConsole(`${floppy.drive}: `);
-                } else std.writeConsole("   ");
-                std.writeConsoleCharacter("floppy0");
-                std.writeConsoleCharacter("floppy1");
-                std.writeConsole(` ${floppy.name}\n`);
-            }
-        } else if (command === "spawn") {
-            const [name] = rest;
-            if (!name) {
-                std.writeConsole("Missing floppy name\n");
-                return;
-            }
-
-            try {
-                this.pc.fileSystem.spawnFloppy(name);
-                std.writeConsole(`Floppy '${name}' has materialized\n`);
-            } catch (e) {
-                std.writeConsole(`${(<Error>e).message}\n`);
-            }
-
-            return;
-        } else if (command === "import") {
-        } else if (command === "export") {
-        } else if (command === "burn") {
-            const [name] = rest;
-            if (!name) {
-                std.writeConsole("Missing floppy name\n");
-                return;
-            }
-
-            try {
-                this.pc.fileSystem.burnFloppy(name);
-                std.writeConsole(`Floppy '${name}' is now a pile of ash\n`);
-            } catch (e) {
-                std.writeConsole(`${(<Error>e).message}\n`);
-            }
-        } else if (command === "insert") {
-            const [label, name] = rest;
-
-            if (!label) {
-                std.writeConsole("Missing drive label\n");
-                return;
-            }
-
-            if (!isDriveLabel(label)) {
-                std.writeConsole("Invalid drive label\n");
-                return;
-            }
-
-            if (!name) {
-                std.writeConsole("Missing floppy name\n");
-                return;
-            }
-
-            try {
-                this.pc.fileSystem.insertFloppy(label, name);
-                std.writeConsole(
-                    `Floppy '${name}' is now available through ${label}:/\n`,
-                );
-            } catch (e) {
-                std.writeConsole(`${(<Error>e).message}\n`);
-            }
-        } else if (command === "eject") {
-            const [label] = rest;
-
-            if (!label) {
-                std.writeConsole("Missing drive label\n");
-                return;
-            }
-
-            if (!isDriveLabel(label)) {
-                std.writeConsole("Invalid drive label\n");
-                return;
-            }
-
-            try {
-                this.pc.fileSystem.ejectFloppy(label);
-                std.writeConsole(
-                    `Drive ${label}:/ no longer contains a floppy\n`,
-                );
-
-                if (label === this.workingDirectory.drive) {
-                    this.currentDrive = "C";
-                }
-            } catch (e) {
-                std.writeConsole(`${(<Error>e).message}\n`);
-            }
+            this.commandDiskList();
+        } else if (
+            command === "spawn" ||
+            command === "import" ||
+            command === "export" ||
+            command === "burn" ||
+            command === "insert" ||
+            command === "eject"
+        ) {
+            std.writeConsole(
+                "Disk management is being redesigned; not available yet\n",
+            );
         } else {
             const printEntry = (cmd: string, text: string) => {
                 const cmdFmt =
@@ -739,29 +678,29 @@ export class PengerShell implements Executable {
             if (!command) {
                 std.writeConsole(`Missing a command\n\n`);
             } else if (command !== "help") {
-                std.writeConsole(`Unknown floppy command "${command}"\n\n`);
+                std.writeConsole(`Unknown disk command "${command}"\n\n`);
             }
 
-            printEntry("flp list", "List all mounted floppies\n");
-            printEntry("flp spawn <name>", "Create a blank floppy '<name>'\n");
+            printEntry("disk list", "List all mounted drives and floppies\n");
+            printEntry("disk spawn <name>", "Create a blank floppy '<name>'\n");
             printEntry(
-                "flp import <name>",
+                "disk import <name>",
                 "Import data onto floppy '<name>'\n",
             );
             printEntry(
-                "flp export <name>",
+                "disk export <name>",
                 "Export data off of floppy '<name>'\n",
             );
             printEntry(
-                "flp burn <name>",
+                "disk burn <name>",
                 "Completely destroy floppy '<name>'\n",
             );
             printEntry(
-                "flp insert <label> <name>",
+                "disk insert <label> <name>",
                 "Insert floppy '<name>' into drive <label>\n",
             );
             printEntry(
-                "flp eject <label>",
+                "disk eject <label>",
                 "Eject the floppy at drive <label>\n",
             );
         }

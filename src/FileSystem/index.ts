@@ -8,3 +8,4 @@ export { FilePath } from "./FilePath";
 export { FileSystemObjectType } from "./types";
 export { FileSystem } from "./FileSystem";
 export { FileInfoDirectory } from "./FileInfo";
+export type { FileSystemDrive } from "./drives";
