@@ -4,6 +4,7 @@ import { type Vector, vectorDivideComponents } from "@Toolbox/Vector";
 import { getIsVectorInZeroAlignedRect, type Rect, type Size } from "../types";
 import { Cursor } from "./Cursor";
 import { vga9x16 } from "./vga9x16";
+import { terminus8x16 } from "./terminus8x16";
 import { getScreenCharacterAttributesFromTermCellAttributes } from "./BufferAdapter";
 import {
     compareScreenBufferCharacter,
@@ -29,6 +30,8 @@ export type ClickListener = (clickEvent: {
     position: Vector;
     mouseButton: number;
 }) => void;
+
+const DEFAULT_FONT = vga9x16;
 
 export class Screen {
     private widthInCharacters: number;
@@ -89,7 +92,7 @@ export class Screen {
     private font: Font;
 
     constructor() {
-        this.font = vga9x16;
+        this.font = DEFAULT_FONT;
         this.widthInCharacters = 80;
         this.heightInCharacters = 25;
         this.totalCharacters = this.widthInCharacters * this.heightInCharacters;
@@ -191,7 +194,7 @@ export class Screen {
         this.boxCtx = this.boxCanvas.getContext("2d")!;
         this.boxCtx.imageSmoothingEnabled = false;
 
-        this.setScreenMode({ w: 80, h: 25 }, vga9x16);
+        this.setScreenMode({ w: 80, h: 25 }, DEFAULT_FONT);
     }
 
     private initCanvas(containerEl: HTMLElement) {
