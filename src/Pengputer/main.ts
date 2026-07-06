@@ -45,6 +45,7 @@ import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 import { loadVga9x16 } from "../Screen/vga9x16";
 import { loadVga9x8 } from "../Screen/vga9x8";
 import { loadTerminus6x12 } from "@src/Screen/terminus6x12";
+import { loadTerminus8x16 } from "@src/Screen/terminus8x16";
 import { fullScreenLocalStorageKey } from "./constants";
 import { applyFullScreenState } from "./util";
 
@@ -331,6 +332,7 @@ class PengOS {
     await loadVga9x16();
     await loadVga9x8();
     await loadTerminus6x12();
+    await loadTerminus8x16();
 
     const screen = new Screen();
     await screen.init(document.getElementById("screen-container")!);
