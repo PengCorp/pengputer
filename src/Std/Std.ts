@@ -19,9 +19,14 @@ import { ScreenMode } from "./constants";
 import { readKey, readLine } from "./readLine";
 import _ from "lodash";
 
-import { vga9x16 } from "../Screen/vga9x16";
-import { vga9x8 } from "../Screen/vga9x8";
-import { terminus6x12 } from "../Screen/terminus6x12";
+import { type Font } from "../Screen/Font";
+import { vga9x16, vga9x8, terminus8x16 } from "../Screen/Fonts";
+import { type BIOSFontFamily, biosSettings } from "../Pengputer/BIOSSettings";
+
+const FONT_80X25_BY_FAMILY: Record<BIOSFontFamily, Font> = {
+    vga: vga9x16,
+    terminus: terminus8x16,
+};
 
 export type ConsoleWriteAttributes = Partial<CellAttributes> & {
     reset?: boolean;
@@ -38,7 +43,7 @@ export class Std {
     private screenMode: ScreenMode;
 
     constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
-        this.screenMode = ScreenMode.mode80x25_9x16;
+        this.screenMode = ScreenMode.mode80x25;
         this.textBuffer = textBuffer;
         this.screen = screen;
         this.keyboard = keyboard;
@@ -77,27 +82,21 @@ export class Std {
 
     setConsoleScreenMode(screenMode: ScreenMode) {
         switch (screenMode) {
-            case ScreenMode.mode80x25_9x16:
+            case ScreenMode.mode80x25:
                 {
-                    this.screenMode = ScreenMode.mode80x25_9x16;
+                    this.screenMode = ScreenMode.mode80x25;
                     const size = { w: 80, h: 25 };
-                    this.screen.setScreenMode(size, vga9x16);
+                    const font =
+                        FONT_80X25_BY_FAMILY[biosSettings.getSetting("font")];
+                    this.screen.setScreenMode(size, font);
                     this.textBuffer.setPageSize(size);
                 }
                 break;
-            case ScreenMode.mode80x50_9x8:
+            case ScreenMode.mode80x50:
                 {
-                    this.screenMode = ScreenMode.mode80x50_9x8;
+                    this.screenMode = ScreenMode.mode80x50;
                     const size = { w: 80, h: 50 };
                     this.screen.setScreenMode(size, vga9x8);
-                    this.textBuffer.setPageSize(size);
-                }
-                break;
-            case ScreenMode.mode106x36_6x12:
-                {
-                    this.screenMode = ScreenMode.mode106x36_6x12;
-                    const size = { w: 106, h: 36 };
-                    this.screen.setScreenMode(size, terminus6x12);
                     this.textBuffer.setPageSize(size);
                 }
                 break;

@@ -2,11 +2,14 @@
 """
 Convert a BDF bitmap font into Screen-compatible PNG atlases (white glyphs on
 transparent background) plus a TypeScript module with character value maps,
-matching the format consumed by src/Screen/Font.ts (see src/Screen/terminus6x12.ts
-and src/Screen/vga9x16.ts for hand-authored examples of the target format).
+matching the format consumed by src/Screen/Font.ts (see
+src/Screen/Fonts/terminus6x12/terminus6x12.ts and
+src/Screen/Fonts/vga9x16/vga9x16.ts for hand-authored examples of the target
+format). Each font lives in its own directory under src/Screen/Fonts/<name>/,
+with an index.ts that just re-exports the font module.
 
 Usage:
-    python bdf_to_atlas.py ter-u16n.bdf --name terminus8x16 --out-dir src/Screen
+    python bdf_to_atlas.py ter-u16n.bdf --name terminus8x16 --out-dir src/Screen/Fonts/terminus8x16
 """
 
 from __future__ import annotations
@@ -161,10 +164,10 @@ def build_ts_module(name: str, cw: int, ch: int, pages: list[list[Glyph]], cols:
     pascal_name = name[0].upper() + name[1:]
 
     lines: list[str] = []
-    lines.append('import { Font } from "./Font";')
+    lines.append('import { Font } from "../../Font";')
     for i in range(len(pages)):
         lines.append(f'import {name}Atlas{i} from "./{name}_{i}.png";')
-    lines.append('import { type charArray } from "../types";')
+    lines.append('import { type charArray } from "../../../types";')
     lines.append("")
     lines.append("/* cSpell:disable */")
     lines.append("")
@@ -254,6 +257,10 @@ def main() -> None:
     ts_path = out_dir / f"{name}.ts"
     ts_path.write_text(ts_source, encoding="utf-8")
     print(f"wrote {ts_path} ({len(glyphs)} glyphs across {len(pages)} page(s))")
+
+    index_path = out_dir / "index.ts"
+    index_path.write_text(f'export * from "./{name}";\n', encoding="utf-8")
+    print(f"wrote {index_path}")
 
 
 if __name__ == "__main__":

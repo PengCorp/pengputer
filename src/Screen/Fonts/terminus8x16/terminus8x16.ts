@@ -1,8 +1,8 @@
-import { Font } from "./Font";
+import { Font } from "../../Font";
 import terminus8x16Atlas0 from "./terminus8x16_0.png";
 import terminus8x16AtlasCustom from "./terminus8x16_custom.png";
 import terminus8x16BoldAtlas0 from "./terminus8x16Bold_0.png";
-import { type charArray } from "../types";
+import { type charArray } from "../../../types";
 
 /* cSpell:disable */
 

@@ -1,11 +1,11 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
-import { Font } from "./Font";
+import { Font } from "../../Font";
 import cp437 from "./vga9x16.png";
 import cp437plus from "./vga9x16_plus.png";
 import cp437legacy from "./vga9x16_legacy.png";
 import cp437patterns from "./vga9x16_patterns.png";
 import cp437custom from "./vga9x16_custom.png";
-import { type charArray } from "../types";
+import { type charArray } from "../../../types";
 
 /* cSpell:disable */
 
@@ -23,7 +23,7 @@ const vgaCharacterValueMap: charArray[] = [
 
 // Sourced from: https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_9x16
 // 74 characters wide, 11 characters high
-export const vgaPlusCharacterValueMap: charArray[] = [
+const vgaPlusCharacterValueMap: charArray[] = [
     " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghi",
     "jklmnopqrstuvwxyz{|}~⌂ ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ",
     "ÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝ",
@@ -58,7 +58,7 @@ export const vgaLegacyCharacterValueMap: charArray[] = [
 
 /* cSpell:enable */
 
-export const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
+const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
     (l) => splitStringIntoCharacters(l),
 );
 

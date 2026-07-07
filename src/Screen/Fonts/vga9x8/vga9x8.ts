@@ -1,12 +1,12 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
-import { Font } from "./Font";
+import { Font } from "../../Font";
 import cp437 from "./vga9x8.png";
 import cp437custom from "./vga9x8_custom.png";
-import { type charArray } from "../types";
+import { type charArray } from "../../../types";
 
 /* cSpell:disable */
 
-export const vgaPlusCharacterValueMap: charArray[] = [
+const vgaPlusCharacterValueMap: charArray[] = [
     " !\"#$%&'()*+,-./",
     "0123456789:;<=>?",
     "@ABCDEFGHIJKLMNO",
@@ -58,7 +58,7 @@ export const vgaPlusCharacterValueMap: charArray[] = [
 
 /* cSpell:enable */
 
-export const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
+const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
     (l) => splitStringIntoCharacters(l),
 );
 

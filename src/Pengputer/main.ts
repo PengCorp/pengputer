@@ -18,7 +18,7 @@ import { PengerShell } from "./PengerShell";
 import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
-import { Std } from "../Std";
+import { ScreenMode, Std } from "../Std";
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg"; // cspell:disable-line
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
@@ -42,12 +42,11 @@ import { FileTransferTest } from "./FileTransferTest";
 import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
-import { loadVga9x16 } from "../Screen/vga9x16";
-import { loadVga9x8 } from "../Screen/vga9x8";
-import { loadTerminus6x12 } from "@src/Screen/terminus6x12";
-import { loadTerminus8x16 } from "@src/Screen/terminus8x16";
+import { vga9x16, loadFonts } from "../Screen/Fonts";
 import { fullScreenLocalStorageKey } from "./constants";
 import { applyFullScreenState } from "./util";
+import { BIOS } from "./BIOS";
+import { biosSettings } from "./BIOSSettings";
 
 const PATH_SEPARATOR = "/";
 
@@ -62,9 +61,11 @@ class PengOS {
 
     constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
         const std = new Std(keyboard, textBuffer, screen);
+        std.setConsoleScreenMode(ScreenMode.mode80x25);
         this.pc = {
             fileSystem: new FileSystem(),
             std,
+            keyboard,
             reboot: async () => {
                 localStorage.removeItem("hasStartedUp");
             },
@@ -232,11 +233,33 @@ class PengOS {
     }
 
     private async runStartupAnimation() {
-        const { std } = this.pc;
+        const { std, keyboard } = this.pc;
+
         std.clearConsole();
-        if (!localStorage.getItem("hasStartedUp")) {
+        let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
+        while (!hasStartedUp) {
+            std.setConsoleScreenMode(ScreenMode.mode80x25);
+
+            let deletePressed = false;
+            const unsubDelete = keyboard.subscribe((data) => {
+                if (data.code === "Delete") {
+                    deletePressed = true;
+                    const attrs = std.getConsoleAttributes();
+                    const pos = std.getConsoleCursorPosition();
+                    std.setConsoleCursorPosition({ x: 0, y: 23 });
+                    std.resetConsoleAttributes();
+                    std.writeConsole("Entering ");
+                    std.writeConsole("SETUP", { bold: true });
+                    std.writeConsole("...       ", { reset: true });
+                    std.setConsoleAttributes(attrs);
+                    std.setConsoleCursorPosition(pos);
+                }
+            });
             window.startupNoise.volume = 0.7;
             window.startupNoise.play();
+
+            std.resetConsole();
+            std.clearConsole();
             std.setIsConsoleCursorVisible(false);
             std.drawConsoleImage(
                 await loadImageBitmapFromUrl(energyStar),
@@ -259,7 +282,7 @@ class PengOS {
             std.setConsoleCursorPosition({ x: 0, y: 23 });
             std.writeConsole("Press ");
             std.updateConsoleAttributes({ bold: true });
-            std.writeConsole("PENG");
+            std.writeConsole("DEL");
             std.resetConsoleAttributes();
             std.writeConsole(" to enter SETUP\n");
             std.writeConsole("05/02/1984-ALADDIN5-P2B-6733F1-9268");
@@ -288,6 +311,14 @@ class PengOS {
 
             std.writeConsole("PNP Init Completed");
             await waitFor(2500);
+
+            unsubDelete();
+
+            if (deletePressed) {
+                console.log("go to BIOS");
+                await new BIOS(this.pc).run([]);
+                continue;
+            }
 
             std.clearConsole();
             std.writeConsole(
@@ -324,17 +355,17 @@ class PengOS {
             std.writeConsole("Starting PengOS...\n\n");
             await waitFor(1000);
             localStorage.setItem("hasStartedUp", "yes");
+            hasStartedUp = true;
         }
     }
 }
 
 (async () => {
-    await loadVga9x16();
-    await loadVga9x8();
-    await loadTerminus6x12();
-    await loadTerminus8x16();
+    biosSettings.init();
 
-    const screen = new Screen();
+    await loadFonts();
+
+    const screen = new Screen({ w: 80, h: 25 }, vga9x16);
     await screen.init(document.getElementById("screen-container")!);
 
     const keyboard = new Keyboard();

@@ -1,9 +1,9 @@
 import { splitStringIntoCharacters } from "@Toolbox/String";
-import { Font } from "./Font";
+import { Font } from "../../Font";
 import terminus0 from "./terminus6x12_0.png";
 import terminus1 from "./terminus6x12_1.png";
 import terminusCustom from "./terminus6x12_custom.png";
-import { type charArray } from "../types";
+import { type charArray } from "../../../types";
 
 /* cSpell:disable */
 

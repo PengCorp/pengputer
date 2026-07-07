@@ -21,7 +21,11 @@ import {
     type KeyCode,
     type PengKeyboardEvent,
 } from "./types";
-import { Signal } from "@Toolbox/Signal";
+import {
+    Signal,
+    type SignalListener,
+    type SignalUnsubscribe,
+} from "@Toolbox/Signal";
 
 export class Keyboard implements KeyboardSource {
     private _sources: KeyboardSource[];
@@ -165,6 +169,12 @@ export class Keyboard implements KeyboardSource {
     public async waitForNextEvent(): Promise<PengKeyboardEvent> {
         await this._eventSignal.getPromise();
         return this.getNextEvent()!;
+    }
+
+    public subscribe(
+        listener: SignalListener<PengKeyboardEvent>,
+    ): SignalUnsubscribe {
+        return this._eventSignal.listen(listener);
     }
 
     /**
