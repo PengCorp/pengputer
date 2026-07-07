@@ -31,7 +31,7 @@ export type ClickListener = (clickEvent: {
     mouseButton: number;
 }) => void;
 
-const DEFAULT_FONT = terminus8x16;
+const DEFAULT_FONT = vga9x16;
 
 export class Screen {
     private widthInCharacters: number;
