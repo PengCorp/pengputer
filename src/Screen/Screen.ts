@@ -31,7 +31,7 @@ export type ClickListener = (clickEvent: {
     mouseButton: number;
 }) => void;
 
-const DEFAULT_FONT = vga9x16;
+const DEFAULT_FONT = terminus8x16;
 
 export class Screen {
     private widthInCharacters: number;
@@ -598,6 +598,7 @@ export class Screen {
         if (isCharacterVisible) {
             const atlasRegion = this.font.getCharacter(
                 bufferCharacter.character,
+                bufferCharacter.attributes.bold ? "bold" : "regular",
                 x,
             );
             if (atlasRegion) {

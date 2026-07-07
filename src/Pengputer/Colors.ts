@@ -219,9 +219,7 @@ export class Colors implements Executable {
             fgColor: classicColors["orange"],
         });
         std.writeConsole("Classic");
-        std.updateConsoleAttributes({
-            fgColor: classicColors["lightOrange"],
-        });
+        std.updateConsoleAttributes({ bold: true });
         std.writeConsole(" Orange");
         std.resetConsoleAttributes();
         std.writeConsole(" (28-color extended classic palette)\n");

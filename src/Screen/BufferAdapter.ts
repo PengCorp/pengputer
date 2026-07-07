@@ -45,7 +45,7 @@ export const getScreenCharacterAttributesFromTermCellAttributes = (
     return {
         fgColor,
         bgColor,
-        bold: false,
+        bold: cellAttr.bold,
         blink: cellAttr.blink,
         reverseVideo: cellAttr.reverseVideo,
         underline: cellAttr.underline,

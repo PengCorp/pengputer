@@ -11,12 +11,22 @@ interface Atlas {
     patternRunLength: number;
 }
 
+interface CharacterLocation {
+    canvas: HTMLCanvasElement;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
+type FontWeight = "regular" | "bold";
+
 /** Represents a font that contains character glyphs. Single font can contain multiple atlases with character maps. */
 export class Font {
     private characterWidth: number;
     private characterHeight: number;
 
-    private atlases: Record<string, Atlas>;
+    private atlases: Record<FontWeight, Record<string, Atlas>>;
 
     private unstableCharacters: charArray;
 
@@ -29,7 +39,10 @@ export class Font {
         this.characterHeight = characterHeight;
         this.unstableCharacters = splitStringIntoCharacters(unstableCharacters);
 
-        this.atlases = {};
+        this.atlases = {
+            regular: {},
+            bold: {},
+        };
     }
 
     public getCharacterSize(): Size {
@@ -55,6 +68,7 @@ export class Font {
         key: string,
         dataURL: string,
         valueMap: string[][],
+        weight: FontWeight = "regular",
         scale: number = 1,
         patternRunLength: number = 1,
     ) {
@@ -90,7 +104,7 @@ export class Font {
             }
         }
 
-        this.atlases[key] = {
+        this.atlases[weight][key] = {
             canvas,
             ctx,
             characterLocations,
@@ -100,9 +114,14 @@ export class Font {
     }
 
     /** Retrieves a descriptor of the character with the atlas, x, y, w, and h of the character. */
-    getCharacter(char: string, screenX: number) {
-        for (let atlasKey in this.atlases) {
-            const atlas = this.atlases[atlasKey];
+    getCharacter(
+        char: string,
+        weight: FontWeight,
+        screenX: number,
+    ): CharacterLocation | null {
+        const atlasesForWeight = this.atlases[weight];
+        for (let atlasKey in atlasesForWeight) {
+            const atlas = atlasesForWeight[atlasKey];
 
             const characterLocation = atlas.characterLocations[char];
             if (characterLocation) {
@@ -118,6 +137,10 @@ export class Font {
                     h: this.characterHeight * atlas.scale,
                 };
             }
+        }
+
+        if (weight !== "regular") {
+            return this.getCharacter(char, "regular", screenX);
         }
 
         return null;
