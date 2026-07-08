@@ -1,11 +1,21 @@
 import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
-import { biosSettings } from "./BIOSSettings";
+import { biosSettings, type BIOSSettingsData } from "./BIOSSettings";
+import { applyFullScreenState } from "./util";
 import { classicColors } from "@Color/ansi";
 import _ from "lodash";
 
-const MENU_ITEM_FONT = 0;
-const MENU_ITEM_COUNT = 1;
+const MENU_ITEM_ZOOM = 0;
+const MENU_ITEM_FONT = 1;
+const MENU_ITEM_COUNT = 2;
+
+const MENU_ITEM_DESCRIPTIONS: Record<number, string> = {
+    [MENU_ITEM_FONT]:
+        "Selects which bitmap font is used to render text on this display.",
+    [MENU_ITEM_ZOOM]: "Toggles full-screen zoom mode for the browser window.",
+};
+
+const EXPLANATION_WIDTH = 78;
 
 export class BIOS implements Executable {
     private pc: PC;
@@ -37,14 +47,14 @@ export class BIOS implements Executable {
         std.writeConsole('║                                                                              ║');
         std.writeConsole('║                                                                              ║');
         std.writeConsole('║                                                                              ║');
-        std.writeConsole('║                                                                              ║');
+        std.writeConsole('╟──────────────────────────────────────────────────────────────────────────────╢');
         std.writeConsole('║                                                                              ║');
 
         std.writeConsole('║                                                                              ║');
         std.writeConsole('║                                                                              ║');
         std.writeConsole('╟──────────────────────────────────────────────────────────────────────────────╢');
-        std.writeConsole('║ Esc : Quit                             ↑ ↓ : Select Item                     ║');
-        std.writeConsole('║                                        ← → : Change Item                     ║');
+        std.writeConsole('║ Esc : Exit without saving              ↑ ↓ : Select Item                     ║');
+        std.writeConsole('║ S   : Save and exit                    ← → : Change Item                     ║');
 
         std.writeConsole('╚══════════════════════════════════════════════════════════════════════════════╝');
     }
@@ -53,6 +63,9 @@ export class BIOS implements Executable {
         const { std } = this.pc;
 
         let selectedMenuItem = 0;
+        const pendingSettings: BIOSSettingsData = {
+            ...biosSettings.getSettings(),
+        };
 
         std.resetConsole();
         std.updateConsoleAttributes({
@@ -84,41 +97,50 @@ export class BIOS implements Executable {
         const renderMenu = () => {
             std.setConsoleCursorPosition({ x: 2, y: 2 });
             renderMenuItem(
+                "Zoom",
+                pendingSettings.zoom ? "On" : "Off",
+                selectedMenuItem === MENU_ITEM_ZOOM,
+            );
+            std.setConsoleCursorPosition({ x: 2, y: 3 });
+            renderMenuItem(
                 "Font",
-                biosSettings.getSetting("font") === "vga" ? "VGA" : "Terminus",
+                pendingSettings.font === "vga" ? "VGA" : "Terminus",
                 selectedMenuItem === MENU_ITEM_FONT,
             );
         };
 
+        const renderExplanation = () => {
+            const description = MENU_ITEM_DESCRIPTIONS[selectedMenuItem] ?? "";
+            const leftPad = Math.max(
+                Math.floor((EXPLANATION_WIDTH - description.length) / 2),
+                0,
+            );
+            const rightPad = Math.max(
+                EXPLANATION_WIDTH - description.length - leftPad,
+                0,
+            );
+            std.setConsoleCursorPosition({ x: 1, y: 19 });
+            std.writeConsole(
+                `${" ".repeat(leftPad)}${description}${" ".repeat(rightPad)}`,
+            );
+        };
+
         renderMenu();
+        renderExplanation();
 
         while (true) {
             const { key } = await std.readConsoleKey();
             if (key === "Escape") {
                 break;
             }
-            if (key === "ArrowLeft") {
+            if (key === "ArrowLeft" || key === "ArrowRight") {
                 switch (selectedMenuItem) {
-                    case 0:
-                        biosSettings.setSetting(
-                            "font",
-                            biosSettings.getSetting("font") === "vga"
-                                ? "terminus"
-                                : "vga",
-                        );
+                    case MENU_ITEM_FONT:
+                        pendingSettings.font =
+                            pendingSettings.font === "vga" ? "terminus" : "vga";
                         break;
-                }
-                renderMenu();
-            }
-            if (key === "ArrowRight") {
-                switch (selectedMenuItem) {
-                    case 0:
-                        biosSettings.setSetting(
-                            "font",
-                            biosSettings.getSetting("font") === "vga"
-                                ? "terminus"
-                                : "vga",
-                        );
+                    case MENU_ITEM_ZOOM:
+                        pendingSettings.zoom = !pendingSettings.zoom;
                         break;
                 }
                 renderMenu();
@@ -129,6 +151,7 @@ export class BIOS implements Executable {
                     selectedMenuItem = 0;
                 }
                 renderMenu();
+                renderExplanation();
             }
             if (key === "ArrowDown") {
                 selectedMenuItem += 1;
@@ -136,6 +159,12 @@ export class BIOS implements Executable {
                     selectedMenuItem = MENU_ITEM_COUNT - 1;
                 }
                 renderMenu();
+                renderExplanation();
+            }
+            if (key === "KeyS") {
+                biosSettings.setSettings({ ...pendingSettings });
+                applyFullScreenState();
+                break;
             }
         }
     }

@@ -2,12 +2,14 @@ export type BIOSFontFamily = "vga" | "terminus";
 
 export interface BIOSSettingsData {
     font: BIOSFontFamily;
+    zoom: boolean;
 }
 
 const STORAGE_KEY = "biosSettings";
 
 const DEFAULT_BIOS_SETTINGS: BIOSSettingsData = {
     font: "vga",
+    zoom: false,
 };
 
 class BIOSSettingsStore {
@@ -53,6 +55,10 @@ class BIOSSettingsStore {
     ) {
         const settings = this.getSettings();
         settings[key] = value;
+        this.persistSettings(settings);
+    }
+
+    setSettings(settings: BIOSSettingsData) {
         this.persistSettings(settings);
     }
 }

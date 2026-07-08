@@ -43,7 +43,6 @@ import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 import { vga9x16, loadFonts } from "../Screen/Fonts";
-import { fullScreenLocalStorageKey } from "./constants";
 import { applyFullScreenState } from "./util";
 import { BIOS } from "./BIOS";
 import { biosSettings } from "./BIOSSettings";

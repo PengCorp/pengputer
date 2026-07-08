@@ -1,9 +1,9 @@
-import { fullScreenLocalStorageKey } from "./constants";
+import { biosSettings } from "./BIOSSettings";
 
 export const applyFullScreenState = () => {
-    const isFullScreen = localStorage.getItem(fullScreenLocalStorageKey);
+    const isFullScreen = biosSettings.getSetting("zoom");
     const body = document.body;
-    if (isFullScreen === "true") {
+    if (isFullScreen) {
         body.classList.add("full-screen");
     } else {
         body.classList.remove("full-screen");

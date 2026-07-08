@@ -18,8 +18,8 @@ import { classicColors } from "@Color/ansi";
 
 import _ from "lodash";
 import type { Executable } from "@FileSystem/fileTypes";
-import { fullScreenLocalStorageKey } from "./constants";
 import { applyFullScreenState } from "./util";
+import { biosSettings } from "./BIOSSettings";
 
 interface TakenProgram {
     path: FilePath;
@@ -731,12 +731,7 @@ export class PengerShell implements Executable {
     }
 
     private commandZoom() {
-        const currentState = localStorage.getItem(fullScreenLocalStorageKey);
-        if (currentState === "true") {
-            localStorage.setItem(fullScreenLocalStorageKey, "false");
-        } else {
-            localStorage.setItem(fullScreenLocalStorageKey, "true");
-        }
+        biosSettings.setSetting("zoom", !biosSettings.getSetting("zoom"));
         applyFullScreenState();
     }
 }
