@@ -53,8 +53,8 @@ export class BIOS implements Executable {
         std.writeConsole('║                                                                              ║');
         std.writeConsole('║                                                                              ║');
         std.writeConsole('╟──────────────────────────────────────────────────────────────────────────────╢');
-        std.writeConsole('║ Esc : Exit without saving              ↑ ↓ : Select Item                     ║');
-        std.writeConsole('║ S   : Save and exit                    ← → : Change Item                     ║');
+        std.writeConsole('║ Esc : Exit without saving              ↑ ↓ : Select item                     ║');
+        std.writeConsole('║ S   : Save and exit                    ← → : Change item                     ║');
 
         std.writeConsole('╚══════════════════════════════════════════════════════════════════════════════╝');
     }
