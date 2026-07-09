@@ -1,0 +1,1 @@
+export { BrickGameApp } from "./BrickGameApp";

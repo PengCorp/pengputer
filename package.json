@@ -5,6 +5,7 @@
     "scripts": {
         "test": "vitest",
         "dev": "vite",
+        "host": "vite --host",
         "build": "vite build",
         "type": "tsc --noEmit",
         "prepare": "husky",

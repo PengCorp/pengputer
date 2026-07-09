@@ -33,6 +33,7 @@ import {
 import { PengsweeperApp } from "./Pengsweeper";
 import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
+import { BrickGameApp } from "./BrickGame";
 
 import "@Color/ansi";
 import { TextBuffer } from "../TextBuffer";
@@ -185,6 +186,11 @@ class PengOS {
             type: FileSystemObjectType.Executable,
             name: "blakjack.exe", // cspell:disable-line
             createInstance: () => new Blackjack(this.pc),
+        });
+        gamesDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "brick.exe",
+            createInstance: () => new BrickGameApp(this.pc),
         });
 
         const documentsDir = rootDir.mkdir("documents");
