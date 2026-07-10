@@ -221,6 +221,8 @@ enum CommandType {
     NoOp,
     Delete,
     Quit,
+    Search,
+    Replace,
 }
 
 type CommandHelp = {
@@ -261,6 +263,26 @@ type CommandDelete = {
 
 type CommandQuit = { type: CommandType.Quit };
 
+type CommandSearch = {
+    type: CommandType.Search;
+    fromLine: number;
+    toLine: number;
+    isQuery: boolean;
+} & (
+    | { reuseLastPattern: true }
+    | { reuseLastPattern: false; searchText: string }
+);
+
+type CommandReplace = {
+    type: CommandType.Replace;
+    fromLine: number;
+    toLine: number;
+    isQuery: boolean;
+} & (
+    | { reuseLastPattern: true }
+    | { reuseLastPattern: false; oldText: string; newText: string }
+);
+
 type Command =
     | CommandHelp
     | CommandInsert
@@ -269,7 +291,9 @@ type Command =
     | CommandPage
     | CommandNoop
     | CommandDelete
-    | CommandQuit;
+    | CommandQuit
+    | CommandSearch
+    | CommandReplace;
 
 interface CommandParserContext {
     totalLines: number;
@@ -564,6 +588,122 @@ class CommandParser {
         throw new Error("Unreachable");
     }
 
+    /**
+     * Default range for Search/Replace when no explicit line numbers are
+     * given: starts right after the current line, wrapping around to the
+     * start of the file if the current line is at or past the end.
+     */
+    private getDefaultSearchReplaceRange(): [number, number] {
+        const from =
+            this.currentLine + 1 < this.totalLines ? this.currentLine + 1 : 0;
+        return [from, this.totalLines - 1];
+    }
+
+    private parseSearchReplaceRange(
+        lineNumbers: (number | null)[],
+    ): [number, number] {
+        if (lineNumbers.length === 0) {
+            return this.getDefaultSearchReplaceRange();
+        }
+
+        const fromLine = lineNumbers[0];
+
+        if (lineNumbers.length === 1) {
+            if (isNil(fromLine)) {
+                throw new Error("Entry error");
+            }
+            return [
+                clamp(fromLine, 0, this.totalLines - 1),
+                this.totalLines - 1,
+            ];
+        }
+
+        const toLine = lineNumbers[1];
+
+        if (lineNumbers.length === 2) {
+            const [defaultFrom, defaultTo] =
+                this.getDefaultSearchReplaceRange();
+            const from = clamp(
+                fromLine ?? defaultFrom,
+                0,
+                this.totalLines - 1,
+            );
+            const to = clamp(toLine ?? defaultTo, 0, this.totalLines - 1);
+
+            if (to < from) {
+                throw new Error("Entry error");
+            }
+
+            return [from, to];
+        }
+
+        throw new Error("Too many arguments");
+    }
+
+    private parseSearch(
+        tokens: Token[],
+        lineNumbers: (number | null)[],
+        isQuery: boolean,
+    ): CommandSearch {
+        const [fromLine, toLine] = this.parseSearchReplaceRange(lineNumbers);
+
+        let searchText: string | null = null;
+        const searchTextToken = tokens[0];
+        if (searchTextToken?.type === TokenType.String) {
+            tokens.shift();
+            searchText = searchTextToken.value;
+        }
+
+        if (searchText === null) {
+            return { type: CommandType.Search, fromLine, toLine, isQuery, reuseLastPattern: true };
+        }
+
+        return {
+            type: CommandType.Search,
+            fromLine,
+            toLine,
+            isQuery,
+            reuseLastPattern: false,
+            searchText,
+        };
+    }
+
+    private parseReplace(
+        tokens: Token[],
+        lineNumbers: (number | null)[],
+        isQuery: boolean,
+    ): CommandReplace {
+        const [fromLine, toLine] = this.parseSearchReplaceRange(lineNumbers);
+
+        let oldText: string | null = null;
+        let newText = "";
+        const oldTextToken = tokens[0];
+        if (oldTextToken?.type === TokenType.String) {
+            tokens.shift();
+            oldText = oldTextToken.value;
+
+            const newTextToken = tokens[0];
+            if (newTextToken?.type === TokenType.String) {
+                tokens.shift();
+                newText = newTextToken.value;
+            }
+        }
+
+        if (oldText === null) {
+            return { type: CommandType.Replace, fromLine, toLine, isQuery, reuseLastPattern: true };
+        }
+
+        return {
+            type: CommandType.Replace,
+            fromLine,
+            toLine,
+            isQuery,
+            reuseLastPattern: false,
+            oldText,
+            newText,
+        };
+    }
+
     /** Returns next command or throws. Modifies the passed in tokens array. */
     getNextCommand(tokens: Token[]): Command {
         const lineNumbers: (number | null)[] = [];
@@ -592,6 +732,20 @@ class CommandParser {
         }
         if (lastIsSeparator) {
             lineNumbers.push(null);
+        }
+
+        // A leading "?" is a query-mode modifier when it prefixes Search or
+        // Replace (e.g. "?S", "?R"); otherwise it's the standalone Help command.
+        let isQuery = false;
+        if (
+            tokens[0]?.type === TokenType.Command &&
+            tokens[0].value === "?" &&
+            tokens[1]?.type === TokenType.Command &&
+            (tokens[1].value.toLowerCase() === "s" ||
+                tokens[1].value.toLowerCase() === "r")
+        ) {
+            isQuery = true;
+            tokens.shift();
         }
 
         const commandToken = tokens[0];
@@ -636,6 +790,12 @@ class CommandParser {
             case "q": {
                 return { type: CommandType.Quit };
             }
+            case "s": {
+                return this.parseSearch(tokens, lineNumbers, isQuery);
+            }
+            case "r": {
+                return this.parseReplace(tokens, lineNumbers, isQuery);
+            }
         }
 
         throw new Error(`Unknown command: ${command}`);
@@ -660,6 +820,10 @@ export class Pedlin implements Executable {
 
     private lines: string[];
     private currentLine: number;
+
+    private lastSearchText: string | null = null;
+    private lastReplaceOld: string | null = null;
+    private lastReplaceNew: string = "";
 
     constructor(pc: PC) {
         this.pc = pc;
@@ -782,6 +946,146 @@ export class Pedlin implements Executable {
         this.lines.splice(fromLine, toLine - fromLine + 1);
     }
 
+    /** Reads a single confirmation keypress for query-mode Search/Replace. */
+    private async readConfirmKey(): Promise<"accept" | "reject" | "abort"> {
+        const { std } = this;
+
+        std.flushKeyboardEvents();
+        while (true) {
+            const ev = await std.waitForNextKeyboardEvent();
+            if (!ev.pressed) {
+                continue;
+            }
+
+            if (ev.isControlDown && ev.code === "KeyC") {
+                std.writeConsole("^C\n");
+                return "abort";
+            }
+            if (ev.char === "\n") {
+                std.writeConsole("\n");
+                return "accept";
+            }
+            if (ev.char === "y" || ev.char === "Y") {
+                std.writeConsole(`${ev.char}\n`);
+                return "accept";
+            }
+            if (ev.char === "n" || ev.char === "N") {
+                std.writeConsole(`${ev.char}\n`);
+                return "reject";
+            }
+        }
+    }
+
+    /** Finds the first line containing searchText within the range, inclusive. */
+    private async search(
+        fromLine: number,
+        toLine: number,
+        searchText: string,
+        isQuery: boolean,
+    ) {
+        const { std } = this;
+
+        for (
+            let i = fromLine;
+            i <= toLine && i <= this.lines.length - 1;
+            i += 1
+        ) {
+            const line = this.lines[i] ?? "";
+            if (!line.includes(searchText)) {
+                continue;
+            }
+
+            if (!isQuery) {
+                this.currentLine = i;
+                this.printLineNumber(i);
+                std.writeConsole(`${line}\n`);
+                return;
+            }
+
+            this.printLineNumber(i);
+            std.writeConsole(`${line}\n`);
+            std.writeConsole("O.K.? ");
+            const result = await this.readConfirmKey();
+            if (result === "abort") {
+                return;
+            }
+            if (result === "accept") {
+                this.currentLine = i;
+                return;
+            }
+        }
+
+        std.writeConsole("Not found\n");
+    }
+
+    /**
+     * Replaces every occurrence of oldText on every line within the range,
+     * inclusive, printing the line again after each individual substitution.
+     * In query mode, each occurrence is previewed and must be confirmed
+     * individually; declining a match leaves it untouched and scanning
+     * resumes just past it, still within the same line.
+     */
+    private async replace(
+        fromLine: number,
+        toLine: number,
+        oldText: string,
+        newText: string,
+        isQuery: boolean,
+    ) {
+        const { std } = this;
+        let foundAny = false;
+
+        for (
+            let i = fromLine;
+            i <= toLine && i <= this.lines.length - 1;
+            i += 1
+        ) {
+            let searchFrom = 0;
+
+            while (true) {
+                const line = this.lines[i] ?? "";
+                const matchIndex = line.indexOf(oldText, searchFrom);
+                if (matchIndex === -1) {
+                    break;
+                }
+                foundAny = true;
+
+                const replacedLine =
+                    line.slice(0, matchIndex) +
+                    newText +
+                    line.slice(matchIndex + oldText.length);
+
+                if (!isQuery) {
+                    this.lines[i] = replacedLine;
+                    this.currentLine = i;
+                    this.printLineNumber(i);
+                    std.writeConsole(`${replacedLine}\n`);
+                    searchFrom = matchIndex + newText.length;
+                    continue;
+                }
+
+                this.printLineNumber(i);
+                std.writeConsole(`${replacedLine}\n`);
+                std.writeConsole("O.K.? ");
+                const result = await this.readConfirmKey();
+                if (result === "abort") {
+                    return;
+                }
+                if (result === "accept") {
+                    this.lines[i] = replacedLine;
+                    this.currentLine = i;
+                    searchFrom = matchIndex + newText.length;
+                } else {
+                    searchFrom = matchIndex + oldText.length;
+                }
+            }
+        }
+
+        if (!foundAny) {
+            std.writeConsole("Not found\n");
+        }
+    }
+
     private writeHelp() {
         const { std } = this;
 
@@ -861,6 +1165,49 @@ export class Pedlin implements Executable {
                     this.currentLine = command.fromLine;
                     this.deleteLines(command.fromLine, command.toLine);
                     break;
+                case CommandType.Search: {
+                    let searchText: string;
+                    if (command.reuseLastPattern) {
+                        if (this.lastSearchText === null) {
+                            throw new Error("Entry error");
+                        }
+                        searchText = this.lastSearchText;
+                    } else {
+                        searchText = command.searchText;
+                        this.lastSearchText = searchText;
+                    }
+                    await this.search(
+                        command.fromLine,
+                        command.toLine,
+                        searchText,
+                        command.isQuery,
+                    );
+                    break;
+                }
+                case CommandType.Replace: {
+                    let oldText: string;
+                    let newText: string;
+                    if (command.reuseLastPattern) {
+                        if (this.lastReplaceOld === null) {
+                            throw new Error("Entry error");
+                        }
+                        oldText = this.lastReplaceOld;
+                        newText = this.lastReplaceNew;
+                    } else {
+                        oldText = command.oldText;
+                        newText = command.newText;
+                        this.lastReplaceOld = oldText;
+                        this.lastReplaceNew = newText;
+                    }
+                    await this.replace(
+                        command.fromLine,
+                        command.toLine,
+                        oldText,
+                        newText,
+                        command.isQuery,
+                    );
+                    break;
+                }
                 case CommandType.Quit:
                     return true;
             }
