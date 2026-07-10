@@ -1,2 +1,2 @@
 export type { DriveKind, FileSystemDrive } from "./FileSystemDrive";
-export { TransientFileSystemDrive } from "./TransientFileSystemDrive";
+export { FileSystemDrive } from "./FileSystemDrive";

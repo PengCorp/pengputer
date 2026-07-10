@@ -292,6 +292,34 @@ export class Std {
         this.writeConsole("\n\n", { reset: true });
     }
 
+    printAlignedRows(rows: string[][], minColumn: number = 8, title: boolean = true) {
+        let maxes = [];
+
+        for(let i = 0; i < rows.length; i++) {
+            const cells = rows[i];
+            for(let j = 0; j < cells.length; j++) {
+                if(!maxes[j] || String(cells[j]).length > maxes[j]) maxes[j] = cells[j].length;
+            }
+        }
+        maxes.map(i => Math.max(minColumn, Number(i)));
+
+        if(title) {
+            const row = rows.shift();
+            for(let i = 0; i < row.length; i++) {
+                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+2).fill(' ').join(''),
+                  { bold: true });
+            }
+            this.writeConsole("\n");
+        }
+        for(const row of rows) {
+            for(let i = 0; i < row.length; i++) {
+                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+2).fill(' ').join(''),
+                  { reset: true });
+            }
+            this.writeConsole("\n");
+        }
+    }
+
     /* ===================== GRAPHICS ========================= */
 
     setAreGraphicsEnabled(areGraphicsEnabled: boolean) {

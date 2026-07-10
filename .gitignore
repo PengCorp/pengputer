@@ -29,3 +29,10 @@ CLAUDE.md
 
 /work
 /ref
+
+# editor files
+*.swp
+*.swo
+*.swn
+*#
+*~

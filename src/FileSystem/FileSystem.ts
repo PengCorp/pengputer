@@ -2,7 +2,7 @@ import type { FilePath } from "./FilePath";
 import type { FileInfo, FileInfoDirectory } from "./FileInfo";
 import { type DriveLetter, isDriveLetter } from "./constants";
 import { FileSystemObjectType } from "./types";
-import { TransientFileSystemDrive, type FileSystemDrive } from "./drives";
+import { FileSystemDrive } from "./Drive";
 import { TextFile } from "./fileTypes";
 
 export interface DriveMount {
@@ -36,12 +36,12 @@ function summarizeContents(dir: FileInfoDirectory): DriveContentsSummary {
 
 export class FileSystem {
     // mounts["C:"] -> "SYSTEM"
-    // drives["SYSTEM"] -> <TransientFileSystemDrive "SYSTEM">
+    // drives["SYSTEM"] -> <FileSystemDrive "SYSTEM">
     #mounts = new Map<DriveLetter, string>();
     #drives = new Map<string, FileSystemDrive>();
 
     constructor() {
-        this.mountDrive("C", new TransientFileSystemDrive(true, "SYSTEM"));
+        this.mountDrive("C", new FileSystemDrive(true, "SYSTEM", "Fixed"));
     }
 
     registerDrive(drive: FileSystemDrive): boolean {

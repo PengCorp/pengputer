@@ -10,7 +10,7 @@ import {
     PATH_SEPARATOR,
     type DriveLetter,
 } from "../FileSystem";
-import { TransientFileSystemDrive } from "../FileSystem/drives";
+import { FileSystemDrive } from "../FileSystem/Drive";
 import type { PC } from "./PC";
 
 import { argparse } from "@Toolbox/argparse";
@@ -649,16 +649,13 @@ export class PengerShell implements Executable {
             }
         }
     }
-
+    
     private commandDiskList() {
         const { std, fileSystem } = this.pc;
 
-        const formatRow = (cells: string[]) =>
-            cells.map((cell) => _.padEnd(cell, 8)).join("  ");
+        let rows: string[][] = [];
 
-        std.writeConsole(
-            `${formatRow(["Letter", "Type", "Label", "Dirs", "Files", "Flags"])}\n`,
-        );
+        rows.push(["Letter", "Type", "Label", "Dirs", "Files", "Flags"]);
 
         for (const { letter, drive } of fileSystem.listAllDrives()) {
             const summary = fileSystem.summarizeDrive(drive)!;
@@ -666,17 +663,16 @@ export class PengerShell implements Executable {
             if(drive.readOnly) flags.push("ro");
             else flags.push("rw");
             if(letter != null) flags.push("mount");
-            std.writeConsole(
-                formatRow([
-                    letter==null ? "<none>" : letter+":",
-                    drive.kind,
-                    drive.label,
-                    String(summary.directoryCount),
-                    String(summary.fileCount),
-                    flags.join(",")
-                ]) + "\n",
-            );
+            rows.push([
+                letter==null ? "<none>" : letter+":",
+                drive.kind,
+                drive.label,
+                String(summary.directoryCount),
+                String(summary.fileCount),
+                flags.join(",")
+            ]);
         }
+        std.printAlignedRows(rows);
     }
 
     private commandDisk(args: string[]) {
@@ -699,7 +695,7 @@ export class PengerShell implements Executable {
                 std.writeConsole("ERROR: A drive with this name already exists\n");
                 return;
             }
-            fs.registerDrive(new TransientFileSystemDrive(false, label));
+            fs.registerDrive(new FileSystemDrive(false, label, "RAMFloppy"));
 
             std.writeConsole("Created a new disk labeled " + label + "\n");
         } else if(command === "insert") {
