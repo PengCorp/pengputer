@@ -1,7 +1,7 @@
 export const PATH_SEPARATOR = "/";
 export const LSKEY_FLOPPIES = "floppies";
 
-export const DriveLabelValues: string[] = [
+export const DriveLetterValues: string[] = [
     "A",
     "B",
     "C",
@@ -30,8 +30,8 @@ export const DriveLabelValues: string[] = [
     "Z",
 ] as const;
 
-export type DriveLabel = (typeof DriveLabelValues)[number];
+export type DriveLetter = (typeof DriveLetterValues)[number];
 
-export function isDriveLabel(label: string): label is DriveLabel {
-    return DriveLabelValues.includes(label);
+export function isDriveLetter(letter: string): letter is DriveLetter {
+    return DriveLetterValues.includes(letter);
 }

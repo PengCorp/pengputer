@@ -12,50 +12,50 @@ describe("FileSystem mounting", () => {
     test("mounts C as a read-only transient drive out of the box", () => {
         const fs = new FileSystem();
         expect(fs.isMounted("C")).toBe(true);
-        expect(fs.getDrive("C")!.readOnly).toBe(true);
+        expect(fs.getDriveByLetter("C")!.readOnly).toBe(true);
     });
 
     test("mount refuses a drive letter that's already occupied", () => {
         const fs = new FileSystem();
-        expect(fs.mount("C", new TransientFileSystemDrive(false))).toBe(false);
+        expect(fs.mountDrive("C", new TransientFileSystemDrive(false))).toBe(false);
     });
 
     test("mount succeeds for a free drive letter", () => {
         const fs = new FileSystem();
-        expect(fs.mount("D", new TransientFileSystemDrive(false))).toBe(true);
+        expect(fs.mountDrive("D", new TransientFileSystemDrive(false))).toBe(true);
         expect(fs.isMounted("D")).toBe(true);
     });
 
     test("unmount frees the drive letter back up", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.unmount("D");
         expect(fs.isMounted("D")).toBe(false);
-        expect(fs.mount("D", new TransientFileSystemDrive(false))).toBe(true);
+        expect(fs.mountDrive("D", new TransientFileSystemDrive(false))).toBe(true);
     });
 
     test("getDrive returns undefined for a drive letter that was never mounted", () => {
         const fs = new FileSystem();
-        expect(fs.getDrive("Z")).toBeUndefined();
+        expect(fs.getDriveByLetter("Z")).toBeNull();
     });
 });
 
 describe("FileSystem#listDrives", () => {
     test("lists C as a fixed, SYSTEM-labeled drive by default", () => {
         const fs = new FileSystem();
-        expect(fs.listDrives()).toStrictEqual([
-            { label: "C", drive: fs.getDrive("C") },
+        expect(fs.listAllDrives()).toStrictEqual([
+            { letter: "C", drive: fs.getDriveByLetter("C") },
         ]);
-        expect(fs.getDrive("C")!.kind).toBe("Fixed");
-        expect(fs.getDrive("C")!.label).toBe("SYSTEM");
+        expect(fs.getDriveByLetter("C")!.kind).toBe("Fixed");
+        expect(fs.getDriveByLetter("C")!.label).toBe("SYSTEM");
     });
 
     test("includes newly mounted drives, sorted by label", () => {
         const fs = new FileSystem();
-        fs.mount("E", new TransientFileSystemDrive(false, "SCRATCH1"));
-        fs.mount("D", new TransientFileSystemDrive(false, "SCRATCH2"));
+        fs.mountDrive("E", new TransientFileSystemDrive(false, "SCRATCH1"));
+        fs.mountDrive("D", new TransientFileSystemDrive(false, "SCRATCH2"));
 
-        expect(fs.listDrives().map((m) => m.label)).toStrictEqual([
+        expect(fs.listAllDrives().map((m) => m.letter)).toStrictEqual([
             "C",
             "D",
             "E",
@@ -64,17 +64,17 @@ describe("FileSystem#listDrives", () => {
 
     test("drops a drive from the listing once unmounted", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.unmount("D");
 
-        expect(fs.listDrives().map((m) => m.label)).toStrictEqual(["C"]);
+        expect(fs.listMountedDrives().map((m) => m.letter)).toStrictEqual(["C"]);
     });
 });
 
 describe("FileSystem#summarizeDrive", () => {
     test("counts zero dirs and files on a fresh drive", () => {
         const fs = new FileSystem();
-        expect(fs.summarizeDrive("C")).toStrictEqual({
+        expect(fs.summarizeDriveByLetter("C")).toStrictEqual({
             directoryCount: 0,
             fileCount: 0,
         });
@@ -83,7 +83,7 @@ describe("FileSystem#summarizeDrive", () => {
     test("counts directories and files recursively", () => {
         const fs = new FileSystem();
         const drive = new TransientFileSystemDrive(false);
-        fs.mount("D", drive);
+        fs.mountDrive("D", drive);
 
         fs.createDirectory(path("D:/a/b"));
         drive.rootEntry.addItem({
@@ -99,7 +99,7 @@ describe("FileSystem#summarizeDrive", () => {
 
         // dirs: a, a/b, c => 3. files: root.txt, c/nested.txt => 2.
         // "a" and "b" were already created via createDirectory above; "c" adds a third.
-        expect(fs.summarizeDrive("D")).toStrictEqual({
+        expect(fs.summarizeDriveByLetter("D")).toStrictEqual({
             directoryCount: 3,
             fileCount: 2,
         });
@@ -107,7 +107,7 @@ describe("FileSystem#summarizeDrive", () => {
 
     test("returns null for a drive that isn't mounted", () => {
         const fs = new FileSystem();
-        expect(fs.summarizeDrive("Z")).toBeNull();
+        expect(fs.summarizeDriveByLetter("Z")).toBeNull();
     });
 });
 
@@ -120,7 +120,7 @@ describe("FileSystem#getFileInfo", () => {
 
     test("walks nested directories that exist", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/foo/bar"));
 
         const entry = fs.getFileInfo(path("D:/foo/bar"));
@@ -136,7 +136,7 @@ describe("FileSystem#getFileInfo", () => {
     test("returns null when descending through something that isn't a directory", () => {
         const fs = new FileSystem();
         const drive = new TransientFileSystemDrive(false);
-        fs.mount("D", drive);
+        fs.mountDrive("D", drive);
         drive.rootEntry.addItem({
             type: FileSystemObjectType.TextFile,
             name: "foo",
@@ -161,7 +161,7 @@ describe("FileSystem#getFileInfo", () => {
 describe("FileSystem#createDirectory", () => {
     test("creates every missing segment along the path", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/a/b/c"));
 
         expect(fs.getFileInfo(path("D:/a"))!.type).toBe(
@@ -174,7 +174,7 @@ describe("FileSystem#createDirectory", () => {
 
     test("is idempotent when segments already exist as directories", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/a/b"));
         expect(() => fs.createDirectory(path("D:/a/b/c"))).not.toThrow();
     });
@@ -182,7 +182,7 @@ describe("FileSystem#createDirectory", () => {
     test("refuses to descend through a non-directory entry", () => {
         const fs = new FileSystem();
         const drive = new TransientFileSystemDrive(false);
-        fs.mount("D", drive);
+        fs.mountDrive("D", drive);
         drive.rootEntry.addItem({
             type: FileSystemObjectType.TextFile,
             name: "a",
@@ -210,7 +210,7 @@ describe("FileSystem#createDirectory", () => {
 describe("FileSystem#removeDirectory", () => {
     test("removes an empty directory", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/a/b"));
 
         fs.removeDirectory(path("D:/a/b"));
@@ -220,7 +220,7 @@ describe("FileSystem#removeDirectory", () => {
 
     test("refuses to remove a non-empty directory without force", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/a/b"));
 
         expect(() => fs.removeDirectory(path("D:/a"))).toThrow(/not empty/);
@@ -229,7 +229,7 @@ describe("FileSystem#removeDirectory", () => {
 
     test("removes a non-empty directory when forced", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         fs.createDirectory(path("D:/a/b"));
 
         fs.removeDirectory(path("D:/a"), true);
@@ -238,7 +238,7 @@ describe("FileSystem#removeDirectory", () => {
 
     test("treats removing a drive's own root as a no-op", () => {
         const fs = new FileSystem();
-        fs.mount("D", new TransientFileSystemDrive(false));
+        fs.mountDrive("D", new TransientFileSystemDrive(false));
         expect(() => fs.removeDirectory(path("D:/"))).not.toThrow();
         expect(fs.getFileInfo(path("D:/"))).not.toBeNull();
     });

@@ -1,11 +1,12 @@
-import type { DriveLabel } from "./constants";
 import type { FilePath } from "./FilePath";
 import type { FileInfo, FileInfoDirectory } from "./FileInfo";
+import { type DriveLetter, isDriveLetter } from "./constants";
 import { FileSystemObjectType } from "./types";
 import { TransientFileSystemDrive, type FileSystemDrive } from "./drives";
+import { TextFile } from "./fileTypes";
 
 export interface DriveMount {
-    label: DriveLabel;
+    letter: DriveLetter | null;
     drive: FileSystemDrive;
 }
 
@@ -34,49 +35,123 @@ function summarizeContents(dir: FileInfoDirectory): DriveContentsSummary {
 }
 
 export class FileSystem {
-    #drives = new Map<DriveLabel, FileSystemDrive>();
+    // mounts["C:"] -> "SYSTEM"
+    // drives["SYSTEM"] -> <TransientFileSystemDrive "SYSTEM">
+    #mounts = new Map<DriveLetter, string>();
+    #drives = new Map<string, FileSystemDrive>();
 
     constructor() {
-        this.mount("C", new TransientFileSystemDrive(true, "SYSTEM"));
+        this.mountDrive("C", new TransientFileSystemDrive(true, "SYSTEM"));
     }
 
-    mount(label: DriveLabel, drive: FileSystemDrive): boolean {
-        if (this.#drives.has(label)) return false;
-        this.#drives.set(label, drive);
-        return true;
+    registerDrive(drive: FileSystemDrive): boolean {
+        let oldDrive = this.#drives.get(drive.label);
+        if(!oldDrive) {
+            this.#drives.set(drive.label, drive);
+            return true;
+        }
+        // check if already registered
+        if(oldDrive.kind === drive.kind
+           && oldDrive.readOnly === drive.readOnly) {
+            return true;
+        }
+        // same label different configs
+        throw new Error("ERROR: DRIVE LABEL COLLISION: " + drive.label);
     }
 
-    unmount(label: DriveLabel): void {
-        this.#drives.delete(label);
-    }
-
-    isMounted(label: DriveLabel): boolean {
+    driveExists(label: string): boolean {
         return this.#drives.has(label);
     }
 
-    getDrive(label: DriveLabel): FileSystemDrive | undefined {
-        return this.#drives.get(label);
+    mount(letter: DriveLetter, label: string): boolean {
+        if(!isDriveLetter(letter)) {
+            console.error("mount(\""+label+"\"): not a valid drive letter");
+            return false
+        }
+        if(this.#mounts.has(letter)) {
+            if(this.#mounts.get(letter) !== label) {
+                console.error("mount(\""+label+"\"): already mounted");
+                return false;
+            }
+        }
+        if(!this.#drives.has(label)) return false;
+        this.#mounts.set(letter, label);
+        return true;
     }
 
-    listDrives(): DriveMount[] {
+    mountDrive(letter: DriveLetter, drive: FileSystemDrive): boolean {
+        this.registerDrive(drive);
+        return this.mount(letter, drive.label);
+    }
+
+    unmount(letter: DriveLetter): boolean {
+        if(!this.#mounts.has(letter)) return false;
+        this.#mounts.delete(letter);
+        return true;
+    }
+
+    isMounted(letter: DriveLetter): boolean {
+        return this.#mounts.has(letter);
+    }
+
+    getDriveByLetter(letter: DriveLetter): FileSystemDrive | null {
+        const label = this.#mounts.get(letter);
+        if(!label) return null;
+        const drive = this.#drives.get(label);
+        if(!drive) return null;
+        return drive;
+    }
+
+    getDriveByLabel(letter: string): FileSystemDrive | null {
+        const drive = this.#drives.get(letter);
+        if(!drive) return null;
+        return drive;
+    }
+
+    getMountpoint(label: string): DriveLetter | null {
+        for (const [ letter, mountedLabel ] of this.#mounts.entries()) {
+            // console.log({ letter, mountedLabel, label });
+            if(mountedLabel === label) return letter;
+        }
+        return null;
+    }
+
+    listAllDrives(): DriveMount[] {
         return [...this.#drives.entries()]
-            .map(([label, drive]) => ({ label, drive }))
+            .map((([label, drive]) => {
+                return { letter: this.getMountpoint(label), drive };
+            }).bind(this))
             .sort((a, b) =>
-                a.label < b.label ? -1 : a.label > b.label ? 1 : 0,
+                (!a.letter || !b.letter) ? 1 : a.letter < b.letter ? -1 : a.letter > b.letter ? 1 : 0,
             );
     }
 
-    summarizeDrive(label: DriveLabel): DriveContentsSummary | null {
-        const drive = this.#drives.get(label);
+    listMountedDrives(): DriveMount[] {
+        return [...this.#mounts.entries()]
+            .map((([letter, name]) => {
+                const drive = this.getDriveByLabel(name)!;
+                return { letter, drive };
+            }).bind(this))
+            .sort((a, b) =>
+                a.letter < b.letter ? -1 : a.letter > b.letter ? 1 : 0,
+            );
+    }
+
+    summarizeDrive(drive: FileSystemDrive): DriveContentsSummary {
+        return summarizeContents(drive.rootEntry);
+    }
+
+    summarizeDriveByLetter(l: DriveLetter): DriveContentsSummary | null {
+        const drive = this.getDriveByLetter(l);
         if (!drive) return null;
 
-        return summarizeContents(drive.rootEntry);
+        return this.summarizeDrive(drive);
     }
 
     getFileInfo(path: FilePath | null): FileInfo | null {
         if (path === null || path.drive === null) return null;
 
-        const drive = this.#drives.get(path.drive);
+        const drive = this.getDriveByLetter(path.drive);
         if (!drive) return null;
 
         let entry: FileInfo = drive.rootEntry;
@@ -126,12 +201,42 @@ export class FileSystem {
         parent.rmdir(segments[segments.length - 1], force);
     }
 
-    #requireWritableDrive(label: DriveLabel | null): FileSystemDrive {
-        if (label === null) throw new Error("Path has no drive");
+    createFile(path: FilePath): FileInfo {
+        let dir = this.#requireWritableDrive(path.drive).rootEntry;
+        for (const i in path.pieces) {
+            console.log({i}, {i: 0});
+            const name = path.pieces[i];
+            let existing = dir.entries.find((e) => e.name === name);
+            if (i == path.pieces.length-1) {
+                if(!existing) {
+                    return dir.addItem({
+                        type: FileSystemObjectType.TextFile,
+                        data: new TextFile,
+                        name
+                    });
+                }
+                if(existing.type == FileSystemObjectType.Directory) {
+                    throw new Error("Cannot create " + path.toString() + ": Is a Directory");
+                }
+                return existing;
+            }
+            if (existing === undefined) {
+                dir = dir.mkdir(name);
+            } else if (existing.type === FileSystemObjectType.Directory) {
+                dir = existing;
+            } else {
+                throw new Error(`${name} is not a directory`);
+            }
+        }
+        throw new Error("unreachable");
+    }
 
-        const drive = this.#drives.get(label);
-        if (!drive) throw new Error(`Drive ${label}: is not mounted`);
-        if (drive.readOnly) throw new Error(`Drive ${label}: is read-only`);
+    #requireWritableDrive(letter: DriveLetter | null): FileSystemDrive {
+        if (letter === null) throw new Error("Path has no drive");
+
+        const drive = this.getDriveByLetter(letter);
+        if (!drive) throw new Error(`Drive ${letter}: is not mounted`);
+        if (drive.readOnly) throw new Error(`Drive ${letter}: is read-only`);
 
         return drive;
     }

@@ -227,6 +227,7 @@ class PengOS {
                 await this.runStartupAnimation();
             } catch (e) {
                 std.writeConsoleError(e);
+                console.error(e);
             }
         } while (true);
     }
@@ -234,8 +235,58 @@ class PengOS {
     private async runStartupAnimation() {
         const { std, keyboard } = this.pc;
 
-        std.clearConsole();
+        std.resetConsole();
         let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
+
+        // if(hasStartedUp) return;
+
+        if(import.meta.env.DEV) {
+            let y = 0;
+
+            std.setConsoleScreenMode(ScreenMode.mode80x25);
+
+            std.setConsoleCursorPosition({ x: 0, y });
+            std.writeConsole("[i] You are a dev; fast-forwarding boot sequence.");
+            y = 2;
+            std.setConsoleCursorPosition({ x: 2, y });
+            std.writeConsole("Press ");
+            std.writeConsole("DEL", {bold: true});
+            std.writeConsole(" to enter BIOS.", {bold: false});
+            y++;
+            std.setConsoleCursorPosition({ x: 2, y });
+            std.writeConsole("Press any key to skip.");
+
+            y += 2;
+
+            const FFbootDelay = 3;
+            let goBios = false;
+            await runAnimationLoop((_, tt) => {
+                std.setConsoleCursorPosition({ x: 0, y });
+                std.writeConsole((FFbootDelay - Math.floor(tt/1000)) + "s to boot");
+                const kbe = keyboard.getNextEvent();
+                if(kbe) {
+                    if(!kbe.pressed) return false;
+                    if(kbe.code == "Delete") {
+                        goBios = true;
+                        return true;
+                    }
+                    if(!kbe.isModifier && !kbe.isAutoRepeat) return true;
+                }
+
+                return tt >= FFbootDelay*1000;
+            });
+            std.setConsoleCursorPosition({ x: 0, y: 5 });
+            std.writeConsole("                        ");
+            std.setConsoleCursorPosition({ x: 0, y: 5 });
+            if(goBios) {
+                await new BIOS(this.pc).run([]);
+                std.resetConsole();
+                std.setConsoleScreenMode(ScreenMode.mode80x25);
+            }
+            localStorage.setItem("hasStartedUp", "yes");
+            return;
+        }
+
         while (!hasStartedUp) {
             std.setConsoleScreenMode(ScreenMode.mode80x25);
 

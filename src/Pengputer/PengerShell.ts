@@ -6,10 +6,11 @@
 import {
     FilePath,
     FileSystemObjectType,
-    isDriveLabel,
+    isDriveLetter,
     PATH_SEPARATOR,
-    type DriveLabel,
+    type DriveLetter,
 } from "../FileSystem";
+import { TransientFileSystemDrive } from "../FileSystem/drives";
 import type { PC } from "./PC";
 
 import { argparse } from "@Toolbox/argparse";
@@ -32,7 +33,7 @@ export class PengerShell implements Executable {
     private isRunning: boolean = false;
 
     private workingDirectories: { [id: string]: FilePath } = {};
-    private currentDrive: DriveLabel = "C";
+    private currentDrive: DriveLetter = "C";
     private currentPath: string[] = [];
     private prompt: string = "%P>";
 
@@ -112,6 +113,7 @@ export class PengerShell implements Executable {
             drop: this.commandDrop.bind(this),
             reboot: this.commandReboot.bind(this),
             disk: this.commandDisk.bind(this),
+            write: this.commandWrite.bind(this)
         };
 
         this.isRunning = true;
@@ -159,6 +161,8 @@ export class PengerShell implements Executable {
                 "drop",
                 "reboot",
                 "zoom",
+                "disk",
+                "write"
             ];
 
             const commandString =
@@ -198,9 +202,9 @@ export class PengerShell implements Executable {
                         );
                     }
                 } else if (driveSwitchMatch) {
-                    const label = driveSwitchMatch[1].toUpperCase();
-                    if (isDriveLabel(label)) {
-                        this.commandSwitchDrive(label);
+                    const drive = driveSwitchMatch[1].toUpperCase();
+                    if (isDriveLetter(drive)) {
+                        this.commandSwitchDrive(drive);
                     } else {
                         std.writeConsole(`Invalid drive label\n`);
                     }
@@ -352,15 +356,15 @@ export class PengerShell implements Executable {
         }
     }
 
-    private commandSwitchDrive(label: DriveLabel) {
+    private commandSwitchDrive(letter: DriveLetter) {
         const { std, fileSystem } = this.pc;
 
-        if (!fileSystem.isMounted(label)) {
-            std.writeConsole(`Drive ${label}: is not available\n`);
+        if (!fileSystem.isMounted(letter)) {
+            std.writeConsole(`Drive ${letter}: is not available\n`);
             return;
         }
 
-        this.currentDrive = label;
+        this.currentDrive = letter;
         std.writeConsole(`Now using ${this.workingDirectory.toString()}\n`);
     }
 
@@ -403,6 +407,7 @@ export class PengerShell implements Executable {
                 );
             } catch (e) {
                 std.writeConsole(`${(<Error>e).message}\n`);
+                console.log(e);
             }
         }
     }
@@ -635,6 +640,7 @@ export class PengerShell implements Executable {
         printEntry("disk", "Manage drives and floppy disks\n");
         printEntry("reboot", "Restart the system\n");
         printEntry("zoom", "Toggles the full screen mode on and off");
+        printEntry("write", "Write a line to a file");
 
         if (this.takenPrograms.length > 0) {
             std.writeConsole("\nAvailable programs:\n");
@@ -651,39 +657,157 @@ export class PengerShell implements Executable {
             cells.map((cell) => _.padEnd(cell, 8)).join("  ");
 
         std.writeConsole(
-            `${formatRow(["Letter", "Type", "Label", "Dirs", "Files"])}\n`,
+            `${formatRow(["Letter", "Type", "Label", "Dirs", "Files", "Flags"])}\n`,
         );
 
-        for (const { label, drive } of fileSystem.listDrives()) {
-            const summary = fileSystem.summarizeDrive(label)!;
+        for (const { letter, drive } of fileSystem.listAllDrives()) {
+            const summary = fileSystem.summarizeDrive(drive)!;
+            let flags = [];
+            if(drive.readOnly) flags.push("ro");
+            else flags.push("rw");
+            if(letter != null) flags.push("mount");
             std.writeConsole(
-                `${formatRow([
-                    `${label}:`,
+                formatRow([
+                    letter==null ? "<none>" : letter+":",
                     drive.kind,
                     drive.label,
                     String(summary.directoryCount),
                     String(summary.fileCount),
-                ])}\n`,
+                    flags.join(",")
+                ]) + "\n",
             );
         }
     }
 
     private commandDisk(args: string[]) {
-        const { std } = this.pc;
+        const { std, fileSystem: fs } = this.pc;
         const [command] = args;
+
 
         if (command === "list") {
             this.commandDiskList();
-        } else if (
-            command === "spawn" ||
+        } else if (command === "spawn") {
+            const [name] = args.slice(1);
+            if(!name) {
+                std.consoleWrite("Not enough arguments to <");
+                std.consoleWrite("disk spawn <name>", { bold: true });
+                std.consoleWrite(">\n", { bold: false });
+                return;
+            }
+            const label = name.toUpperCase();
+            if(fs.driveExists(label)) {
+                std.writeConsole("ERROR: A drive with this name already exists\n");
+                return;
+            }
+            fs.registerDrive(new TransientFileSystemDrive(false, label));
+
+            std.writeConsole("Created a new disk labeled " + label + "\n");
+        } else if(command === "insert") {
+            const [u_letter, u_name] = args.slice(1);
+            if(!u_letter || !u_name) {
+                std.writeConsole("Missing arguments\n");
+                return;
+            }
+            const name = u_name.toUpperCase();
+            const disk = fs.getDriveByLabel(name);
+
+            if(!disk) {
+                std.writeConsole("Disk <" +name+ "> does not exist\n");
+                return;
+            }
+
+            let letter = u_letter.toUpperCase();
+            {
+                let colonIndex = letter.indexOf(':');
+                if(letter.length > 2 && colonIndex > 1) {
+                    std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
+                    return;
+                }
+                if(colonIndex > 0) letter = letter.slice(0, colonIndex);
+
+                if(!isDriveLetter(letter)) {
+                    std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
+                    return;
+                }
+            }
+
+
+            if(fs.isMounted(letter)) {
+                std.writeConsole("Drive " + letter + ": is already inserted\n");
+                return;
+            }
+            fs.mount(letter, name);
+            std.writeConsole("Installed drive <" +name + "> to " +letter+ ":\n");
+        } else if(command === "eject") {
+            const [u_letter] = args.slice(1);
+            if(!u_letter) {
+                std.writeConsole("Missing drive letter to eject\n");
+                return;
+            }
+            let letter = u_letter.toUpperCase();
+            let colonIndex = letter.indexOf(':');
+            if(letter.length > 2 && colonIndex > 1) {
+                std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
+                return;
+            }
+            if(colonIndex > 0) letter = letter.slice(0, colonIndex);
+
+            if(!isDriveLetter(letter)) {
+                std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
+                return;
+            }
+
+            if(!fs.isMounted(letter)) {
+                std.writeConsole("Disk " + letter + ": is not inserted\n");
+                return;
+            }
+
+            if(this.currentDrive == letter) {
+                std.writeConsole("Cannot eject " +letter + ": because the shell workdir is inside it.\n");
+                return;
+            }
+
+            if(fs.listMountedDrives().length == 1) {
+                std.writeConsole("Cannot eject " +letter+ ": because it is the only mounted disk.\n");
+                return;
+            }
+
+            // TODO: detect if shell's pwd is inside this disk and fail
+            fs.unmount(letter);
+            std.writeConsole("Ejected " + letter + ":\n");
+            return;
+        } else if(command === "burn") {
+            throw "TODO";
+            const [name] = args.slice(1);
+            const drive = fs.getDriveByLabel(name);
+            if(name === "SYSTEM") {
+                // TODO: drive.kind == Fixed instead of this
+                std.writeConsole("Cannot destroy <SYSTEM> drive.\n");
+                return;
+            }
+            if(!drive) {
+                std.writeConsole("Drive <" +name+ "> does not exist.\n");
+                return;
+            }
+            let letter = fs.getMountpoint(name);
+            if(letter != null) {
+                if(this.currentDrive === letter) {
+                    std.writeConsole("Cannot eject " +letter + ": because the shell workdir is inside it.\n");
+                    return;
+                }
+                if(fs.listMountedDrives().length == 1) {
+                    std.writeConsole("Cannot eject " +letter+ ": because it is the only mounted disk.\n");
+                    return;
+                }
+                fs.unmount(letter);
+            }
+            // TODO: destroy the universe
+        } else if(
             command === "import" ||
-            command === "export" ||
-            command === "burn" ||
-            command === "insert" ||
-            command === "eject"
+            command === "export"
         ) {
             std.writeConsole(
-                "Disk management is being redesigned; not available yet\n",
+                "Import/export is not implemented\n",
             );
         } else {
             const printEntry = (cmd: string, text: string) => {
@@ -733,5 +857,33 @@ export class PengerShell implements Executable {
     private commandZoom() {
         biosSettings.setSetting("zoom", !biosSettings.getSetting("zoom"));
         applyFullScreenState();
+    }
+
+    private commandWrite(args: string[]) {
+        const [fileName, u_string] = args;
+        const { std, fileSystem: fs } = this.pc;
+
+        if(!fileName) {
+            std.writeConsole("Need file to write to\n");
+            std.writeConsole("Usage: write <filename> [text]\n");
+            return;
+        }
+        const path = this.getCanonicalPath(this.workingDirectory, fileName);
+        if(!path) {
+            throw new Error("Could not get file path");
+        }
+
+        let file = fs.getFileInfo(path);
+        if(!file) {
+            file = fs.createFile(path);
+        }
+
+        if(file.type != FileSystemObjectType.TextFile) {
+            std.writeConsole(fileName+": Not readable\n");
+            return;
+        }
+        if(u_string) {
+            file.data.append(u_string + "\n");
+        }
     }
 }

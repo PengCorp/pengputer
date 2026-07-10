@@ -1,4 +1,4 @@
-import { isDriveLabel, PATH_SEPARATOR, type DriveLabel } from "./constants";
+import { isDriveLetter, PATH_SEPARATOR, type DriveLetter } from "./constants";
 
 function collapseSegments(segments: string[], absolute: boolean): string[] {
     const collapsed: string[] = [];
@@ -24,15 +24,15 @@ function collapseSegments(segments: string[], absolute: boolean): string[] {
 export class FilePath {
     static tryParse(
         input: string,
-        defaultDrive: DriveLabel | null = null,
+        defaultDrive: DriveLetter | null = null,
     ): FilePath | null {
         let rest = input;
-        let drive: DriveLabel | null = null;
+        let drive: DriveLetter | null = null;
 
         const colonIndex = rest.indexOf(":");
         if (colonIndex >= 0) {
             const label = rest.slice(0, colonIndex).toUpperCase();
-            if (!isDriveLabel(label)) return null;
+            if (!isDriveLetter(label)) return null;
 
             drive = label;
             rest = rest.slice(colonIndex + 1);
@@ -48,12 +48,12 @@ export class FilePath {
         return new FilePath(drive, segments, rooted);
     }
 
-    #drive: DriveLabel | null;
+    #drive: DriveLetter | null;
     #segments: readonly string[];
     #absolute: boolean;
 
     private constructor(
-        drive: DriveLabel | null,
+        drive: DriveLetter | null,
         segments: string[],
         absolute: boolean,
     ) {
@@ -62,7 +62,7 @@ export class FilePath {
         this.#segments = collapseSegments(segments, this.#absolute);
     }
 
-    get drive(): DriveLabel | null {
+    get drive(): DriveLetter | null {
         return this.#drive;
     }
 

@@ -29,7 +29,7 @@ export class FileInfoDirectory {
         return [...this.#entries];
     }
 
-    addItem(info: Exclude<FileInfo, FileInfoDirectory>) {
+    addItem(info: Exclude<FileInfo, FileInfoDirectory>): FileInfo {
         if (_.find(this.#entries, (e) => e.name === info.name)) {
             throw new Error(`${info.name} already exists`);
         }

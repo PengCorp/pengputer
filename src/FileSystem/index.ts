@@ -1,6 +1,6 @@
 export {
-    type DriveLabel,
-    isDriveLabel,
+    type DriveLetter,
+    isDriveLetter,
     PATH_SEPARATOR,
     LSKEY_FLOPPIES,
 } from "./constants";
