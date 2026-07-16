@@ -40,6 +40,7 @@ import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 import { FileTransferTest } from "./FileTransferTest";
 import { Pedlin } from "./Pedlin";
+import { EdApp } from "./ed";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 import { vga9x16, loadFonts } from "../Screen/Fonts";
@@ -163,6 +164,11 @@ class PengOS {
             type: FileSystemObjectType.Executable,
             name: "pedlin.exe",
             createInstance: () => new Pedlin(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileSystemObjectType.Executable,
+            name: "ped.exe",
+            createInstance: () => new EdApp(this.pc)
         });
 
         const gamesDir = rootDir.mkdir("games");

@@ -22,6 +22,8 @@ function collapseSegments(segments: string[], absolute: boolean): string[] {
 }
 
 export class FilePath {
+    // TODO: paths `C:test/` and `C:test` parse into the same thing, which loses context
+    //       distunguishing references to directories vs. files in the specified path.
     static tryParse(
         input: string,
         defaultDrive: DriveLetter | null = null,

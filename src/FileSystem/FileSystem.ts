@@ -59,6 +59,22 @@ export class FileSystem {
         throw new Error("ERROR: DRIVE LABEL COLLISION: " + drive.label);
     }
 
+    unregisterDrive(label: string) {
+        const disk = this.getDriveByLabel(label);
+        if(!disk) {
+            console.warn("Tried to delete not existing disk <" +label+ ">");
+            return;
+        }
+        if(disk.kind == "Fixed") {
+            throw new Error("Tried to unregister fixed drive <" +label+ ">");
+        }
+        if(this.getMountpoint(label) != null) {
+            throw new Error("Tried to unregister mounted drive <" +label+ ">");
+        }
+
+        this.#drives.delete(label);
+    }
+
     driveExists(label: string): boolean {
         return this.#drives.has(label);
     }
@@ -148,20 +164,32 @@ export class FileSystem {
         return this.summarizeDrive(drive);
     }
 
-    getFileInfo(path: FilePath | null): FileInfo | null {
+    // TODO: see in FilePath:tryParse
+    getFileInfo(path: FilePath | null, create: boolean = false): FileInfo | null {
         if (path === null || path.drive === null) return null;
 
         const drive = this.getDriveByLetter(path.drive);
         if (!drive) return null;
 
         let entry: FileInfo = drive.rootEntry;
-        for (const name of path.pieces) {
+        for (let i = 0; i < path.pieces.length; i++) {
+            const name = path.pieces[i];
             if (entry.type !== FileSystemObjectType.Directory) return null;
 
             const next: FileInfo | undefined = entry.entries.find(
                 (e) => e.name === name,
             );
-            if (!next) return null;
+            if (!next) {
+                if (i == path.pieces.length-1 && create) {
+                    // optionally create a text file
+                    this.#requireWritableDrive(path.drive!);
+                    next = entry.addItem({
+                        type: FileSystemObjectType.TextFile,
+                        data: new TextFile,
+                        name: name,
+                    });
+                } else return null;
+            }
 
             entry = next;
         }

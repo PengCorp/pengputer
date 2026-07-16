@@ -1,6 +1,6 @@
 /**
  * Author: Strawberry / nashiora@github / echoephile@github
- * Description: Implements the
+ * Description: Implements the h
  */
 
 import {
@@ -51,6 +51,16 @@ export class PengerShell implements Executable {
             this.autorun = autorunString.split("/");
         } else {
             this.autorun = [];
+        }
+
+        this.takenPrograms = [];
+        const path = this.getCanonicalPath("C:", "/software/ped.exe");
+        const edFile = pc.fileSystem.getFileInfo(path);
+        if(edFile) {
+            this.takenPrograms.push({
+                name: "ped",
+                path
+            });
         }
     }
 
@@ -161,8 +171,7 @@ export class PengerShell implements Executable {
                 "drop",
                 "reboot",
                 "zoom",
-                "disk",
-                "write"
+                "disk"
             ];
 
             const commandString =
@@ -194,6 +203,7 @@ export class PengerShell implements Executable {
                 } else if (knownTakenApp) {
                     const app = fileSystem.getFileInfo(knownTakenApp.path);
                     if (app && app.type === FileSystemObjectType.Executable) {
+                        // FIXME: the running program is not aware of cwd
                         await app.createInstance().run(args);
                         std.resetConsole();
                     } else {
@@ -451,6 +461,7 @@ export class PengerShell implements Executable {
         const fileEntry = fileSystem.getFileInfo(path);
         if (fileEntry) {
             if (fileEntry.type === FileSystemObjectType.Executable) {
+                // FIXME: the running program is not aware of cwd
                 await fileEntry.createInstance().run(args);
             } else if (
                 fileEntry.type === FileSystemObjectType.Link &&
@@ -639,8 +650,7 @@ export class PengerShell implements Executable {
         printEntry("drop", "Remove a program from the command list\n");
         printEntry("disk", "Manage drives and floppy disks\n");
         printEntry("reboot", "Restart the system\n");
-        printEntry("zoom", "Toggles the full screen mode on and off");
-        printEntry("write", "Write a line to a file");
+        printEntry("zoom", "Toggles the full screen mode on and off\n");
 
         if (this.takenPrograms.length > 0) {
             std.writeConsole("\nAvailable programs:\n");
@@ -662,10 +672,14 @@ export class PengerShell implements Executable {
             let flags = [];
             if(drive.readOnly) flags.push("ro");
             else flags.push("rw");
+            if(drive.kind == "RAMFloppy") flags.push("ram");
+            else if(drive.kind == "Fixed") flags.push("const");
             if(letter != null) flags.push("mount");
+            let seenKind = drive.kind;
+            if(seenKind == "RAMFloppy") seenKind = "Floppy";
             rows.push([
                 letter==null ? "<none>" : letter+":",
-                drive.kind,
+                seenKind,
                 drive.label,
                 String(summary.directoryCount),
                 String(summary.fileCount),
@@ -768,17 +782,20 @@ export class PengerShell implements Executable {
                 return;
             }
 
-            // TODO: detect if shell's pwd is inside this disk and fail
             fs.unmount(letter);
             std.writeConsole("Ejected " + letter + ":\n");
             return;
         } else if(command === "burn") {
-            throw "TODO";
-            const [name] = args.slice(1);
+            const [u_name] = args.slice(1);
+            if(!u_name) {
+                std.writeConsole("Need disk label to burn.\n");
+                return;
+            }
+            const name = u_name.toUpperCase();
             const drive = fs.getDriveByLabel(name);
-            if(name === "SYSTEM") {
+            if(drive.kind == "Fixed") {
                 // TODO: drive.kind == Fixed instead of this
-                std.writeConsole("Cannot destroy <SYSTEM> drive.\n");
+                std.writeConsole("Cannot destroy Fixed drive.\n");
                 return;
             }
             if(!drive) {
@@ -797,7 +814,8 @@ export class PengerShell implements Executable {
                 }
                 fs.unmount(letter);
             }
-            // TODO: destroy the universe
+            fs.unregisterDrive(drive.label);
+            std.writeConsole("Burned, destroyed and trashed " +drive.label+ "\n");
         } else if(
             command === "import" ||
             command === "export"
