@@ -39,6 +39,7 @@ import { TextBuffer } from "../TextBuffer";
 import { Blackjack } from "./Blackjack";
 import { Colors } from "./Colors";
 import { FileTransferTest } from "./FileTransferTest";
+import { TestPwd } from "./testexe/pwd";
 import { Pedlin } from "./Pedlin";
 import { EdApp } from "./ed";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
@@ -60,11 +61,12 @@ class PengOS {
     private pc: PC;
 
     constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
-        const std = new Std(keyboard, textBuffer, screen);
+        const fileSystem = new FileSystem();
+        const std = new Std(keyboard, textBuffer, screen, fileSystem);
         std.setConsoleScreenMode(ScreenMode.mode80x25);
         this.pc = {
-            fileSystem: new FileSystem(),
             std,
+            fileSystem,
             keyboard,
             reboot: async () => {
                 localStorage.removeItem("hasStartedUp");
@@ -146,6 +148,11 @@ class PengOS {
             type: FileType.Executable,
             name: "transfer.exe",
             createInstance: () => new FileTransferTest(this.pc),
+        });
+        testDir.addItem({
+            type: FileType.Executable,
+            name: "pwd.exe",
+            createInstance: () => new TestPwd(this.pc),
         });
 
         const softwareDir = rootDir.mkdir("software");

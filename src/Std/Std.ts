@@ -23,6 +23,10 @@ import { type Font } from "../Screen/Font";
 import { vga9x16, vga9x8, terminus8x16 } from "../Screen/Fonts";
 import { type BIOSFontFamily, biosSettings } from "../Pengputer/BIOSSettings";
 
+import { type FileHandle, type FileEntry,
+    FileType, FilePath, FileSystem, FileEntryDirectory
+} from "../FileSystem";
+
 const FONT_80X25_BY_FAMILY: Record<BIOSFontFamily, Font> = {
     vga: vga9x16,
     terminus: terminus8x16,
@@ -42,11 +46,64 @@ export class Std {
 
     private screenMode: ScreenMode;
 
-    constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
+    private fs: FileSystem;
+    private cwdPath: FilePath;
+    private cwd: FileEntryDirectory;
+
+    constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen, fs: FileSystem) {
         this.screenMode = ScreenMode.mode80x25;
         this.textBuffer = textBuffer;
         this.screen = screen;
         this.keyboard = keyboard;
+        this.fs = fs;
+        // set default cwd
+        const disks = fs.listMountedDrives();
+        if(!disks.length) throw new Error("at least one disk must be mounted");
+        this.cwdPath = new FilePath(disks[0].letter, [], true);
+        // this is needed to shut up tsc
+        this.cwd = new FileEntryDirectory("NOT_VALID_REPORT_BUG", []);
+        this.setCwdP(this.cwdPath);
+    }
+
+    /* File system thingies >v< */
+
+    getAbsolutePathS(rel: string): FilePath|null {
+        const relPath = FilePath.tryParse(rel);
+        if(!relPath) return null;
+
+        return this.cwdPath.combine(relPath);
+    }
+
+    getAbsolutePathP(rel: FilePath): FilePath {
+        return this.cwdPath.combine(rel);
+    }
+
+    setCwd(cwd: string): FilePath {
+        const path = FilePath.tryParse(cwd);
+        if(!path) return this.cwdPath;
+        return this.setCwdP(path);
+    }
+
+    setCwdP(cwd: FilePath): FilePath {
+        const newCwd = this.cwdPath.combine(cwd);
+        const newCwdEnt = this.fs.getFileInfo(newCwd);
+        if(!newCwdEnt) return this.cwdPath;
+        if(newCwdEnt.type != FileType.Directory) return this.cwdPath;
+        this.cwdPath = newCwd;
+        this.cwd = newCwdEnt;
+        return this.cwdPath;
+    }
+
+    getCwd(): FilePath { return this.cwdPath; }
+    getCwdStr(): string { return this.cwdPath.toString(); }
+
+    open(path: string, create: boolean = false): FileHandle|null {
+        const fpath = this.getAbsolutePathS(path);
+
+        // TODO: error messages :>
+        if(!fpath) return null;
+
+        return this.fs.openFile(fpath, create);
     }
 
     /* ===================== CONSOLE CONTROL ========================= */

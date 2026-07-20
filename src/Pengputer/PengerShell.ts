@@ -55,14 +55,8 @@ export class PengerShell implements Executable {
         }
 
         this.takenPrograms = [];
-        const path = this.getCanonicalPath("C:", "/software/ped.exe");
-        const edFile = pc.fileSystem.getFileInfo(path);
-        if(edFile) {
-            this.takenPrograms.push({
-                name: "ped",
-                path
-            });
-        }
+        this.takeProgram("ped", FilePath.tryParse("C:/software/ped.exe")!);
+        this.takeProgram("pwd", FilePath.tryParse("C:/test/pwd.exe")!);
     }
 
     private get workingDirectory(): FilePath {
@@ -76,9 +70,12 @@ export class PengerShell implements Executable {
     }
 
     private set workingDirectory(wd: FilePath) {
-        const drive = wd.drive ?? "C";
+        if(!wd.drive) throw new Error("workingDirectory set to non-abs path");
+        const drive = wd.drive;
         this.currentDrive = drive;
         this.workingDirectories[drive] = wd;
+        //this.workingDirectories[drive].drive = drive;
+        this.pc.std.setCwdP(wd);
     }
 
     private shiftAutorunCommand() {
@@ -391,6 +388,7 @@ export class PengerShell implements Executable {
         }
 
         this.currentDrive = letter;
+        this.pc.std.setCwdP(this.workingDirectories[letter]);
         std.writeConsole(`Now using ${this.workingDirectory.toString()}\n`);
     }
 
@@ -481,7 +479,6 @@ export class PengerShell implements Executable {
                 return;
             }
             if (file.type === FileType.Executable) {
-                // FIXME: the running program is not aware of cwd [2]
                 await file.execute(args);
             } else if (
                 file.type === FileType.Link &&
@@ -569,6 +566,28 @@ export class PengerShell implements Executable {
         this.suppressNextPromptNewline = true;
     }
 
+    private takeProgram(name: string, path: FilePath): boolean {
+        const { std, fileSystem: fs } = this.pc;
+        const target = fs.openFile(path);
+        if (!target) {
+            std.writeConsole(path.toString()+": Not found\n");
+            return false;
+        }
+        if (target.type !== FileType.Executable) {
+            std.writeConsole(path.toString()+": Not executable\n");
+            return false;
+        }
+        if(!(target.mode & FileMode.EXECUTE)) {
+            std.writeConsole(path.toString()+": Not allowed to execute\n");
+            return false;
+        }
+
+        this.takenPrograms.push({
+            name, path
+        });
+        return true;
+    }
+
     private commandTake(args: string[]) {
         const { std, fileSystem } = this.pc;
         const [argsName] = args;
@@ -592,35 +611,11 @@ export class PengerShell implements Executable {
             std.writeConsole(`Invalid name provided\n`);
             return;
         }
-        const target = fileSystem.openFile(path);
-        if (!target) {
-            std.writeConsole("Program not found\n");
-            return;
-        }
-        if (target.type !== FileType.Executable) {
-            std.writeConsole("Not executable\n");
-            return;
-        }
-        if(!(target.mode & FileMode.EXECUTE)) {
-            std.writeConsole(argsName+": Not allowed to execute\n");
-            return;
-        }
         const strippedSplit = strippedNameMatch[0].split("/");
-        const strippedName = strippedSplit[strippedSplit.length - 1];
-        let candidateName = strippedName;
-        let dedupIndex = 0;
-        while (this.takenPrograms.find((p) => p.name === candidateName)) {
-            dedupIndex += 1;
-            candidateName = `${strippedName}~${dedupIndex}`;
+        const addName = strippedSplit[strippedSplit.length - 1];
+        if(this.takeProgram(addName, path)) {
+            std.writeConsole(`Added "${argsName}" as "${addName}" to command list\n`);
         }
-
-        std.writeConsole(
-            `Added "${argsName}" as "${candidateName}" to command list\n`,
-        );
-        this.takenPrograms.push({
-            name: candidateName,
-            path,
-        });
     }
 
     private commandDrop(args: string[]) {
