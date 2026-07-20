@@ -3,22 +3,20 @@ import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
-import { DateApp } from "./DateApp";
-import { EightBall } from "./EightBall";
 import {
     FileEntryDirectory,
     FilePath,
     FileSystem,
     FileType,
 } from "../FileSystem";
-import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
-import { PengerShell } from "./PengerShell";
 
 import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
 import { ScreenMode, Std } from "../Std";
+import { TextBuffer } from "../TextBuffer";
+
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg"; // cspell:disable-line
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
@@ -30,18 +28,26 @@ import {
     LinkFile,
     TextFile,
 } from "@FileSystem/fileTypes";
+/* programs */
+import { PengerShell } from "./PengerShell";
+// fun
 import { PengsweeperApp } from "./Pengsweeper";
-import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
-
-import "@Color/ansi";
-import { TextBuffer } from "../TextBuffer";
+import { DateApp } from "./DateApp";
+import { EightBall } from "./EightBall";
 import { Blackjack } from "./Blackjack";
-import { Colors } from "./Colors";
-import { FileTransferTest } from "./FileTransferTest";
+// test programs
+import { PrintArgs } from "./testexe/PrintArgs";
+import { HelloWorld } from "./testexe/HelloWorld";
+import { Colors } from "./testexe/Colors";
+import { FileTransferTest } from "./testexe/FileTransferTest";
 import { TestPwd } from "./testexe/pwd";
+// editors
 import { Pedlin } from "./Pedlin";
 import { EdApp } from "./ed";
+/* end programs */
+
+import "@Color/ansi";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 import { vga9x16, loadFonts } from "../Screen/Fonts";

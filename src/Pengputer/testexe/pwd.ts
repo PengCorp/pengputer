@@ -1,5 +1,5 @@
 import { type PC } from "../PC";
-import { type Executable } from "../../FileSystem/fileTypes";
+import { type Executable } from "@FileSystem/fileTypes";
 
 export class TestPwd implements Executable {
     private pc: PC;

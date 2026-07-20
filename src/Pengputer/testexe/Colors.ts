@@ -12,9 +12,9 @@ import {
     BOXED_LEFT,
     BOXED_RIGHT,
     BOXED_TOP,
-} from "../TextBuffer";
+} from "../../TextBuffer";
 import { type Executable } from "@FileSystem/fileTypes";
-import { type PC } from "./PC";
+import { type PC } from "../PC";
 
 const CHAR = "  ";
 

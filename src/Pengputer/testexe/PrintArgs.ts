@@ -1,5 +1,5 @@
 import { type Executable } from "@FileSystem/fileTypes";
-import { type PC } from "./PC";
+import { type PC } from "../PC";
 
 export class PrintArgs implements Executable {
     private pc: PC;
