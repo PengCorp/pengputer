@@ -1,7 +1,7 @@
 import type { FilePath } from "./FilePath";
-import type { FileInfo, FileInfoDirectory } from "./FileInfo";
-import { type DriveLetter, isDriveLetter } from "./constants";
-import { FileSystemObjectType } from "./types";
+import type { FileEntry, FileEntryDirectory } from "./FileInfo";
+import { type DriveLetter, isDriveLetter, FileMode } from "./constants";
+import { FileType } from "./types";
 import { FileSystemDrive } from "./Drive";
 import { TextFile } from "./fileTypes";
 
@@ -15,12 +15,25 @@ export interface DriveContentsSummary {
     fileCount: number;
 }
 
-function summarizeContents(dir: FileInfoDirectory): DriveContentsSummary {
+/* Opened file/directory */
+export interface FileHandle {
+    readonly mode: FileMode;
+    readonly type: FileType;
+    readonly path: FilePath;
+    read?(): string;
+    write?(text: string): void;
+    /* Execute program / Special action (play/pause, open link, etc.); async */
+    execute?(args: string[]): Promise<boolean>;
+
+    getEntry(): /*readonly*/ FileEntry
+}
+
+function summarizeContents(dir: FileEntryDirectory): DriveContentsSummary {
     let directoryCount = 0;
     let fileCount = 0;
 
     for (const entry of dir.entries) {
-        if (entry.type === FileSystemObjectType.Directory) {
+        if (entry.type === FileType.Directory) {
             directoryCount += 1;
 
             const nested = summarizeContents(entry);
@@ -34,14 +47,20 @@ function summarizeContents(dir: FileInfoDirectory): DriveContentsSummary {
     return { directoryCount, fileCount };
 }
 
+export interface MountedDrive {
+    readonly flags: FileMode,
+    readonly label: string
+};
+
 export class FileSystem {
-    // mounts["C:"] -> "SYSTEM"
+    // mounts["C:"] -> MountedDrive { -rx, "SYSTEM" }
     // drives["SYSTEM"] -> <FileSystemDrive "SYSTEM">
-    #mounts = new Map<DriveLetter, string>();
+    #mounts = new Map<DriveLetter, MountedDrive>();
     #drives = new Map<string, FileSystemDrive>();
 
     constructor() {
-        this.mountDrive("C", new FileSystemDrive(true, "SYSTEM", "Fixed"));
+        this.registerDrive(new FileSystemDrive(true, "SYSTEM", "Fixed"));
+        this.mount("C", "SYSTEM", FileMode.WRX);
     }
 
     registerDrive(drive: FileSystemDrive): boolean {
@@ -79,26 +98,32 @@ export class FileSystem {
         return this.#drives.has(label);
     }
 
-    mount(letter: DriveLetter, label: string): boolean {
+    mount(letter: DriveLetter, label: string, flags: FileMode = FileMode.WRX): boolean {
         if(!isDriveLetter(letter)) {
             console.error("mount(\""+label+"\"): not a valid drive letter");
             return false
         }
         if(this.#mounts.has(letter)) {
-            if(this.#mounts.get(letter) !== label) {
-                console.error("mount(\""+label+"\"): already mounted");
+            if(this.#mounts.get(letter)!.label !== label) {
+                console.error("mount(\""+label+"\"): letter already used");
                 return false;
             }
         }
+        //if(this.getMountpoint(label) != null) return false;
         if(!this.#drives.has(label)) return false;
-        this.#mounts.set(letter, label);
+        const diskMode = this.#drives.get(label)!.readOnly ? ~FileMode.WRITE : FileMode.WRX;
+        let mountInfo: MountedDrive = {
+            label: label,
+            flags: (flags & diskMode) & FileMode.WRX
+        }
+        this.#mounts.set(letter, mountInfo);
         return true;
     }
 
-    mountDrive(letter: DriveLetter, drive: FileSystemDrive): boolean {
+    /* mountDrive(letter: DriveLetter, drive: FileSystemDrive): boolean {
         this.registerDrive(drive);
         return this.mount(letter, drive.label);
-    }
+    } */
 
     unmount(letter: DriveLetter): boolean {
         if(!this.#mounts.has(letter)) return false;
@@ -111,9 +136,9 @@ export class FileSystem {
     }
 
     getDriveByLetter(letter: DriveLetter): FileSystemDrive | null {
-        const label = this.#mounts.get(letter);
-        if(!label) return null;
-        const drive = this.#drives.get(label);
+        const mount = this.#mounts.get(letter);
+        if(!mount) return null;
+        const drive = this.#drives.get(mount.label);
         if(!drive) return null;
         return drive;
     }
@@ -124,9 +149,14 @@ export class FileSystem {
         return drive;
     }
 
+    getMountedDriveMode(letter: string): FileMode {
+        const info = this.#mounts.get(letter);
+        if(!info) return 0;
+        return info.flags;
+    }
+
     getMountpoint(label: string): DriveLetter | null {
-        for (const [ letter, mountedLabel ] of this.#mounts.entries()) {
-            // console.log({ letter, mountedLabel, label });
+        for (const [ letter, { label: mountedLabel } ] of this.#mounts.entries()) {
             if(mountedLabel === label) return letter;
         }
         return null;
@@ -144,8 +174,8 @@ export class FileSystem {
 
     listMountedDrives(): DriveMount[] {
         return [...this.#mounts.entries()]
-            .map((([letter, name]) => {
-                const drive = this.getDriveByLabel(name)!;
+            .map((([letter, info]) => {
+                const drive = this.getDriveByLabel(info.label)!;
                 return { letter, drive };
             }).bind(this))
             .sort((a, b) =>
@@ -164,35 +194,110 @@ export class FileSystem {
         return this.summarizeDrive(drive);
     }
 
+    openFile(path: FilePath, create: boolean = false): FileHandle | null {
+        const entry = this.getFileInfo(path, create);
+        if(!entry) return null;
+        const driveMode = this.#mounts.get(path.drive!)!.flags;
+        const mode = (entry.mode & driveMode) & FileMode.WRX;
+
+        let writefunc, readfunc, execfunc;
+        writefunc = null; readfunc = null; execfunc = null;
+        // above funcs must be set as `function() { ... }` instead of
+        // `() => ...` because the latter doesn't seem to capture context
+        // from .bind()
+
+        if((mode & FileMode.READ) === FileMode.READ) {
+            if(entry.type == FileType.TextFile) {
+                readfunc = (function(){ return this.data.getText(); })
+            }
+        }
+
+        if((mode & FileMode.WRITE) === FileMode.WRITE) {
+            if(entry.type == FileType.TextFile) {
+                writefunc = (function(data: string) {
+                    this.data.replace(data);
+                })
+            }
+        }
+
+        if((mode & FileMode.EXECUTE) === FileMode.EXECUTE) {
+            if(entry.type != FileType.TextFile && entry.type != FileType.Directory) {
+                execfunc = (async function(args: string[]){
+                    const arg1 = args[0];
+                    if(this.type == FileType.Audio) {
+                        if(arg1 === "play")
+                            return this.data.play(), true;
+                        else if(arg1 === "stop")
+                            return this.data.stop(), true;
+                        else return false;
+                    } else if(this.type == FileType.Executable) {
+                        return await this.createInstance().run(args);
+                    } else if(this.type == FileType.Image) {
+                        throw new Error("TODO");
+                    } else if(this.type == FileType.Link) {
+                        if(arg1 === this.openType)
+                            return true;
+                        else if(!arg1)
+                            this.data.open();
+                        else return false;
+                    } else {
+                        throw new Error("FileHandle.read not implemented for file type " + this.type);
+                    }
+                })
+            }
+        }
+        if(writefunc) writefunc = writefunc.bind(entry);
+        if(readfunc) readfunc = readfunc.bind(entry);
+        if(execfunc) execfunc = execfunc.bind(entry);
+
+        const handle: FileHandle = {
+            mode: mode,
+            type: entry.type,
+            write: writefunc,
+            read: readfunc,
+            execute: execfunc,
+            getEntry: (function() { return this as FileEntry; }).bind(entry)
+        };
+
+        return handle;
+    }
+
     // TODO: see in FilePath:tryParse
-    getFileInfo(path: FilePath | null, create: boolean = false): FileInfo | null {
+    // USERS: please use FileSystem.openFile instead
+    getFileInfo(path: FilePath | null, create: boolean = false): FileEntry | null {
         if (path === null || path.drive === null) return null;
 
         const drive = this.getDriveByLetter(path.drive);
         if (!drive) return null;
 
-        let entry: FileInfo = drive.rootEntry;
+        let entry: FileEntry = drive.rootEntry;
         for (let i = 0; i < path.pieces.length; i++) {
             const name = path.pieces[i];
-            if (entry.type !== FileSystemObjectType.Directory) return null;
+            if (entry.type !== FileType.Directory) return null;
 
-            const next: FileInfo | undefined = entry.entries.find(
+            const next: FileEntry | undefined = entry.entries.find(
                 (e) => e.name === name,
             );
             if (!next) {
                 if (i == path.pieces.length-1 && create) {
                     // optionally create a text file
                     this.#requireWritableDrive(path.drive!);
-                    next = entry.addItem({
-                        type: FileSystemObjectType.TextFile,
+                    return entry.addItem({
+                        type: FileType.TextFile,
                         data: new TextFile,
                         name: name,
+                        mode: 6 /* WR- */
                     });
                 } else return null;
             }
 
             entry = next;
         }
+
+        // unsuitable since it destroys local permissions
+        /* if(entry != null) {
+            entry.mode &= driveMode;
+        } */
 
         return entry;
     }
@@ -203,7 +308,7 @@ export class FileSystem {
             const existing = dir.entries.find((e) => e.name === name);
             if (existing === undefined) {
                 dir = dir.mkdir(name);
-            } else if (existing.type === FileSystemObjectType.Directory) {
+            } else if (existing.type === FileType.Directory) {
                 dir = existing;
             } else {
                 throw new Error(`${name} is not a directory`);
@@ -222,35 +327,35 @@ export class FileSystem {
         if (parent === null) {
             throw new Error(`${parentPath.toString()} does not exist`);
         }
-        if (parent.type !== FileSystemObjectType.Directory) {
+        if (parent.type !== FileType.Directory) {
             throw new Error(`${parentPath.toString()} is not a directory`);
         }
 
         parent.rmdir(segments[segments.length - 1], force);
     }
 
-    createFile(path: FilePath): FileInfo {
+    /* Create new text file */
+    createFile(path: FilePath): FileEntry {
         let dir = this.#requireWritableDrive(path.drive).rootEntry;
         for (const i in path.pieces) {
-            console.log({i}, {i: 0});
             const name = path.pieces[i];
             let existing = dir.entries.find((e) => e.name === name);
             if (i == path.pieces.length-1) {
                 if(!existing) {
                     return dir.addItem({
-                        type: FileSystemObjectType.TextFile,
+                        type: FileType.TextFile,
                         data: new TextFile,
                         name
                     });
                 }
-                if(existing.type == FileSystemObjectType.Directory) {
+                if(existing.type == FileType.Directory) {
                     throw new Error("Cannot create " + path.toString() + ": Is a Directory");
                 }
                 return existing;
             }
             if (existing === undefined) {
                 dir = dir.mkdir(name);
-            } else if (existing.type === FileSystemObjectType.Directory) {
+            } else if (existing.type === FileType.Directory) {
                 dir = existing;
             } else {
                 throw new Error(`${name} is not a directory`);

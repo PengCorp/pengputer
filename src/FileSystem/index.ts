@@ -5,7 +5,8 @@ export {
     LSKEY_FLOPPIES,
 } from "./constants";
 export { FilePath } from "./FilePath";
-export { FileSystemObjectType } from "./types";
-export { FileSystem } from "./FileSystem";
-export { FileInfoDirectory } from "./FileInfo";
+export { FileType } from "./types";
+export { type FileHandle, FileSystem } from "./FileSystem";
+export { type FileEntry, FileEntryDirectory } from "./FileInfo";
 export { FileSystemDrive } from "./Drive";
+export { FileMode } from "./constants";

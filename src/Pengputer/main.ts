@@ -6,10 +6,10 @@ import { waitFor } from "@Toolbox/waitFor";
 import { DateApp } from "./DateApp";
 import { EightBall } from "./EightBall";
 import {
-    FileInfoDirectory,
+    FileEntryDirectory,
     FilePath,
     FileSystem,
-    FileSystemObjectType,
+    FileType,
 } from "../FileSystem";
 import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
@@ -79,7 +79,7 @@ class PengOS {
         );
         if (
             pengerShellExe !== null &&
-            pengerShellExe.type === FileSystemObjectType.Executable
+            pengerShellExe.type === FileType.Executable
         ) {
             await pengerShellExe.createInstance().run([]);
         } else {
@@ -93,13 +93,13 @@ class PengOS {
     async startup() {
         const rootDir = this.pc.fileSystem.getFileInfo(
             FilePath.tryParse("C:/"),
-        )! as FileInfoDirectory;
+        )! as FileEntryDirectory;
         if (!rootDir) {
             throw new Error("Root dir is undefined.");
         }
 
         rootDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "date.exe",
             createInstance: () => new DateApp(this.pc),
         });
@@ -112,7 +112,7 @@ class PengOS {
                 "XII OF THE PENGER CRIMINAL JUSTICE CODE",
         );
         pengOSDir.addItem({
-            type: FileSystemObjectType.TextFile,
+            type: FileType.TextFile,
             data: licenseTxt,
             name: "LICENSE.TXT",
         });
@@ -121,29 +121,29 @@ class PengOS {
             `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
         );
         pengOSDir.addItem({
-            type: FileSystemObjectType.TextFile,
+            type: FileType.TextFile,
             data: pplTxt,
             name: "PPL.TXT",
         });
 
         const testDir = rootDir.mkdir("test");
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "colors.exe",
             createInstance: () => new Colors(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "args.exe",
             createInstance: () => new PrintArgs(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "hello.exe",
             createInstance: () => new HelloWorld(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "transfer.exe",
             createInstance: () => new FileTransferTest(this.pc),
         });
@@ -151,45 +151,45 @@ class PengOS {
         const softwareDir = rootDir.mkdir("software");
 
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "8ball.exe",
             createInstance: () => new EightBall(this.pc),
         });
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "psh.exe",
             createInstance: () => new PengerShell(this.pc),
         });
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pedlin.exe",
             createInstance: () => new Pedlin(this.pc),
         });
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "ped.exe",
             createInstance: () => new EdApp(this.pc)
         });
 
         const gamesDir = rootDir.mkdir("games");
         gamesDir.addItem({
-            type: FileSystemObjectType.Link,
+            type: FileType.Link,
             name: "pongr.exe", // cspell:disable-line
             data: new LinkFile("https://penger.city/pongerslair/"),
             openType: "run",
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pengtris.exe", // cspell:disable-line
             createInstance: () => new TetrisApp(this.pc),
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pengswp.exe", // cspell:disable-line
             createInstance: () => new PengsweeperApp(this.pc),
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "blakjack.exe", // cspell:disable-line
             createInstance: () => new Blackjack(this.pc),
         });
@@ -197,29 +197,29 @@ class PengOS {
         const documentsDir = rootDir.mkdir("documents");
         const musicDir = documentsDir.mkdir("music");
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "CANYON.MID",
             data: new AudioFile(canyonOgg),
         });
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "PASSPORT.MID",
             data: new AudioFile(passportOgg),
         });
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "mountainking.mid", // cspell:disable-line
             data: new AudioFile(mountainKingOgg),
         });
 
         const pengersDir = documentsDir.mkdir("pengers");
         pengersDir.addItem({
-            type: FileSystemObjectType.Image,
+            type: FileType.Image,
             name: "macger.png", // cspell:disable-line
             data: new ImageFile(macgerPng), // cspell:disable-line
         });
         pengersDir.addItem({
-            type: FileSystemObjectType.Image,
+            type: FileType.Image,
             name: "nerdger.png", // cspell:disable-line
             data: new ImageFile(nerdgerPng), // cspell:disable-line
         });

@@ -1,4 +1,4 @@
-import { FileInfoDirectory } from "./FileInfo";
+import { FileEntryDirectory } from "./FileInfo";
 
 export type DriveKind = "Fixed" | "Floppy" | "RAMFloppy";
 
@@ -7,16 +7,16 @@ export class FileSystemDrive {
     readonly kind: DriveKind;
     readonly label: string;
 
-    #root: FileInfoDirectory;
+    #root: FileEntryDirectory;
 
     constructor(readOnly: boolean = true, label: string = "UNTITLED", kind: DriveKind = "RAMFloppy") {
         this.readOnly = readOnly;
         this.label = label;
         this.kind = kind;
-        this.#root = new FileInfoDirectory("/", []);
+        this.#root = new FileEntryDirectory("/", []);
     }
 
-    get rootEntry(): FileInfoDirectory {
+    get rootEntry(): FileEntryDirectory {
         return this.#root;
     }
 }

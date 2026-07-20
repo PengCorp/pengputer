@@ -5,7 +5,8 @@
 
 import {
     FilePath,
-    FileSystemObjectType,
+    FileType,
+    FileMode,
     isDriveLetter,
     PATH_SEPARATOR,
     type DriveLetter,
@@ -123,7 +124,6 @@ export class PengerShell implements Executable {
             drop: this.commandDrop.bind(this),
             reboot: this.commandReboot.bind(this),
             disk: this.commandDisk.bind(this),
-            write: this.commandWrite.bind(this)
         };
 
         this.isRunning = true;
@@ -146,7 +146,7 @@ export class PengerShell implements Executable {
             ];
 
             const entry = fileSystem.getFileInfo(this.workingDirectory);
-            if (entry && entry.type === FileSystemObjectType.Directory) {
+            if (entry && entry.type === FileType.Directory) {
                 const entries = entry.entries;
                 autoCompleteStrings = [
                     ...autoCompleteStrings,
@@ -201,16 +201,18 @@ export class PengerShell implements Executable {
                     await knownCommand(args.slice(1));
                     std.resetConsole();
                 } else if (knownTakenApp) {
-                    const app = fileSystem.getFileInfo(knownTakenApp.path);
-                    if (app && app.type === FileSystemObjectType.Executable) {
-                        // FIXME: the running program is not aware of cwd
-                        await app.createInstance().run(args);
-                        std.resetConsole();
-                    } else {
-                        std.writeConsole(
-                            `Executable not found. Consider dropping`,
-                        );
+                    const app = fileSystem.openFile(knownTakenApp.path);
+                    if(!app || app.type != FileType.Executable) {
+                        std.writeConsole("Executable not found. Consider dropping");
+                        continue;
                     }
+                    if(!(app.mode & FileMode.EXECUTE)) {
+                        std.writeConsole(knownTakenApp.path.toString()+": Not allowed to execute");
+                        continue;
+                    }
+                    // FIXME: the running program is not aware of cwd [0]
+                    await app.execute(args);
+                    std.resetConsole();
                 } else if (driveSwitchMatch) {
                     const drive = driveSwitchMatch[1].toUpperCase();
                     if (isDriveLetter(drive)) {
@@ -289,8 +291,11 @@ export class PengerShell implements Executable {
         const entry = fileSystem.getFileInfo(lookPath);
 
         std.writeConsole(`Looking in ${lookPath.toString()}\n\n`);
+
+        let rows: string[][] = [];
         if (entry) {
-            if (entry.type === FileSystemObjectType.Directory) {
+            const driveFlags = fileSystem.getMountedDriveMode(lookPath.drive);
+            if (entry.type === FileType.Directory) {
                 const entries = [...entry.entries];
                 if (entries.length > 0) {
                     entries.sort((a, b) => {
@@ -304,27 +309,38 @@ export class PengerShell implements Executable {
                     });
                     entries.sort((a, b) => {
                         if (
-                            a.type === FileSystemObjectType.Directory &&
-                            b.type === FileSystemObjectType.Directory
+                            a.type === FileType.Directory &&
+                            b.type === FileType.Directory
                         ) {
                             return 0;
                         }
                         if (
-                            a.type === FileSystemObjectType.Directory &&
-                            b.type !== FileSystemObjectType.Directory
+                            a.type === FileType.Directory &&
+                            b.type !== FileType.Directory
                         ) {
                             return -1;
                         }
                         return 1;
                     });
-                    for (const directoryEntry of entries) {
+                    for (const ent of entries) {
+                        const mode = ent.mode & driveFlags;
                         const isDir =
-                            directoryEntry.type ===
-                            FileSystemObjectType.Directory;
-                        std.writeConsole(
-                            `${directoryEntry.name}${isDir ? PATH_SEPARATOR : ""}\n`,
-                        );
+                            ent.type ===
+                            FileType.Directory;
+                        let size = 0;
+                        if(isDir)
+                          size = ent.entries.length;
+                        else if(ent.type == FileType.TextFile)
+                          size = ent.data.getText().length;
+                        rows.push([
+                            ((mode & FileMode.WRITE) ? 'w' : '-')
+                            +((mode & FileMode.READ) ? 'r' : '-')
+                            +((mode & FileMode.EXECUTE) ? 'x' : '-'),
+                            String(size),
+                            `${ent.name}${isDir ? PATH_SEPARATOR : ""}`,
+                        ]);
                     }
+                    std.printAlignedRows(rows, 3, false);
                 } else {
                     std.writeConsole(`Directory is empty\n`);
                 }
@@ -353,7 +369,7 @@ export class PengerShell implements Executable {
 
         const fsEntry = fileSystem.getFileInfo(newPath);
         if (fsEntry) {
-            if (fsEntry.type === FileSystemObjectType.Directory) {
+            if (fsEntry.type === FileType.Directory) {
                 this.workingDirectory = newPath;
                 std.writeConsole(
                     `Now in ${this.workingDirectory.toString()}\n`,
@@ -458,17 +474,21 @@ export class PengerShell implements Executable {
             return;
         }
 
-        const fileEntry = fileSystem.getFileInfo(path);
-        if (fileEntry) {
-            if (fileEntry.type === FileSystemObjectType.Executable) {
-                // FIXME: the running program is not aware of cwd
-                await fileEntry.createInstance().run(args);
+        const file = fileSystem.openFile(path);
+        if (file) {
+            if(!(file.mode & FileMode.EXECUTE)) {
+                std.writeConsole(fileName+": Not allowed to execute\n");
+                return;
+            }
+            if (file.type === FileType.Executable) {
+                // FIXME: the running program is not aware of cwd [2]
+                await file.execute(args);
             } else if (
-                fileEntry.type === FileSystemObjectType.Link &&
-                fileEntry.openType === "run"
+                file.type === FileType.Link &&
+                await file.execute(["run"])
             ) {
                 std.writeConsole("Running...\n");
-                fileEntry.data.open();
+                await file.execute([]);
             } else {
                 std.writeConsole(`Not executable\n`);
             }
@@ -492,18 +512,26 @@ export class PengerShell implements Executable {
             return;
         }
 
-        const fileEntry = fileSystem.getFileInfo(path);
-        if (fileEntry) {
-            if (fileEntry.type === FileSystemObjectType.TextFile) {
-                std.writeConsole(`${fileEntry.data.getText()}`);
-            } else if (fileEntry.type === FileSystemObjectType.Audio) {
+        const file = fileSystem.openFile(path);
+        if(!file) {
+            std.writeConsole("Does not exist\n");
+        } else {
+            if(!(file.mode & FileMode.READ)) {
+                std.writeConsole(path.toString()+": Not allowed to read\n");
+                return;
+            }
+
+            const fileEntry = file.getEntry();
+            if (file.type === FileType.TextFile) {
+                std.writeConsole(file.read());
+            } else if (file.type === FileType.Audio) {
                 std.writeConsole(`Playing ${fileEntry.name}...\n`);
                 std.writeConsole(`Press any key to exit.`);
-                fileEntry.data.play();
+                file.execute(["play"]);
                 await std.readConsoleKey();
-                fileEntry.data.stop();
+                file.execute(["stop"]);
                 std.writeConsole(`\n`);
-            } else if (fileEntry.type === FileSystemObjectType.Image) {
+            } else if (file.type === FileType.Image) {
                 std.clearConsole();
                 const image = await fileEntry.data.load();
                 if (image) {
@@ -519,16 +547,14 @@ export class PengerShell implements Executable {
                 std.resetConsole();
                 std.clearConsole();
             } else if (
-                fileEntry.type === FileSystemObjectType.Link &&
-                fileEntry.openType === "open"
+                file.type === FileType.Link &&
+                await file.execute(["open"])
             ) {
                 std.writeConsole("Opening...\n");
-                fileEntry.data.open();
+                await file.execute([]);
             } else {
                 std.writeConsole(`Not readable\n`);
             }
-        } else {
-            std.writeConsole(`Does not exist\n`);
         }
     }
 
@@ -566,13 +592,17 @@ export class PengerShell implements Executable {
             std.writeConsole(`Invalid name provided\n`);
             return;
         }
-        const target = fileSystem.getFileInfo(path);
+        const target = fileSystem.openFile(path);
         if (!target) {
             std.writeConsole("Program not found\n");
             return;
         }
-        if (target.type !== FileSystemObjectType.Executable) {
+        if (target.type !== FileType.Executable) {
             std.writeConsole("Not executable\n");
+            return;
+        }
+        if(!(target.mode & FileMode.EXECUTE)) {
+            std.writeConsole(argsName+": Not allowed to execute\n");
             return;
         }
         const strippedSplit = strippedNameMatch[0].split("/");
@@ -674,7 +704,18 @@ export class PengerShell implements Executable {
             else flags.push("rw");
             if(drive.kind == "RAMFloppy") flags.push("ram");
             else if(drive.kind == "Fixed") flags.push("const");
-            if(letter != null) flags.push("mount");
+            if(letter != null) {
+                const mountMode = fileSystem.getMountedDriveMode(letter);
+                if(mountMode & FileMode.WRITE) {
+                    if(flags.indexOf("rw")) {
+                        flags[flags.indexOf("rw")] = "ro";
+                    }
+                }
+                flags.push("mount");
+                if(!(mountMode & FileMode.EXECUTE)) {
+                    flags[flags.indexOf("mount")] += "=noexec";
+                }
+            }
             let seenKind = drive.kind;
             if(seenKind == "RAMFloppy") seenKind = "Floppy";
             rows.push([
@@ -699,9 +740,9 @@ export class PengerShell implements Executable {
         } else if (command === "spawn") {
             const [name] = args.slice(1);
             if(!name) {
-                std.consoleWrite("Not enough arguments to <");
-                std.consoleWrite("disk spawn <name>", { bold: true });
-                std.consoleWrite(">\n", { bold: false });
+                std.writeConsole("Not enough arguments to <");
+                std.writeConsole("disk spawn <name>", { bold: true });
+                std.writeConsole(">\n", { bold: false });
                 return;
             }
             const label = name.toUpperCase();
@@ -793,13 +834,13 @@ export class PengerShell implements Executable {
             }
             const name = u_name.toUpperCase();
             const drive = fs.getDriveByLabel(name);
+            if(!drive) {
+                std.writeConsole("Drive <" +name+ "> does not exist.\n");
+                return;
+            }
             if(drive.kind == "Fixed") {
                 // TODO: drive.kind == Fixed instead of this
                 std.writeConsole("Cannot destroy Fixed drive.\n");
-                return;
-            }
-            if(!drive) {
-                std.writeConsole("Drive <" +name+ "> does not exist.\n");
                 return;
             }
             let letter = fs.getMountpoint(name);
@@ -871,33 +912,5 @@ export class PengerShell implements Executable {
     private commandZoom() {
         biosSettings.setSetting("zoom", !biosSettings.getSetting("zoom"));
         applyFullScreenState();
-    }
-
-    private commandWrite(args: string[]) {
-        const [fileName, u_string] = args;
-        const { std, fileSystem: fs } = this.pc;
-
-        if(!fileName) {
-            std.writeConsole("Need file to write to\n");
-            std.writeConsole("Usage: write <filename> [text]\n");
-            return;
-        }
-        const path = this.getCanonicalPath(this.workingDirectory, fileName);
-        if(!path) {
-            throw new Error("Could not get file path");
-        }
-
-        let file = fs.getFileInfo(path);
-        if(!file) {
-            file = fs.createFile(path);
-        }
-
-        if(file.type != FileSystemObjectType.TextFile) {
-            std.writeConsole(fileName+": Not readable\n");
-            return;
-        }
-        if(u_string) {
-            file.data.append(u_string + "\n");
-        }
     }
 }

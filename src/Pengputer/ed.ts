@@ -4,7 +4,7 @@
 import { type PC } from "./PC";
 import { Std } from "../Std";
 import { type Executable } from "../FileSystem/fileTypes";
-import { type FileInfo, FilePath, FileSystemObjectType } from "../FileSystem";
+import { type FileHandle, FilePath, FileType, FileMode } from "../FileSystem";
 
 interface ParsedCommand {
     cmd: string|null;
@@ -18,7 +18,7 @@ export class EdApp implements Executable {
 
     private lines: string[];
     private lineNo: number;
-    private file: FileInfo | null;
+    private file: FileHandle | null;
     private path: FilePath | null;
 
     constructor(pc: PC) {
@@ -32,26 +32,27 @@ export class EdApp implements Executable {
 
     private readFile(): number {
         if(!this.file) throw new Error("called readFile with no file");
-        this.lines = this.file.data.getText().split('\n');
-        return this.file.data.getText().length;
+        const data = this.file.read();
+        this.lines = data.split('\n');
+        return data.length;
     }
 
     private writeFile(fileName: string | null): number {
-        /* standartized error handling and better FS.open would be nice :P */
         const { std } = this;
         let wpath: FilePath|null = null;
-        let wfile: FileInfo|null = null;
+        let wfile: FileHandle|null = null;
 
         // pick file to write to: `fileName` > this.path > ERROR
         if(fileName) {
             wpath = FilePath.tryParse(fileName, null);
-            console.log(wfile);
+            //console.log(wfile);
             if(!wpath) {
                 return -1;
             }
         } else {
             wpath = this.path;
             wfile = this.file;
+            if(wpath) fileName = wpath.toString();
         }
 
         if(!wpath) {
@@ -62,17 +63,20 @@ export class EdApp implements Executable {
         // open file for writing
         if(!wfile) {
             try {
-                let fileInf = this.pc.fileSystem.getFileInfo(wfile, /*create*/ true);
-                if(fileInf) {
-                    if(fileInf.type == FileSystemObjectType.Directory) {
+                let file = this.pc.fileSystem.openFile(wpath, /*create*/ true);
+                if(file) {
+                    if(file.type == FileType.Directory) {
                         std.writeConsole(fileName+": Is a directory\n");
                         return -2;
-                    } else if(fileInf.type != FileSystemObjectType.TextFile) {
+                    } else if(file.type != FileType.TextFile) {
                         std.writeConsole(fileName+": Not editable\n");
                         return -2;
                     }
-                } else return -1; // you really fucked up
-                wfile = fileInf;
+                } else {
+                    std.writeConsole(fileName+": i TRIED to open the FILE but it REALLY didn't work\n");
+                    return -1; // you really fucked up
+                }
+                wfile = file;
             } catch(e) {
                 if(e.message) {
                     if(/read-only/.test(e.message)) {
@@ -92,6 +96,11 @@ export class EdApp implements Executable {
             }
         }
 
+        if(!wfile.write) {
+            std.writeConsole(fileName+": Not allowed to write\n");
+            return -2;
+        }
+
         // legal:
         // this.path && this.file (ignore)
         //  this.path && !this.file (set this.file)
@@ -105,9 +114,31 @@ export class EdApp implements Executable {
         }
 
         const text = this.lines.join('\n');
-        this.file.data.replace(text);
+        this.file.write(text);
 
         return text.length;
+    }
+
+    private openFile(fileName: string) {
+        const { std } = this;
+
+        const filePath = FilePath.tryParse(fileName, null);
+        if(!filePath) {
+            std.writeConsole("Failed to parse file path\n");
+            return;
+        }
+        this.file = this.pc.fileSystem.openFile(filePath, false);
+        console.log(this.file, filePath);
+        if(this.file) {
+            if(this.file.type != FileType.TextFile) {
+                std.writeConsole(fileName+": Not editable\n");
+                return;
+            }
+            std.writeConsole(String(this.readFile())+"\n");
+        } else {
+            // it's fine, we will try to create the file when user writes to it.
+        }
+        this.path = filePath;
     }
 
     private async readUserLines(): Promise<string[]> {
@@ -129,23 +160,7 @@ export class EdApp implements Executable {
         args.shift();
         if(args.length > 0) {
             const fileName = args[0];
-            const filePath = FilePath.tryParse(fileName, null);
-            if(!filePath) {
-                std.writeConsole("Failed to parse file path\n");
-                return;
-            }
-            this.file = this.pc.fileSystem.getFileInfo(filePath);
-            console.log(this.file, filePath);
-            if(this.file) {
-                if(this.file.type != FileSystemObjectType.TextFile) {
-                    std.writeConsole(fileName+": Not editable\n");
-                    return;
-                }
-                std.writeConsole(String(this.readFile())+"\n");
-            } else {
-                std.writeConsole(fileName+": No such file\n");
-            }
-            this.path = filePath;
+            this.openFile(fileName);
         }
 
         // parsing funcs
@@ -163,7 +178,6 @@ export class EdApp implements Executable {
             let cur = 0;
 
             let line = await std.readConsoleLine();
-            console.log(line);
             if(!line || line.trim().length == 0) {
                 std.writeConsole("?\n");
                 continue;
@@ -195,7 +209,6 @@ export class EdApp implements Executable {
                     cur++;
                 }
             }
-            console.log(range);
 
             if(range[0] > range[1]) {
                 std.writeConsole("?\n");
@@ -258,7 +271,7 @@ export class EdApp implements Executable {
                 if(range[0] == 0) {
                     range[0] = range[1] = this.lineNo?this.lineNo:1;
                 }
-                if(range[0]-1 >= this.lines.length) {
+                if(range[0] > this.lines.length) {
                     std.writeConsole("?\n");
                     continue;
                 }
@@ -286,10 +299,8 @@ export class EdApp implements Executable {
                     this.lines[this.lineNo-1] = null;
                     this.lines = this.lines.filter(l => l != null && l != undefined);
                 } else {
-                    console.log(lines);
                     let i: number;
                     for(i = 0; i < lines.length; i++ ) {
-                        console.log(i);
                         this.lines[this.lineNo-1+i] = lines[i];
                     }
                     this.lineNo += i-1;
@@ -305,14 +316,13 @@ export class EdApp implements Executable {
                 this.lineNo += 1;
 
                 const latter = [...this.lines.slice(this.lineNo-1)];
-                console.log(latter);
 
                 let i: number;
                 for(i = 0; i < lines.length; i++ ) {
                     this.lines[this.lineNo-1+i] = lines[i];
                 }
+                this.lineNo += i-1;
 
-                console.log(this.lines.slice(0, this.lineNo-1+i), latter);
                 this.lines = [...this.lines.slice(0, this.lineNo-1+i), ...latter];
 
                 continue;

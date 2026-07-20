@@ -1,49 +1,58 @@
 import _ from "lodash";
 import type {
     AudioFile,
-    BinaryFile,
     ImageFile,
     LinkFile,
     LinkOpenType,
     TextFile,
     Executable,
 } from "./fileTypes";
-import { FileSystemObjectType } from "./types";
+import { FileType } from "./types";
+import { FileMode } from "./constants";
 
-export class FileInfoDirectory {
-    type: FileSystemObjectType.Directory = FileSystemObjectType.Directory;
+export class FileEntryDirectory {
+    type: FileType.Directory = FileType.Directory;
+    mode: FileMode;
 
     #name: string;
-    #entries: FileInfo[] = [];
+    #entries: FileEntry[] = [];
 
-    constructor(name: string, entries: FileInfo[]) {
+    constructor(name: string, entries: FileEntry[]) {
         this.#name = name;
         this.#entries = entries;
+        this.mode = FileMode.WRX;
     }
 
     get name() {
         return this.#name;
     }
 
-    get entries(): readonly FileInfo[] {
+    get entries(): readonly FileEntry[] {
         return [...this.#entries];
     }
 
-    addItem(info: Exclude<FileInfo, FileInfoDirectory>): FileInfo {
+    addItem(info: Exclude<FileEntry, FileEntryDirectory>): FileEntry {
         if (_.find(this.#entries, (e) => e.name === info.name)) {
             throw new Error(`${info.name} already exists`);
+        }
+
+        if(info.mode == undefined || info.mode == null) {
+            info.mode = FileMode.READ | FileMode.WRITE;
+            if(info.type != FileType.TextFile)
+                info.mode |= FileMode.EXECUTE;
         }
 
         this.#entries.push(info);
         return info;
     }
 
-    mkdir(name: string): FileInfoDirectory {
+    mkdir(name: string): FileEntryDirectory {
         if (_.find(this.#entries, (e) => e.name === name)) {
             throw new Error(`${name} already exists`);
         }
 
-        const dir = new FileInfoDirectory(name, []);
+        const dir = new FileEntryDirectory(name, []);
+        dir.mode = FileMode.WRX;
         this.#entries.push(dir);
         return dir;
     }
@@ -55,7 +64,7 @@ export class FileInfoDirectory {
             throw new Error(`${name} does not exist`);
         }
 
-        if (dir.type !== FileSystemObjectType.Directory) {
+        if (dir.type !== FileType.Directory) {
             throw new Error(`${name} is not a directory`);
         }
 
@@ -67,48 +76,46 @@ export class FileInfoDirectory {
     }
 }
 
-export interface FileInfoText {
-    type: FileSystemObjectType.TextFile;
+export interface FileEntryText {
+    type: FileType.TextFile;
     name: string;
+    mode: FileMode;
     data: TextFile;
 }
 
-export interface FileInfoExecutable {
-    type: FileSystemObjectType.Executable;
+export interface FileEntryExecutable {
+    type: FileType.Executable;
     name: string;
+    mode: FileMode;
     createInstance: () => Executable;
 }
 
-export interface FileInfoAudio {
-    type: FileSystemObjectType.Audio;
+export interface FileEntryAudio {
+    type: FileType.Audio;
     name: string;
+    mode: FileMode;
     data: AudioFile;
 }
 
-export interface FileInfoImage {
-    type: FileSystemObjectType.Image;
+export interface FileEntryImage {
+    type: FileType.Image;
     name: string;
+    mode: FileMode;
     data: ImageFile;
 }
 
-export interface FileInfoLink {
-    type: FileSystemObjectType.Link;
+export interface FileEntryLink {
+    type: FileType.Link;
     name: string;
+    mode: FileMode;
     data: LinkFile;
     openType: LinkOpenType;
 }
 
-export interface FileInfoBinary {
-    type: FileSystemObjectType.Binary;
-    name: string;
-    data: BinaryFile;
-}
-
-export type FileInfo =
-    | FileInfoDirectory
-    | FileInfoText
-    | FileInfoExecutable
-    | FileInfoAudio
-    | FileInfoImage
-    | FileInfoLink
-    | FileInfoBinary;
+export type FileEntry =
+    | FileEntryDirectory
+    | FileEntryText
+    | FileEntryExecutable
+    | FileEntryAudio
+    | FileEntryImage
+    | FileEntryLink;
