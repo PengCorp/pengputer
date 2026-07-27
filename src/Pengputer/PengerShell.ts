@@ -203,7 +203,7 @@ export class PengerShell implements Executable {
                         std.writeConsole("Executable not found. Consider dropping");
                         continue;
                     }
-                    if(!(app.mode & FileMode.EXECUTE)) {
+                    if(!app.execute) {
                         std.writeConsole(knownTakenApp.path.toString()+": Not allowed to execute");
                         continue;
                     }
@@ -291,7 +291,7 @@ export class PengerShell implements Executable {
 
         let rows: string[][] = [];
         if (entry) {
-            const driveFlags = fileSystem.getMountedDriveMode(lookPath.drive);
+            const driveFlags = fileSystem.getMountedDriveMode(lookPath.drive!);
             if (entry.type === FileType.Directory) {
                 const entries = [...entry.entries];
                 if (entries.length > 0) {
@@ -474,7 +474,7 @@ export class PengerShell implements Executable {
 
         const file = fileSystem.openFile(path);
         if (file) {
-            if(!(file.mode & FileMode.EXECUTE)) {
+            if(!file.execute) {
                 std.writeConsole(fileName+": Not allowed to execute\n");
                 return;
             }
@@ -513,7 +513,7 @@ export class PengerShell implements Executable {
         if(!file) {
             std.writeConsole("Does not exist\n");
         } else {
-            if(!(file.mode & FileMode.READ)) {
+            if(!file.read) {
                 std.writeConsole(path.toString()+": Not allowed to read\n");
                 return;
             }
@@ -524,9 +524,9 @@ export class PengerShell implements Executable {
             } else if (file.type === FileType.Audio) {
                 std.writeConsole(`Playing ${fileEntry.name}...\n`);
                 std.writeConsole(`Press any key to exit.`);
-                file.execute(["play"]);
+                fileEntry.data.play();
                 await std.readConsoleKey();
-                file.execute(["stop"]);
+                fileEntry.data.stop();
                 std.writeConsole(`\n`);
             } else if (file.type === FileType.Image) {
                 std.clearConsole();
@@ -545,10 +545,10 @@ export class PengerShell implements Executable {
                 std.clearConsole();
             } else if (
                 file.type === FileType.Link &&
-                await file.execute(["open"])
+                fileEntry.openType == "open"
             ) {
                 std.writeConsole("Opening...\n");
-                await file.execute([]);
+                fileEntry.data.open();
             } else {
                 std.writeConsole(`Not readable\n`);
             }

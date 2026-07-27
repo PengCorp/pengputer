@@ -73,7 +73,8 @@ export class EdApp implements Executable {
                     return -1; // somethin' really fucked up
                 }
                 wfile = file;
-            } catch(e) {
+            } catch(q) {
+                const e = <Error>q;
                 if(e.message) {
                     if(/read-only/.test(e.message)) {
                         std.writeConsole(wpath+": Drive is read-only\n");
@@ -96,7 +97,7 @@ export class EdApp implements Executable {
 
         // legal:
         // this.path && this.file (ignore)
-        //  this.path && !this.file (set this.file)
+        // this.path && !this.file (set this.file)
         // !this.path && !this.file (set both)
         if(this.file) {
             if(!this.path) throw new Error("EDeezNuts violation: illegal right nut state");
@@ -107,7 +108,7 @@ export class EdApp implements Executable {
         }
 
         const text = this.lines.join('\n');
-        this.file.write(text);
+        wfile.write(text);
 
         return text.length;
     }
@@ -123,6 +124,10 @@ export class EdApp implements Executable {
         if(this.file) {
             if(this.file.type != FileType.TextFile) {
                 std.writeConsole(fileName+": Not editable\n");
+                return;
+            }
+            if(!this.file.read) {
+                std.writeConsole(fileName+": Not readable\n");
                 return;
             }
             std.writeConsole(String(this.readFile())+"\n");
@@ -152,6 +157,7 @@ export class EdApp implements Executable {
         if(args.length > 0) {
             const fileName = args[0];
             this.openFile(fileName);
+            if(this.file && !this.file.read) return;
         }
 
         // parsing funcs
@@ -287,8 +293,7 @@ export class EdApp implements Executable {
                 const lines = await this.readUserLines();
                 if(lines.length == 0) {
                     // remove this line
-                    this.lines[this.lineNo-1] = null;
-                    this.lines = this.lines.filter(l => l != null && l != undefined);
+                    this.lines = this.lines.filter((_,i) => i != (this.lineNo-1));
                 } else {
                     let i: number;
                     for(i = 0; i < lines.length; i++ ) {
@@ -321,12 +326,12 @@ export class EdApp implements Executable {
                 if(!range[0]) {
                     range[0] = range[1] = this.lineNo?this.lineNo:this.lines.length;
                 }
-                for(let i = range[0]; i <= range[1]; i++ ) {
-                    this.lines[i-1] = null;
+                if(!range[0]) {
+                    std.writeConsole("?\n");
+                    continue;
                 }
-                this.lines = this.lines.filter(l => l!=null && l!=undefined);
-                this.lineNo = range[0];
-                if(this.lineNo > this.lines.length) this.lineNo = this.lines.length;
+                this.lines = this.lines.filter((_,i) => !((range[0]-1) <= i && i <= (range[1]-1)));
+                this.lineNo = Math.min(this.lines.length, range[0]);
 
                 continue;
             } else if(false) {

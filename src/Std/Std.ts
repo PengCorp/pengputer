@@ -352,6 +352,8 @@ export class Std {
     printAlignedRows(rows: string[][], minColumn: number = 8, title: boolean = true) {
         let maxes = [];
 
+        if(rows.length == 0) return;
+
         for(let i = 0; i < rows.length; i++) {
             const cells = rows[i];
             for(let j = 0; j < cells.length; j++) {
@@ -361,7 +363,7 @@ export class Std {
         maxes.map(i => Math.max(minColumn, Number(i)));
 
         if(title) {
-            const row = rows.shift();
+            const row = rows.shift()!;
             for(let i = 0; i < row.length; i++) {
                 this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+2).fill(' ').join(''),
                   { bold: true });

@@ -208,13 +208,13 @@ export class FileSystem {
 
         if((mode & FileMode.READ) === FileMode.READ) {
             if(entry.type == FileType.TextFile) {
-                readfunc = (function(){ return this.data.getText(); })
+                readfunc = (function(this: FileEntry){ return this.data.getText(); })
             }
         }
 
         if((mode & FileMode.WRITE) === FileMode.WRITE) {
             if(entry.type == FileType.TextFile) {
-                writefunc = (function(data: string) {
+                writefunc = (function(this: FileEntry, data: string) {
                     this.data.replace(data);
                 })
             }
@@ -222,7 +222,7 @@ export class FileSystem {
 
         if((mode & FileMode.EXECUTE) === FileMode.EXECUTE) {
             if(entry.type != FileType.TextFile && entry.type != FileType.Directory) {
-                execfunc = (async function(args: string[]){
+                execfunc = (async function(this: FileEntry, args: string[]){
                     const arg1 = args[0];
                     if(this.type == FileType.Audio) {
                         if(arg1 === "play")
