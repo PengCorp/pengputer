@@ -1,5 +1,5 @@
 import type { FilePath } from "./FilePath";
-import type { FileEntry, FileEntryDirectory } from "./FileInfo";
+import type { FileEntry, FileEntryDirectory, FileEntryText } from "./FileInfo";
 import { type DriveLetter, isDriveLetter, FileMode } from "./constants";
 import { FileType } from "./types";
 import { FileSystemDrive } from "./Drive";
@@ -23,7 +23,7 @@ export interface FileHandle {
     read?(): string;
     write?(text: string): void;
     /* Execute program / Special action (play/pause, open link, etc.); async */
-    execute?(args: string[]): Promise<boolean>;
+    execute?(args: string[]): Promise<void>;
 
     getEntry(): /*readonly*/ FileEntry
 }
@@ -164,7 +164,7 @@ export class FileSystem {
 
     listAllDrives(): DriveMount[] {
         return [...this.#drives.entries()]
-            .map((([label, drive]) => {
+            .map((([label, drive]: [string, FileSystemDrive]) => {
                 return { letter: this.getMountpoint(label), drive };
             }).bind(this))
             .sort((a, b) =>
@@ -174,7 +174,7 @@ export class FileSystem {
 
     listMountedDrives(): DriveMount[] {
         return [...this.#mounts.entries()]
-            .map((([letter, info]) => {
+            .map((([letter, info]: [DriveLetter, MountedDrive]) => {
                 const drive = this.getDriveByLabel(info.label)!;
                 return { letter, drive };
             }).bind(this))
@@ -201,21 +201,20 @@ export class FileSystem {
         const mode = (entry.mode & driveMode) & FileMode.WRX;
 
         let writefunc, readfunc, execfunc;
-        writefunc = null; readfunc = null; execfunc = null;
         // above funcs must be set as `function() { ... }` instead of
         // `() => ...` because the latter doesn't seem to capture context
         // from .bind()
 
         if((mode & FileMode.READ) === FileMode.READ) {
             if(entry.type == FileType.TextFile) {
-                readfunc = (function(this: FileEntry){ return this.data.getText(); })
+                readfunc = (function(this: FileEntry){ return (<FileEntryText>this).data.getText(); })
             }
         }
 
         if((mode & FileMode.WRITE) === FileMode.WRITE) {
             if(entry.type == FileType.TextFile) {
                 writefunc = (function(this: FileEntry, data: string) {
-                    this.data.replace(data);
+                    (<FileEntryText>this).data.replace(data);
                 })
             }
         }
@@ -226,37 +225,33 @@ export class FileSystem {
                     const arg1 = args[0];
                     if(this.type == FileType.Audio) {
                         if(arg1 === "play")
-                            return this.data.play(), true;
+                            this.data.play();
                         else if(arg1 === "stop")
-                            return this.data.stop(), true;
-                        else return false;
+                            this.data.stop();
                     } else if(this.type == FileType.Executable) {
-                        return await this.createInstance().run(args);
+                        await this.createInstance().run(args);
                     } else if(this.type == FileType.Image) {
                         throw new Error("TODO");
                     } else if(this.type == FileType.Link) {
-                        if(arg1 === this.openType)
-                            return true;
-                        else if(!arg1)
-                            this.data.open();
-                        else return false;
+                        this.data.open();
                     } else {
                         throw new Error("FileHandle.read not implemented for file type " + this.type);
                     }
                 })
             }
         }
-        if(writefunc) writefunc = writefunc.bind(entry);
         if(readfunc) readfunc = readfunc.bind(entry);
+        if(writefunc) writefunc = writefunc.bind(entry);
         if(execfunc) execfunc = execfunc.bind(entry);
 
         const handle: FileHandle = {
             mode: mode,
             type: entry.type,
-            write: writefunc,
+            path: path,
             read: readfunc,
+            write: writefunc,
             execute: execfunc,
-            getEntry: (function() { return this as FileEntry; }).bind(entry)
+            getEntry: (function(this: FileEntry) { return this; }).bind(entry)
         };
 
         return handle;
@@ -286,7 +281,7 @@ export class FileSystem {
                         type: FileType.TextFile,
                         data: new TextFile,
                         name: name,
-                        mode: 6 /* WR- */
+                        mode: 6 as FileMode /* WR- */
                     });
                 } else return null;
             }
@@ -335,9 +330,9 @@ export class FileSystem {
     }
 
     /* Create new text file */
-    createFile(path: FilePath): FileEntry {
+    createFile(path: FilePath, mode: FileMode = 6 as FileMode): FileEntry {
         let dir = this.#requireWritableDrive(path.drive).rootEntry;
-        for (const i in path.pieces) {
+        for (let i = 0; i < path.pieces.length; i++) {
             const name = path.pieces[i];
             let existing = dir.entries.find((e) => e.name === name);
             if (i == path.pieces.length-1) {

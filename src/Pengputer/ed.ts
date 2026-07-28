@@ -32,7 +32,7 @@ export class EdApp implements Executable {
 
     private readFile(): number {
         if(!this.file) throw new Error("called readFile with no file");
-        const data = this.file.read();
+        const data = this.file.read!();
         this.lines = data.split('\n');
         return data.length;
     }

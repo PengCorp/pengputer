@@ -521,15 +521,17 @@ export class PengerShell implements Executable {
             const fileEntry = file.getEntry();
             if (file.type === FileType.TextFile) {
                 std.writeConsole(file.read());
-            } else if (file.type === FileType.Audio) {
+            } else if (fileEntry.type === FileType.Audio) {
+                // TODO: replace with file.read/execute
                 std.writeConsole(`Playing ${fileEntry.name}...\n`);
                 std.writeConsole(`Press any key to exit.`);
                 fileEntry.data.play();
                 await std.readConsoleKey();
                 fileEntry.data.stop();
                 std.writeConsole(`\n`);
-            } else if (file.type === FileType.Image) {
+            } else if (fileEntry.type === FileType.Image) {
                 std.clearConsole();
+                // TODO: replace with file.read/execute
                 const image = await fileEntry.data.load();
                 if (image) {
                     std.drawConsoleImage(image, 0, 0);
@@ -544,7 +546,7 @@ export class PengerShell implements Executable {
                 std.resetConsole();
                 std.clearConsole();
             } else if (
-                file.type === FileType.Link &&
+                fileEntry.type === FileType.Link &&
                 fileEntry.openType == "open"
             ) {
                 std.writeConsole("Opening...\n");
