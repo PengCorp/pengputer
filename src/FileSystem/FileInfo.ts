@@ -9,6 +9,10 @@ import type {
 } from "./fileTypes";
 import { FileType } from "./types";
 import { FileMode } from "./constants";
+import { type PartialBy } from "../util";
+
+type AddFileEntryInput = PartialBy<
+    Exclude<FileEntry, FileEntryDirectory>, "mode">;
 
 export class FileEntryDirectory {
     type: FileType.Directory = FileType.Directory;
@@ -31,7 +35,8 @@ export class FileEntryDirectory {
         return [...this.#entries];
     }
 
-    addItem(info: Exclude<FileEntry, FileEntryDirectory>): FileEntry {
+    addItem(infoIn: AddFileEntryInput): FileEntry {
+        const info: FileEntry = { mode: FileMode.WRX, ...infoIn };
         if (_.find(this.#entries, (e) => e.name === info.name)) {
             throw new Error(`${info.name} already exists`);
         }
