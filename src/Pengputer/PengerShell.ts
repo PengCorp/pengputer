@@ -613,8 +613,14 @@ export class PengerShell implements Executable {
             std.writeConsole(`Invalid name provided\n`);
             return;
         }
-        const strippedSplit = strippedNameMatch[0].split("/");
-        const addName = strippedSplit[strippedSplit.length - 1];
+        const strippedName = strippedNameMatch[0].split("/").pop();
+        let addName = strippedName;
+        let dedupIndex = 0;
+        while (this.takenPrograms.find((p) => p.name === addName)) {
+            dedupIndex += 1;
+            addName = `${strippedName}~${dedupIndex}`;
+        }
+
         if(this.takeProgram(addName, path)) {
             std.writeConsole(`Added "${argsName}" as "${addName}" to command list\n`);
         }
