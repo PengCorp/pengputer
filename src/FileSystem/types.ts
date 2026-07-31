@@ -6,3 +6,5 @@ export enum FileType {
     Image = "img",
     Link = "lnk",
 }
+
+export { FileMode, type DriveLetter } from "./constants";

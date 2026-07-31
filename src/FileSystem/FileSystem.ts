@@ -20,10 +20,10 @@ export interface FileHandle {
     readonly mode: FileMode;
     readonly type: FileType;
     readonly path: FilePath;
-    read?(): string;
-    write?(text: string): void;
+    read?: (() => string) | undefined;
+    write?: ((text: string) => void) | undefined;
     /* Execute program / Special action (play/pause, open link, etc.); async */
-    execute?(args: string[]): Promise<void>;
+    execute?: ((args: string[]) => Promise<void>) | undefined;
 
     getEntry(): /*readonly*/ FileEntry
 }

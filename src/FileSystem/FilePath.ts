@@ -54,7 +54,7 @@ export class FilePath {
     #segments: readonly string[];
     #absolute: boolean;
 
-    private constructor(
+    constructor(
         drive: DriveLetter | null,
         segments: string[],
         absolute: boolean,
