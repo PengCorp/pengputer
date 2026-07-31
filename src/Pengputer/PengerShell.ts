@@ -709,7 +709,7 @@ export class PengerShell implements Executable {
             else if(drive.kind == "Fixed") flags.push("const");
             if(letter != null) {
                 const mountMode = fileSystem.getMountedDriveMode(letter);
-                if(mountMode & FileMode.WRITE) {
+                if(!(mountMode & FileMode.WRITE)) {
                     if(flags.indexOf("rw")) {
                         flags[flags.indexOf("rw")] = "ro";
                     }

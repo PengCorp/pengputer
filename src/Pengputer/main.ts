@@ -254,10 +254,8 @@ class PengOS {
     private async runStartupAnimation() {
         const { std, keyboard } = this.pc;
 
-        std.resetConsole();
+        std.clearConsole();
         let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
-
-        // if(hasStartedUp) return;
 
         if(import.meta.env.DEV) {
             let y = 0;
@@ -302,9 +300,8 @@ class PengOS {
                 std.resetConsole();
                 std.setConsoleScreenMode(ScreenMode.mode80x25);
             }
-            localStorage.setItem("hasStartedUp", "yes");
             return;
-        }
+        } else if(hasStartedUp) return;
 
         while (!hasStartedUp) {
             std.setConsoleScreenMode(ScreenMode.mode80x25);
