@@ -626,22 +626,33 @@ export class PengerShell implements Executable {
 
     private commandDrop(args: string[]) {
         const { std } = this.pc;
-        const [name] = args;
 
-        if (!name) {
-            std.writeConsole("Must provide a name\n");
+        if (args.length == 0) {
+            std.writeConsole("Must provide at least one name\n");
             return;
         }
 
-        const newTakenPrograms = this.takenPrograms.filter(
-            (p) => p.name !== name,
-        );
+        let rmed = [];
 
-        if (newTakenPrograms.length < this.takenPrograms.length) {
-            std.writeConsole(`"${name}" dropped from command list\n`);
+        const newTakenPrograms = this.takenPrograms.filter(p => {
+            if(args.includes(p.name)) {
+                rmed.push(p.name);
+                delete args[args.indexOf(p.name)];
+                return false;
+            }
+            return true;
+        });
+
+        args = args.filter(x => x); /* delete does not actually delete */
+        if(args.length) {
+            console.log(args);
+            std.writeConsole(args.join(', ') + " "
+                + (args.length>1 ? "were" : "was") + " not found in the taken commands list.\n");
+        }
+
+        if(rmed.length) {
+            std.writeConsole(rmed.join(', ') + " "+(rmed.length>1 ? "were" : "was")+" dropped.\n");
             this.takenPrograms = newTakenPrograms;
-        } else {
-            std.writeConsole(`"${name}" not found in the taken command list\n`);
         }
     }
 
