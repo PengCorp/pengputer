@@ -1,5 +1,9 @@
 import { padStart } from "lodash";
-import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
+import {
+    Keyboard,
+    PhysicalKeyboard,
+    ScreenKeyboard,
+} from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
@@ -282,12 +286,11 @@ class PengOS {
                 std.writeConsole((FFbootDelay - Math.floor(tt/1000)) + "s to boot");
                 const kbe = keyboard.getNextEvent();
                 if(kbe) {
-                    if(!kbe.pressed) return false;
                     if(kbe.code == "Delete") {
                         goBios = true;
                         return true;
                     }
-                    if(!kbe.isModifier && !kbe.isAutoRepeat) return true;
+                    return true;
                 }
 
                 return tt >= FFbootDelay*1000;
@@ -308,7 +311,7 @@ class PengOS {
 
             let deletePressed = false;
             const unsubDelete = keyboard.subscribe((data) => {
-                if (data.code === "Delete") {
+                if (data.code === "Delete" && Keyboard.isCharKeyPress(data)) {
                     deletePressed = true;
                     const attrs = std.getConsoleAttributes();
                     const pos = std.getConsoleCursorPosition();

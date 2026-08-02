@@ -23,6 +23,7 @@ import {
 } from "../types";
 import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
+import { Keyboard } from "../Keyboard";
 
 enum GameStateKey {
     MainMenu,
@@ -313,7 +314,7 @@ class Pengsweeper extends State {
             while (true) {
                 const ev = std.getNextKeyboardEvent();
                 if (!ev) break;
-                if (ev.isModifier || !ev.pressed) continue;
+                if (!Keyboard.isCharKeyPress(ev)) continue;
 
                 if (ev.code === "ArrowRight") {
                     this.moveCursor({ x: 1, y: 0 });
@@ -633,7 +634,7 @@ class Help extends State {
         while (true) {
             const ev = std.getNextKeyboardEvent();
             if (!ev) break;
-            if (!ev.isModifier && ev.pressed) {
+            if (Keyboard.isRealKeyPress(ev)) {
                 this.signal.emit({ key: "exit" });
             }
         }
@@ -697,7 +698,7 @@ class MainMenu extends State {
         while (true) {
             const ev = std.getNextKeyboardEvent();
             if (!ev) break;
-            if (ev.isModifier || !ev.pressed) continue;
+            if (!Keyboard.isCharKeyPress(ev)) continue;
 
             if (ev.code === "Digit1" || ev.code === "Numpad1") {
                 this.signal.emit({ key: "select", value: "1" });
