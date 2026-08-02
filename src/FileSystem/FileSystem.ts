@@ -163,24 +163,24 @@ export class FileSystem {
     }
 
     listAllDrives(): DriveMount[] {
-        return [...this.#drives.entries()]
-            .map((([label, drive]: [string, FileSystemDrive]) => {
-                return { letter: this.getMountpoint(label), drive };
-            }).bind(this))
-            .sort((a, b) =>
-                (!a.letter || !b.letter) ? 1 : a.letter < b.letter ? -1 : a.letter > b.letter ? 1 : 0,
-            );
+        return [
+            ...this.listMountedDrives(),
+            ...(([...this.#drives.entries()] as [string, FileSystemDrive][])
+                .filter(([label, drive]) => !this.getMountpoint(label))
+                .map(([label, drive]) => {
+                    return { letter: null, drive };
+                })
+                .sort((a, b) => a.drive.label.localeCompare(b.drive.label)))
+        ];
     }
 
     listMountedDrives(): DriveMount[] {
         return [...this.#mounts.entries()]
-            .map((([letter, info]: [DriveLetter, MountedDrive]) => {
+            .map(([letter, info]: [DriveLetter, MountedDrive]) => {
                 const drive = this.getDriveByLabel(info.label)!;
                 return { letter, drive };
-            }).bind(this))
-            .sort((a, b) =>
-                a.letter < b.letter ? -1 : a.letter > b.letter ? 1 : 0,
-            );
+            })
+            .sort((a, b) => a.letter.localeCompare(b.letter));
     }
 
     summarizeDrive(drive: FileSystemDrive): DriveContentsSummary {
