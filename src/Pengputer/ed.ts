@@ -193,13 +193,12 @@ export class EdApp implements Executable {
 
                     cur++;
                 }
-                if(cur >= line.length) break;
                 if(!parsed) {
                     if(i===0) range[i] = 1;
                     if(i===1) range[i] = this.lines.length;
                 }
                 if(i === 0) {
-                    if(line[cur] !== ',') {
+                    if(cur >= line.length || line[cur] !== ',') {
                         range[1] = range[0];
                         break;
                     }
@@ -226,15 +225,10 @@ export class EdApp implements Executable {
                 cur = 0;
             }
 
-            // parse argument
-            for(; cur < line.length && !isspace(line[cur]); cur++ ) { }
-
-            if(cur != 0) {
-                arg = line.slice(0, cur);
-                for(; cur < line.length && isspace(line[cur]); cur++ ) { }
-                line = line.slice(cur);
-                cur = 0;
-            }
+            // argument is the rest of the input
+            arg = line;
+            line = null;
+            cur = 0;
 
             if(0) {
                 std.writeConsole("Parsed command:\n");
@@ -287,19 +281,26 @@ export class EdApp implements Executable {
                 }
                 continue;
             } else if(cmd == 'c') {
-                if(!this.lineNo) this.lineNo = this.lines.length;
-                if(range[0]) this.lineNo = range[0];
+                if(!range[0]) {
+                    range[0] = range[1] = this.lineNo?this.lineNo:this.lines.length;
+                }
+                if(!range[0]) {
+                    std.writeConsole("?\n");
+                    continue;
+                }
                 // replace lines
+                const latter = this.lines.slice(range[1]);
                 const lines = await this.readUserLines();
                 if(lines.length == 0) {
-                    // remove this line
-                    this.lines = this.lines.filter((_,i) => i != (this.lineNo-1));
+                    // remove lines
+                    this.lines = this.lines.filter((_,i) => !((range[0]-1) <= i && i <= (range[1]-1)));
                 } else {
                     let i: number;
                     for(i = 0; i < lines.length; i++ ) {
-                        this.lines[this.lineNo-1+i] = lines[i];
+                        this.lines[range[0]-1+i] = lines[i];
                     }
-                    this.lineNo += i-1;
+                    this.lineNo = range[0] + i-1;
+                    this.lines = [...this.lines.slice(0, this.lineNo), ...latter];
                 }
                 continue;
             } else if(cmd == 'a') {
