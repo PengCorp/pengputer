@@ -98,6 +98,10 @@ export class PengerShell implements Executable {
         const { std, fileSystem } = this.pc;
         let previousEntries: string[] = [];
 
+        const cwd = this.pc.std.getCwd();
+        this.currentDrive = cwd.drive!;
+        this.workingDirectory = cwd;
+
         const commands: Record<
             string,
             (args: string[]) => void | Promise<void>
@@ -206,7 +210,6 @@ export class PengerShell implements Executable {
                         std.writeConsole(knownTakenApp.path.toString()+": Not allowed to execute");
                         continue;
                     }
-                    // FIXME: the running program is not aware of cwd [0]
                     await app.execute(args);
                     std.resetConsole();
                 } else if (driveSwitchMatch) {
@@ -222,7 +225,9 @@ export class PengerShell implements Executable {
                     std.writeConsole(
                         'Try "help" or "h" to see available commands\n',
                     );
+                    continue;
                 }
+                std.setCwdP(this.workingDirectory);
             }
         }
     }
@@ -336,7 +341,7 @@ export class PengerShell implements Executable {
                             `${ent.name}${isDir ? PATH_SEPARATOR : ""}`,
                         ]);
                     }
-                    std.printAlignedRows(rows, 3, false);
+                    std.writeConsoleAlignedRows(rows, 2, false);
                 } else {
                     std.writeConsole(`Directory is empty\n`);
                 }
@@ -612,6 +617,7 @@ export class PengerShell implements Executable {
             .filter(n => !!n) /* remove empty string between dots e.g. test..exe */
             .slice(0, -1)
             .join('.');
+        if(!noExeName) noExeName = exeFullName;
         let addName = noExeName;
         let dedupIndex = 0;
         while (this.takenPrograms.find((p) => p.name === addName)) {
@@ -632,7 +638,7 @@ export class PengerShell implements Executable {
             return;
         }
 
-        let rmed = [];
+        let rmed: string[] = [];
 
         const newTakenPrograms = this.takenPrograms.filter(p => {
             if(args.includes(p.name)) {
@@ -740,7 +746,7 @@ export class PengerShell implements Executable {
                 flags.join(",")
             ]);
         }
-        std.printAlignedRows(rows);
+        std.writeConsoleAlignedRows(rows);
     }
 
     private commandDisk(args: string[]) {
@@ -856,8 +862,7 @@ export class PengerShell implements Executable {
                 std.writeConsole("Cannot destroy Fixed drive.\n");
                 return;
             }
-            let letter = fs.getMountpoint(name);
-            if(letter != null) {
+            if(fs.getMountpoints(name).length) {
                 std.writeConsole("Cannot destroy inserted drive <"+name+">.\n");
                 return;
             }

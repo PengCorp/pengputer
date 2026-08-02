@@ -349,7 +349,7 @@ export class Std {
         this.writeConsole("\n\n", { reset: true });
     }
 
-    printAlignedRows(rows: string[][], minColumn: number = 8, title: boolean = true) {
+    writeConsoleAlignedRows(rows: string[][], minColumn: number = 8, title: boolean = true) {
         let maxes = [];
 
         if(rows.length == 0) return;
@@ -360,19 +360,19 @@ export class Std {
                 if(!maxes[j] || String(cells[j]).length > maxes[j]) maxes[j] = cells[j].length;
             }
         }
-        maxes.map(i => Math.max(minColumn, Number(i)));
+        maxes = maxes.map(i => Math.max(minColumn, Number(i)));
 
         if(title) {
             const row = rows.shift()!;
             for(let i = 0; i < row.length; i++) {
-                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+2).fill(' ').join(''),
+                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+1).fill(' ').join(''),
                   { bold: true });
             }
             this.writeConsole("\n");
         }
         for(const row of rows) {
             for(let i = 0; i < row.length; i++) {
-                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+2).fill(' ').join(''),
+                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+1).fill(' ').join(''),
                   { reset: true });
             }
             this.writeConsole("\n");

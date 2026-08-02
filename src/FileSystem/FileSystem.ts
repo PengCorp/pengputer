@@ -87,7 +87,7 @@ export class FileSystem {
         if(disk.kind == "Fixed") {
             throw new Error("Tried to unregister fixed drive <" +label+ ">");
         }
-        if(this.getMountpoint(label) != null) {
+        if(this.getMountpoints(label).length) {
             throw new Error("Tried to unregister mounted drive <" +label+ ">");
         }
 
@@ -155,18 +155,19 @@ export class FileSystem {
         return info.flags;
     }
 
-    getMountpoint(label: string): DriveLetter | null {
+    getMountpoints(label: string): DriveLetter[] {
+        let list: DriveLetter[] = [];
         for (const [ letter, { label: mountedLabel } ] of this.#mounts.entries()) {
-            if(mountedLabel === label) return letter;
+            if(mountedLabel === label) list.push(letter);
         }
-        return null;
+        return list;
     }
 
     listAllDrives(): DriveMount[] {
         return [
             ...this.listMountedDrives(),
             ...(([...this.#drives.entries()] as [string, FileSystemDrive][])
-                .filter(([label, drive]) => !this.getMountpoint(label))
+                .filter(([label, drive]) => this.getMountpoints(label).length)
                 .map(([label, drive]) => {
                     return { letter: null, drive };
                 })

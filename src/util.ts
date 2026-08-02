@@ -1,4 +1,5 @@
 // stupid TS magic that fixes 22 errors
+/** Properly make a field/key from K inside T optional */
 export type PartialBy<T, K extends keyof T> =
     T extends unknown
       ? Omit<T, K> & Partial<Pick<T, K>>
