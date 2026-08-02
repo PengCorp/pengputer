@@ -340,7 +340,7 @@ export class FileSystem {
                     return dir.addItem({
                         type: FileType.TextFile,
                         data: new TextFile,
-                        name
+                        name, mode
                     });
                 }
                 if(existing.type == FileType.Directory) {
@@ -364,7 +364,8 @@ export class FileSystem {
 
         const drive = this.getDriveByLetter(letter);
         if (!drive) throw new Error(`Drive ${letter}: is not mounted`);
-        if (drive.readOnly) throw new Error(`Drive ${letter}: is read-only`);
+        const ro = drive.readOnly || !(this.getMountedDriveMode(letter) & FileMode.WRITE);
+        if (ro) throw new Error(`Drive ${letter}: is read-only`);
 
         return drive;
     }

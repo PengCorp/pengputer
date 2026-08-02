@@ -36,16 +36,16 @@ export class FileEntryDirectory {
     }
 
     addItem(infoIn: AddFileEntryInput): FileEntry {
-        const info: FileEntry = { mode: FileMode.WRX, ...infoIn };
-        if (_.find(this.#entries, (e) => e.name === info.name)) {
-            throw new Error(`${info.name} already exists`);
+        if (_.find(this.#entries, (e) => e.name === infoIn.name)) {
+            throw new Error(`${infoIn.name} already exists`);
         }
 
-        if(info.mode == undefined || info.mode == null) {
-            info.mode = FileMode.READ | FileMode.WRITE;
-            if(info.type != FileType.TextFile)
-                info.mode |= FileMode.EXECUTE;
+        if(infoIn.mode == undefined || infoIn.mode == null) {
+            infoIn.mode = FileMode.READ | FileMode.WRITE;
+            if(infoIn.type != FileType.TextFile)
+                infoIn.mode |= FileMode.EXECUTE;
         }
+        const info: FileEntry = infoIn as FileEntry;
 
         this.#entries.push(info);
         return info;

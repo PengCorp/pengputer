@@ -33,7 +33,7 @@ export class PengerShell implements Executable {
 
     private isRunning: boolean = false;
 
-    private workingDirectories: { [id: string]: FilePath } = {};
+    private workingDirectories: { [id: DriveLetter]: FilePath } = {};
     private currentDrive: DriveLetter = "C";
     private currentPath: string[] = [];
     private prompt: string = "%P>";
@@ -74,7 +74,6 @@ export class PengerShell implements Executable {
         const drive = wd.drive;
         this.currentDrive = drive;
         this.workingDirectories[drive] = wd;
-        //this.workingDirectories[drive].drive = drive;
         this.pc.std.setCwdP(wd);
     }
 
@@ -353,13 +352,9 @@ export class PengerShell implements Executable {
         const { fileSystem, std } = this.pc;
         const [dirName] = args;
 
-        if (!dirName) {
-            std.writeConsole("Must provide a new path\n");
-            return;
-        }
-
-        const newPath = this.getCanonicalPath(this.workingDirectory, dirName);
+        const newPath = this.getCanonicalPath(this.workingDirectory, dirName ?? "/");
         if (newPath === null) {
+            if(!dirName) throw new Error("Disk root doesn't exist");
             std.writeConsole(`Can't find ${dirName}\n\n`);
             return;
         }
@@ -387,8 +382,11 @@ export class PengerShell implements Executable {
             return;
         }
 
-        this.currentDrive = letter;
-        this.pc.std.setCwdP(this.workingDirectories[letter]);
+        if(this.currentDrive == letter) {
+            this.workingDirectory = FilePath.tryParse("/", letter)!;
+        } else this.currentDrive = letter;
+
+        this.pc.std.setCwdP(this.workingDirectory);
         std.writeConsole(`Now using ${this.workingDirectory.toString()}\n`);
     }
 
@@ -474,6 +472,7 @@ export class PengerShell implements Executable {
 
         const file = fileSystem.openFile(path);
         if (file) {
+            const fileEntry = file.getEntry();
             if(!file.execute) {
                 std.writeConsole(fileName+": Not allowed to execute\n");
                 return;
@@ -481,8 +480,8 @@ export class PengerShell implements Executable {
             if (file.type === FileType.Executable) {
                 await file.execute(args);
             } else if (
-                file.type === FileType.Link &&
-                await file.execute(["run"])
+                fileEntry.type === FileType.Link &&
+                fileEntry.openType == "run"
             ) {
                 std.writeConsole("Running...\n");
                 await file.execute([]);
@@ -513,14 +512,14 @@ export class PengerShell implements Executable {
         if(!file) {
             std.writeConsole("Does not exist\n");
         } else {
-            if(!file.read) {
+            if(!(file.mode & FileMode.READ)) {
                 std.writeConsole(path.toString()+": Not allowed to read\n");
                 return;
             }
 
             const fileEntry = file.getEntry();
             if (file.type === FileType.TextFile) {
-                std.writeConsole(file.read());
+                std.writeConsole(file.read!());
             } else if (fileEntry.type === FileType.Audio) {
                 // TODO: replace with file.read/execute
                 std.writeConsole(`Playing ${fileEntry.name}...\n`);
@@ -607,18 +606,17 @@ export class PengerShell implements Executable {
             std.writeConsole(`Invalid path provided\n`);
             return;
         }
-        const lastPathName = pieces[pieces.length - 1];
-        const strippedNameMatch = lastPathName.match(/^[^.]+/);
-        if (!strippedNameMatch) {
-            std.writeConsole(`Invalid name provided\n`);
-            return;
-        }
-        const strippedName = strippedNameMatch[0].split("/").pop();
-        let addName = strippedName;
+        const exeFullName = pieces[pieces.length - 1].trim().replace(" ", "-");
+        let noExeName = exeFullName /* make sure to be respectful! */
+            .split(".")
+            .filter(n => !!n) /* remove empty string between dots e.g. test..exe */
+            .slice(0, -1)
+            .join('.');
+        let addName = noExeName;
         let dedupIndex = 0;
         while (this.takenPrograms.find((p) => p.name === addName)) {
             dedupIndex += 1;
-            addName = `${strippedName}~${dedupIndex}`;
+            addName = `${noExeName}~${dedupIndex}`;
         }
 
         if(this.takeProgram(addName, path)) {
@@ -822,11 +820,12 @@ export class PengerShell implements Executable {
             }
 
             if(fs.listMountedDrives().length == 1) {
-                std.writeConsole("Cannot eject " +letter+ ": because it is the only mounted disk.\n");
+                std.writeConsole("Cannot eject " +letter+ ": because it is the only inserted disk.\n");
                 return;
             }
 
             fs.unmount(letter);
+            delete this.workingDirectories[letter];
             std.writeConsole("Ejected " + letter + ":\n");
             return;
         } else if(command === "burn") {
@@ -842,24 +841,16 @@ export class PengerShell implements Executable {
                 return;
             }
             if(drive.kind == "Fixed") {
-                // TODO: drive.kind == Fixed instead of this
                 std.writeConsole("Cannot destroy Fixed drive.\n");
                 return;
             }
             let letter = fs.getMountpoint(name);
             if(letter != null) {
-                if(this.currentDrive === letter) {
-                    std.writeConsole("Cannot eject " +letter + ": because the shell workdir is inside it.\n");
-                    return;
-                }
-                if(fs.listMountedDrives().length == 1) {
-                    std.writeConsole("Cannot eject " +letter+ ": because it is the only mounted disk.\n");
-                    return;
-                }
-                fs.unmount(letter);
+                std.writeConsole("Cannot destroy inserted drive <"+name+">.\n");
+                return;
             }
             fs.unregisterDrive(drive.label);
-            std.writeConsole("Burned, destroyed and trashed " +drive.label+ "\n");
+            std.writeConsole("Burned, destroyed and trashed <"+drive.label+">\n");
         } else if(
             command === "import" ||
             command === "export"
@@ -887,7 +878,7 @@ export class PengerShell implements Executable {
                 std.writeConsole(`Unknown disk command "${command}"\n\n`);
             }
 
-            printEntry("disk list", "List all mounted drives and floppies\n");
+            printEntry("disk list", "List all drives and floppies\n");
             printEntry("disk spawn <name>", "Create a blank floppy '<name>'\n");
             printEntry(
                 "disk import <name>",
