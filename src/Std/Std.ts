@@ -23,9 +23,7 @@ import { type Font } from "../Screen/Font";
 import { vga9x16, vga9x8, terminus8x16 } from "../Screen/Fonts";
 import { type BIOSFontFamily, biosSettings } from "../Pengputer/BIOSSettings";
 
-import { type FileHandle, type FileEntry,
-    FileType, FilePath, FileSystem, FileEntryDirectory
-} from "../FileSystem";
+import { type FileHandle, FileType, FilePath, FileSystem } from "../FileSystem";
 
 const FONT_80X25_BY_FAMILY: Record<BIOSFontFamily, Font> = {
     vga: vga9x16,
@@ -48,7 +46,6 @@ export class Std {
 
     private fs: FileSystem;
     private cwdPath: FilePath;
-    private cwd: FileEntryDirectory;
 
     constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen, fs: FileSystem) {
         this.screenMode = ScreenMode.mode80x25;
@@ -60,8 +57,6 @@ export class Std {
         const disks = fs.listMountedDrives();
         if(!disks.length) throw new Error("at least one disk must be mounted");
         this.cwdPath = new FilePath(disks[0].letter, [], true);
-        // this is needed to shut up tsc
-        this.cwd = new FileEntryDirectory("NOT_VALID_REPORT_BUG", []);
         this.setCwdP(this.cwdPath);
     }
 
@@ -90,7 +85,6 @@ export class Std {
         if(!newCwdEnt) return this.cwdPath;
         if(newCwdEnt.type != FileType.Directory) return this.cwdPath;
         this.cwdPath = newCwd;
-        this.cwd = newCwdEnt;
         return this.cwdPath;
     }
 

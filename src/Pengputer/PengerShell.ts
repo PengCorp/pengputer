@@ -33,9 +33,8 @@ export class PengerShell implements Executable {
 
     private isRunning: boolean = false;
 
-    private workingDirectories: { [id: DriveLetter]: FilePath } = {};
+    private workingDirectories: Partial<Record<DriveLetter, FilePath>> = {};
     private currentDrive: DriveLetter = "C";
-    private currentPath: string[] = [];
     private prompt: string = "%P>";
 
     private suppressNextPromptNewline: boolean = false;
@@ -77,6 +76,17 @@ export class PengerShell implements Executable {
         this.pc.std.setCwdP(wd);
     }
 
+    private syncWorkingDirectoryFromStd() {
+        const cwd = this.pc.std.getCwd();
+        if (!cwd.drive || !this.pc.fileSystem.isMounted(cwd.drive)) return;
+
+        const entry = this.pc.fileSystem.getFileInfo(cwd);
+        if (!entry || entry.type !== FileType.Directory) return;
+
+        this.currentDrive = cwd.drive;
+        this.workingDirectories[cwd.drive] = cwd;
+    }
+
     private shiftAutorunCommand() {
         const { std } = this.pc;
         if (this.autorun.length > 1) {
@@ -98,9 +108,7 @@ export class PengerShell implements Executable {
         const { std, fileSystem } = this.pc;
         let previousEntries: string[] = [];
 
-        const cwd = this.pc.std.getCwd();
-        this.currentDrive = cwd.drive!;
-        this.workingDirectory = cwd;
+        this.syncWorkingDirectoryFromStd();
 
         const commands: Record<
             string,
@@ -227,14 +235,14 @@ export class PengerShell implements Executable {
                     );
                     continue;
                 }
-                std.setCwdP(this.workingDirectory);
+                this.syncWorkingDirectoryFromStd();
             }
         }
     }
 
     printPrompt() {
         const { std } = this.pc;
-        const { prompt, currentDrive, currentPath } = this;
+        const { prompt } = this;
 
         std.setIsConsoleCursorVisible(true);
 
@@ -387,11 +395,20 @@ export class PengerShell implements Executable {
             return;
         }
 
-        if(this.currentDrive == letter) {
-            this.workingDirectory = FilePath.tryParse("/", letter)!;
-        } else this.currentDrive = letter;
+        const root = FilePath.tryParse("/", letter)!;
+        const desiredWorkingDirectory =
+            this.currentDrive === letter
+                ? root
+                : (this.workingDirectories[letter] ?? root);
+        const actualWorkingDirectory = std.setCwdP(desiredWorkingDirectory);
 
-        this.pc.std.setCwdP(this.workingDirectory);
+        this.currentDrive = letter;
+        if (actualWorkingDirectory.equals(desiredWorkingDirectory)) {
+            this.workingDirectories[letter] = desiredWorkingDirectory;
+        } else {
+            this.workingDirectories[letter] = root;
+            std.setCwdP(root);
+        }
         std.writeConsole(`Now using ${this.workingDirectory.toString()}\n`);
     }
 
@@ -478,16 +495,20 @@ export class PengerShell implements Executable {
         const file = fileSystem.openFile(path);
         if (file) {
             const fileEntry = file.getEntry();
-            if(!file.execute) {
-                std.writeConsole(fileName+": Not allowed to execute\n");
-                return;
-            }
             if (file.type === FileType.Executable) {
+                if (!file.execute) {
+                    std.writeConsole(`${fileName}: Not allowed to execute\n`);
+                    return;
+                }
                 await file.execute(args);
             } else if (
                 fileEntry.type === FileType.Link &&
                 fileEntry.openType == "run"
             ) {
+                if (!file.execute) {
+                    std.writeConsole(`${fileName}: Not allowed to execute\n`);
+                    return;
+                }
                 std.writeConsole("Running...\n");
                 await file.execute([]);
             } else {
@@ -499,7 +520,6 @@ export class PengerShell implements Executable {
     }
 
     private async commandOpen(args: string[]) {
-        const { currentPath } = this;
         const { std, fileSystem } = this.pc;
         const [fileName] = args;
         if (!fileName) {
@@ -517,25 +537,32 @@ export class PengerShell implements Executable {
         if(!file) {
             std.writeConsole("Does not exist\n");
         } else {
-            if(!(file.mode & FileMode.READ)) {
-                std.writeConsole(path.toString()+": Not allowed to read\n");
-                return;
-            }
-
             const fileEntry = file.getEntry();
             if (file.type === FileType.TextFile) {
-                std.writeConsole(file.read!());
+                if (!file.read) {
+                    std.writeConsole(`${path.toString()}: Not allowed to read\n`);
+                    return;
+                }
+                std.writeConsole(file.read());
             } else if (fileEntry.type === FileType.Audio) {
-                // TODO: replace with file.read/execute
+                if (!file.execute) {
+                    std.writeConsole(
+                        `${path.toString()}: Not allowed to execute\n`,
+                    );
+                    return;
+                }
                 std.writeConsole(`Playing ${fileEntry.name}...\n`);
                 std.writeConsole(`Press any key to exit.`);
-                fileEntry.data.play();
+                await file.execute(["play"]);
                 await std.readConsoleKey();
-                fileEntry.data.stop();
+                await file.execute(["stop"]);
                 std.writeConsole(`\n`);
             } else if (fileEntry.type === FileType.Image) {
+                if (!(file.mode & FileMode.READ)) {
+                    std.writeConsole(`${path.toString()}: Not allowed to read\n`);
+                    return;
+                }
                 std.clearConsole();
-                // TODO: replace with file.read/execute
                 const image = await fileEntry.data.load();
                 if (image) {
                     std.drawConsoleImage(image, 0, 0);
@@ -553,8 +580,14 @@ export class PengerShell implements Executable {
                 fileEntry.type === FileType.Link &&
                 fileEntry.openType == "open"
             ) {
+                if (!file.execute) {
+                    std.writeConsole(
+                        `${path.toString()}: Not allowed to execute\n`,
+                    );
+                    return;
+                }
                 std.writeConsole("Opening...\n");
-                fileEntry.data.open();
+                await file.execute([]);
             } else {
                 std.writeConsole(`Not readable\n`);
             }
@@ -583,7 +616,7 @@ export class PengerShell implements Executable {
             std.writeConsole(path.toString()+": Not executable\n");
             return false;
         }
-        if(!(target.mode & FileMode.EXECUTE)) {
+        if(!target.execute) {
             std.writeConsole(path.toString()+": Not allowed to execute\n");
             return false;
         }
@@ -707,7 +740,7 @@ export class PengerShell implements Executable {
             }
         }
     }
-    
+
     private commandDiskList() {
         const { std, fileSystem } = this.pc;
 
@@ -749,6 +782,14 @@ export class PengerShell implements Executable {
         std.writeConsoleAlignedRows(rows);
     }
 
+    private parseDiskLetter(input: string): DriveLetter | null {
+        const match = /^([A-Za-z]):?$/.exec(input);
+        if (!match) return null;
+
+        const letter = match[1].toUpperCase();
+        return isDriveLetter(letter) ? letter : null;
+    }
+
     private commandDisk(args: string[]) {
         const { std, fileSystem: fs } = this.pc;
         const [command] = args;
@@ -786,43 +827,37 @@ export class PengerShell implements Executable {
                 return;
             }
 
-            let letter = u_letter.toUpperCase();
-            {
-                let colonIndex = letter.indexOf(':');
-                if(letter.length > 2 && colonIndex > 1) {
-                    std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
-                    return;
-                }
-                if(colonIndex > 0) letter = letter.slice(0, colonIndex);
-
-                if(!isDriveLetter(letter)) {
-                    std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
-                    return;
-                }
+            const letter = this.parseDiskLetter(u_letter);
+            if (letter === null) {
+                std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
+                return;
             }
-
 
             if(fs.isMounted(letter)) {
                 std.writeConsole("Drive " + letter + ": is already inserted\n");
                 return;
             }
-            fs.mount(letter, name);
-            std.writeConsole("Installed drive <" +name + "> to " +letter+ ":\n");
+            if (!fs.mount(letter, name)) {
+                const [existingMountpoint] = fs.getMountpoints(name);
+                if (existingMountpoint) {
+                    std.writeConsole(
+                        `Disk <${name}> is already inserted at ${existingMountpoint}:\n`,
+                    );
+                } else {
+                    std.writeConsole(`Could not insert disk <${name}>\n`);
+                }
+                return;
+            }
+            delete this.workingDirectories[letter];
+            std.writeConsole(`Installed drive <${name}> to ${letter}:\n`);
         } else if(command === "eject") {
             const [u_letter] = args.slice(1);
             if(!u_letter) {
                 std.writeConsole("Missing drive letter to eject\n");
                 return;
             }
-            let letter = u_letter.toUpperCase();
-            let colonIndex = letter.indexOf(':');
-            if(letter.length > 2 && colonIndex > 1) {
-                std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
-                return;
-            }
-            if(colonIndex > 0) letter = letter.slice(0, colonIndex);
-
-            if(!isDriveLetter(letter)) {
+            const letter = this.parseDiskLetter(u_letter);
+            if (letter === null) {
                 std.writeConsole("Invalid disk letter: '" + u_letter + "'\n");
                 return;
             }
@@ -910,12 +945,12 @@ export class PengerShell implements Executable {
                 "Completely destroy floppy '<name>'\n",
             );
             printEntry(
-                "disk insert <label> <name>",
-                "Insert floppy '<name>' into drive <label>\n",
+                "disk insert <letter> <name>",
+                "Insert floppy '<name>' into drive <letter>\n",
             );
             printEntry(
-                "disk eject <label>",
-                "Eject the floppy at drive <label>\n",
+                "disk eject <letter>",
+                "Eject the floppy at drive <letter>\n",
             );
         }
     }

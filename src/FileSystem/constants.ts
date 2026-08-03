@@ -1,7 +1,7 @@
 export const PATH_SEPARATOR = "/";
 export const LSKEY_FLOPPIES = "floppies";
 
-export const DriveLetterValues: string[] = [
+export const DriveLetterValues = [
     "A",
     "B",
     "C",
@@ -33,7 +33,7 @@ export const DriveLetterValues: string[] = [
 export type DriveLetter = (typeof DriveLetterValues)[number];
 
 export function isDriveLetter(letter: string): letter is DriveLetter {
-    return DriveLetterValues.includes(letter);
+    return (DriveLetterValues as readonly string[]).includes(letter);
 }
 
 export enum FileMode {

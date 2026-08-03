@@ -1,8 +1,9 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { FileSystem } from "./FileSystem";
 import { FilePath } from "./FilePath";
-import { FileType, type DriveLetter } from "./types";
+import { FileMode, FileType, type DriveLetter } from "./types";
 import { FileSystemDrive } from "./Drive";
+import { TextFile } from "./fileTypes";
 
 function path(input: string): FilePath {
     return FilePath.tryParse(input)!;
@@ -38,6 +39,20 @@ describe("FileSystem mounting", () => {
         fs.unmount("D");
         expect(fs.isMounted("D")).toBe(false);
         expect(mountDrive(fs, "D", new FileSystemDrive(false))).toBe(true);
+    });
+
+    test("refuses to mount the same drive at a second letter", () => {
+        const fs = new FileSystem();
+        const drive = new FileSystemDrive(false, "WORK");
+        fs.registerDrive(drive);
+        expect(fs.mount("D", drive.label)).toBe(true);
+
+        const error = vi.spyOn(console, "error").mockImplementation(() => {});
+        expect(fs.mount("E", drive.label)).toBe(false);
+        error.mockRestore();
+
+        expect(fs.getDriveByLetter("D")).toBe(drive);
+        expect(fs.getDriveByLetter("E")).toBeNull();
     });
 
     test("getDrive returns undefined for a drive letter that was never mounted", () => {
@@ -227,6 +242,15 @@ describe("FileSystem#createDirectory", () => {
             /not mounted/,
         );
     });
+
+    test("throws when a writable drive is mounted without write permission", () => {
+        const fs = new FileSystem();
+        const drive = new FileSystemDrive(false, "LOCKED");
+        fs.registerDrive(drive);
+        fs.mount("D", drive.label, FileMode.READ | FileMode.EXECUTE);
+
+        expect(() => fs.createDirectory(path("D:/stuff"))).toThrow(/read-only/);
+    });
 });
 
 describe("FileSystem#removeDirectory", () => {
@@ -268,5 +292,89 @@ describe("FileSystem#removeDirectory", () => {
     test("throws when the target drive is read-only", () => {
         const fs = new FileSystem();
         expect(() => fs.removeDirectory(path("C:/stuff"))).toThrow(/read-only/);
+    });
+});
+
+describe("FileSystem file modes and handles", () => {
+    test("defaults text files to read/write and executable entries to read/write/execute", () => {
+        const drive = new FileSystemDrive(false);
+        const textInput = {
+            type: FileType.TextFile as const,
+            name: "notes.txt",
+            data: new TextFile(),
+        };
+        const text = drive.rootEntry.addItem(textInput);
+        const executable = drive.rootEntry.addItem({
+            type: FileType.Executable,
+            name: "program.exe",
+            createInstance: () => ({ run: async () => {} }),
+        });
+
+        expect(text.mode).toBe(FileMode.READ | FileMode.WRITE);
+        expect(executable.mode).toBe(FileMode.WRX);
+        expect("mode" in textInput).toBe(false);
+    });
+
+    test("createFile honors its requested mode", () => {
+        const fs = new FileSystem();
+        mountDrive(fs, "D", new FileSystemDrive(false));
+
+        const entry = fs.createFile(path("D:/notes.txt"), FileMode.READ);
+        expect(entry.mode).toBe(FileMode.READ);
+    });
+
+    test("does not create through a mount without write permission", () => {
+        const fs = new FileSystem();
+        const drive = new FileSystemDrive(false, "LOCKED");
+        fs.registerDrive(drive);
+        fs.mount("D", drive.label, FileMode.READ);
+
+        expect(() => fs.openFile(path("D:/notes.txt"), true)).toThrow(
+            /read-only/,
+        );
+        expect(fs.getFileInfo(path("D:/notes.txt"))).toBeNull();
+    });
+
+    test("exposes text capabilities according to effective permissions", () => {
+        const fs = new FileSystem();
+        const drive = new FileSystemDrive(false, "WORK");
+        fs.registerDrive(drive);
+        fs.mount("D", drive.label, FileMode.READ);
+        drive.rootEntry.addItem({
+            type: FileType.TextFile,
+            name: "notes.txt",
+            data: new TextFile(),
+        });
+
+        const handle = fs.openFile(path("D:/notes.txt"))!;
+        expect(handle.read).toBeTypeOf("function");
+        expect(handle.write).toBeUndefined();
+        expect(handle.execute).toBeUndefined();
+    });
+
+    test("does not expose an unimplemented execute operation for images", () => {
+        const fs = new FileSystem();
+        fs.getDriveByLetter("C")!.rootEntry.addItem({
+            type: FileType.Image,
+            name: "picture.png",
+            data: { load: async () => null } as never,
+        });
+
+        expect(fs.openFile(path("C:/picture.png"))!.execute).toBeUndefined();
+    });
+
+    test("mount noexec removes special-action capabilities", () => {
+        const fs = new FileSystem();
+        const drive = new FileSystemDrive(false, "NOEXEC");
+        fs.registerDrive(drive);
+        fs.mount("D", drive.label, FileMode.READ | FileMode.WRITE);
+        drive.rootEntry.addItem({
+            type: FileType.Link,
+            name: "website.lnk",
+            data: { open: vi.fn() } as never,
+            openType: "open",
+        });
+
+        expect(fs.openFile(path("D:/website.lnk"))!.execute).toBeUndefined();
     });
 });

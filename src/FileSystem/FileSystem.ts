@@ -109,8 +109,16 @@ export class FileSystem {
                 return false;
             }
         }
-        //if(this.getMountpoint(label) != null) return false;
         if(!this.#drives.has(label)) return false;
+        const existingMountpoint = this.getMountpoints(label).find(
+            (mountpoint) => mountpoint !== letter,
+        );
+        if (existingMountpoint) {
+            console.error(
+                `mount("${label}"): drive already mounted at ${existingMountpoint}:`,
+            );
+            return false;
+        }
         const diskMode = this.#drives.get(label)!.readOnly ? ~FileMode.WRITE : FileMode.WRX;
         let mountInfo: MountedDrive = {
             label: label,
@@ -149,7 +157,7 @@ export class FileSystem {
         return drive;
     }
 
-    getMountedDriveMode(letter: string): FileMode {
+    getMountedDriveMode(letter: DriveLetter): FileMode {
         const info = this.#mounts.get(letter);
         if(!info) return 0;
         return info.flags;
@@ -221,7 +229,11 @@ export class FileSystem {
         }
 
         if((mode & FileMode.EXECUTE) === FileMode.EXECUTE) {
-            if(entry.type != FileType.TextFile && entry.type != FileType.Directory) {
+            if(
+                entry.type === FileType.Audio ||
+                entry.type === FileType.Executable ||
+                entry.type === FileType.Link
+            ) {
                 execfunc = (async function(this: FileEntry, args: string[]){
                     const arg1 = args[0];
                     if(this.type == FileType.Audio) {
@@ -231,12 +243,13 @@ export class FileSystem {
                             this.data.stop();
                     } else if(this.type == FileType.Executable) {
                         await this.createInstance().run(args);
-                    } else if(this.type == FileType.Image) {
-                        throw new Error("TODO");
                     } else if(this.type == FileType.Link) {
                         this.data.open();
                     } else {
-                        throw new Error("FileHandle.read not implemented for file type " + this.type);
+                        throw new Error(
+                            "FileHandle.execute not implemented for file type " +
+                                this.type,
+                        );
                     }
                 })
             }
@@ -277,12 +290,12 @@ export class FileSystem {
             if (!next) {
                 if (i == path.pieces.length-1 && create) {
                     // optionally create a text file
-                    this.#requireWritableDrive(path.drive!);
+                    this.#requireWritableMount(path.drive!);
                     return entry.addItem({
                         type: FileType.TextFile,
-                        data: new TextFile,
+                        data: new TextFile(),
                         name: name,
-                        mode: 6 as FileMode /* WR- */
+                        mode: FileMode.READ | FileMode.WRITE,
                     });
                 } else return null;
             }
@@ -299,7 +312,7 @@ export class FileSystem {
     }
 
     createDirectory(path: FilePath): void {
-        let dir = this.#requireWritableDrive(path.drive).rootEntry;
+        let dir = this.#requireWritableMount(path.drive).rootEntry;
         for (const name of path.pieces) {
             const existing = dir.entries.find((e) => e.name === name);
             if (existing === undefined) {
@@ -313,7 +326,7 @@ export class FileSystem {
     }
 
     removeDirectory(path: FilePath, force: boolean = false): void {
-        this.#requireWritableDrive(path.drive);
+        this.#requireWritableMount(path.drive);
 
         const segments = path.pieces;
         if (segments.length === 0) return; // a drive's root can't be removed
@@ -331,8 +344,11 @@ export class FileSystem {
     }
 
     /* Create new text file */
-    createFile(path: FilePath, mode: FileMode = 6 as FileMode): FileEntry {
-        let dir = this.#requireWritableDrive(path.drive).rootEntry;
+    createFile(
+        path: FilePath,
+        mode: FileMode = FileMode.READ | FileMode.WRITE,
+    ): FileEntry {
+        let dir = this.#requireWritableMount(path.drive).rootEntry;
         for (let i = 0; i < path.pieces.length; i++) {
             const name = path.pieces[i];
             let existing = dir.entries.find((e) => e.name === name);
@@ -340,8 +356,9 @@ export class FileSystem {
                 if(!existing) {
                     return dir.addItem({
                         type: FileType.TextFile,
-                        data: new TextFile,
-                        name, mode
+                        data: new TextFile(),
+                        name,
+                        mode,
                     });
                 }
                 if(existing.type == FileType.Directory) {
@@ -360,7 +377,7 @@ export class FileSystem {
         throw new Error("unreachable");
     }
 
-    #requireWritableDrive(letter: DriveLetter | null): FileSystemDrive {
+    #requireWritableMount(letter: DriveLetter | null): FileSystemDrive {
         if (letter === null) throw new Error("Path has no drive");
 
         const drive = this.getDriveByLetter(letter);

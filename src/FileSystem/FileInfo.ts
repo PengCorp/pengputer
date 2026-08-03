@@ -40,12 +40,14 @@ export class FileEntryDirectory {
             throw new Error(`${infoIn.name} already exists`);
         }
 
-        if(infoIn.mode == undefined || infoIn.mode == null) {
-            infoIn.mode = FileMode.READ | FileMode.WRITE;
-            if(infoIn.type != FileType.TextFile)
-                infoIn.mode |= FileMode.EXECUTE;
-        }
-        const info: FileEntry = infoIn as FileEntry;
+        const defaultMode =
+            infoIn.type === FileType.TextFile
+                ? FileMode.READ | FileMode.WRITE
+                : FileMode.WRX;
+        const info = {
+            ...infoIn,
+            mode: infoIn.mode ?? defaultMode,
+        } as FileEntry;
 
         this.#entries.push(info);
         return info;
