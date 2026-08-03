@@ -28,6 +28,7 @@ import {
 } from "../types";
 import { type Executable } from "@FileSystem/fileTypes";
 import { type PC } from "./PC";
+import { Keyboard } from "../Keyboard";
 
 const msPerFrame = 16.666666666;
 
@@ -1274,7 +1275,7 @@ class Tetris implements GameState {
                 this.isRightPressed = ev.pressed;
             }
 
-            if (ev.isModifier || !ev.pressed || ev.isAutoRepeat) continue;
+            if (!Keyboard.isRealKeyPress(ev)) continue;
 
             if (ev.code === "ArrowUp") {
                 this.fallingPiece?.rotateRight();
@@ -1485,7 +1486,7 @@ class MainMenu implements GameState {
         while (true) {
             const ev = std.getNextKeyboardEvent();
             if (!ev) break;
-            if (ev.isModifier || !ev.pressed) continue;
+            if (!Keyboard.isCharKeyPress(ev)) continue;
 
             if (ev.code === "Enter") {
                 this.onStartGame.emit();

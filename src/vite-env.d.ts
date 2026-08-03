@@ -12,3 +12,8 @@ declare module "*.ogg" {
     const src: string;
     export default src;
 }
+
+interface ImportMeta {
+    /* (vite) environment variables */
+    readonly env: { readonly DEV?: boolean | undefined };
+};

@@ -1,24 +1,26 @@
 import { padStart } from "lodash";
-import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
+import {
+    Keyboard,
+    PhysicalKeyboard,
+    ScreenKeyboard,
+} from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
-import { DateApp } from "./DateApp";
-import { EightBall } from "./EightBall";
 import {
-    FileInfoDirectory,
+    FileEntryDirectory,
     FilePath,
     FileSystem,
-    FileSystemObjectType,
+    FileType,
 } from "../FileSystem";
-import { HelloWorld } from "./HelloWorld";
 import { type PC } from "./PC";
-import { PengerShell } from "./PengerShell";
 
 import biosPenger from "./res/biosPenger.png";
 import energyStar from "./res/energyStar.png";
 
 import { ScreenMode, Std } from "../Std";
+import { TextBuffer } from "../TextBuffer";
+
 import canyonOgg from "./files/documents/music/CANYON.ogg";
 import mountainKingOgg from "./files/documents/music/mountainking.ogg"; // cspell:disable-line
 import passportOgg from "./files/documents/music/PASSPORT.ogg";
@@ -30,16 +32,26 @@ import {
     LinkFile,
     TextFile,
 } from "@FileSystem/fileTypes";
+/* programs */
+import { PengerShell } from "./PengerShell";
+// fun
 import { PengsweeperApp } from "./Pengsweeper";
-import { PrintArgs } from "./PrintArgs";
 import { TetrisApp } from "./Tetris";
+import { DateApp } from "./DateApp";
+import { EightBall } from "./EightBall";
+import { Blackjack } from "./Blackjack";
+// test programs
+import { PrintArgs } from "./testexe/PrintArgs";
+import { HelloWorld } from "./testexe/HelloWorld";
+import { Colors } from "./testexe/Colors";
+import { FileTransferTest } from "./testexe/FileTransferTest";
+import { TestPwd } from "./testexe/pwd";
+// editors
+import { Pedlin } from "./Pedlin";
+import { EdApp } from "./ed";
+/* end programs */
 
 import "@Color/ansi";
-import { TextBuffer } from "../TextBuffer";
-import { Blackjack } from "./Blackjack";
-import { Colors } from "./Colors";
-import { FileTransferTest } from "./FileTransferTest";
-import { Pedlin } from "./Pedlin";
 import { runAnimationLoop } from "@Toolbox/AnimationLoop";
 
 import { vga9x16, loadFonts } from "../Screen/Fonts";
@@ -59,11 +71,12 @@ class PengOS {
     private pc: PC;
 
     constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen) {
-        const std = new Std(keyboard, textBuffer, screen);
+        const fileSystem = new FileSystem();
+        const std = new Std(keyboard, textBuffer, screen, fileSystem);
         std.setConsoleScreenMode(ScreenMode.mode80x25);
         this.pc = {
-            fileSystem: new FileSystem(),
             std,
+            fileSystem,
             keyboard,
             reboot: async () => {
                 localStorage.removeItem("hasStartedUp");
@@ -78,7 +91,7 @@ class PengOS {
         );
         if (
             pengerShellExe !== null &&
-            pengerShellExe.type === FileSystemObjectType.Executable
+            pengerShellExe.type === FileType.Executable
         ) {
             await pengerShellExe.createInstance().run([]);
         } else {
@@ -92,13 +105,13 @@ class PengOS {
     async startup() {
         const rootDir = this.pc.fileSystem.getFileInfo(
             FilePath.tryParse("C:/"),
-        )! as FileInfoDirectory;
+        )! as FileEntryDirectory;
         if (!rootDir) {
             throw new Error("Root dir is undefined.");
         }
 
         rootDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "date.exe",
             createInstance: () => new DateApp(this.pc),
         });
@@ -111,7 +124,7 @@ class PengOS {
                 "XII OF THE PENGER CRIMINAL JUSTICE CODE",
         );
         pengOSDir.addItem({
-            type: FileSystemObjectType.TextFile,
+            type: FileType.TextFile,
             data: licenseTxt,
             name: "LICENSE.TXT",
         });
@@ -120,70 +133,80 @@ class PengOS {
             `Penger Public License (PPL)\n\nNo copyright.\nIf you are having fun, you are allowed to use and distribute whatever you want.\nYou can't forbid anyone to use Penger freely.\nNo requirements.`,
         );
         pengOSDir.addItem({
-            type: FileSystemObjectType.TextFile,
+            type: FileType.TextFile,
             data: pplTxt,
             name: "PPL.TXT",
         });
 
         const testDir = rootDir.mkdir("test");
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "colors.exe",
             createInstance: () => new Colors(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "args.exe",
             createInstance: () => new PrintArgs(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "hello.exe",
             createInstance: () => new HelloWorld(this.pc),
         });
         testDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "transfer.exe",
             createInstance: () => new FileTransferTest(this.pc),
+        });
+        testDir.addItem({
+            type: FileType.Executable,
+            name: "pwd.exe",
+            createInstance: () => new TestPwd(this.pc),
         });
 
         const softwareDir = rootDir.mkdir("software");
 
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "8ball.exe",
             createInstance: () => new EightBall(this.pc),
         });
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "psh.exe",
             createInstance: () => new PengerShell(this.pc),
         });
         softwareDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pedlin.exe",
             createInstance: () => new Pedlin(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileType.Executable,
+            name: "ped.exe",
+            createInstance: () => new EdApp(this.pc)
         });
 
         const gamesDir = rootDir.mkdir("games");
         gamesDir.addItem({
-            type: FileSystemObjectType.Link,
+            type: FileType.Link,
             name: "pongr.exe", // cspell:disable-line
             data: new LinkFile("https://penger.city/pongerslair/"),
             openType: "run",
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pengtris.exe", // cspell:disable-line
             createInstance: () => new TetrisApp(this.pc),
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "pengswp.exe", // cspell:disable-line
             createInstance: () => new PengsweeperApp(this.pc),
         });
         gamesDir.addItem({
-            type: FileSystemObjectType.Executable,
+            type: FileType.Executable,
             name: "blakjack.exe", // cspell:disable-line
             createInstance: () => new Blackjack(this.pc),
         });
@@ -191,29 +214,29 @@ class PengOS {
         const documentsDir = rootDir.mkdir("documents");
         const musicDir = documentsDir.mkdir("music");
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "CANYON.MID",
             data: new AudioFile(canyonOgg),
         });
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "PASSPORT.MID",
             data: new AudioFile(passportOgg),
         });
         musicDir.addItem({
-            type: FileSystemObjectType.Audio,
+            type: FileType.Audio,
             name: "mountainking.mid", // cspell:disable-line
             data: new AudioFile(mountainKingOgg),
         });
 
         const pengersDir = documentsDir.mkdir("pengers");
         pengersDir.addItem({
-            type: FileSystemObjectType.Image,
+            type: FileType.Image,
             name: "macger.png", // cspell:disable-line
             data: new ImageFile(macgerPng), // cspell:disable-line
         });
         pengersDir.addItem({
-            type: FileSystemObjectType.Image,
+            type: FileType.Image,
             name: "nerdger.png", // cspell:disable-line
             data: new ImageFile(nerdgerPng), // cspell:disable-line
         });
@@ -227,6 +250,7 @@ class PengOS {
                 await this.runStartupAnimation();
             } catch (e) {
                 std.writeConsoleError(e);
+                console.error(e);
             }
         } while (true);
     }
@@ -236,12 +260,58 @@ class PengOS {
 
         std.clearConsole();
         let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
+
+        if(import.meta.env.DEV) {
+            let y = 0;
+
+            std.setConsoleScreenMode(ScreenMode.mode80x25);
+
+            std.setConsoleCursorPosition({ x: 0, y });
+            std.writeConsole("[i] You are a dev; fast-forwarding boot sequence.");
+            y = 2;
+            std.setConsoleCursorPosition({ x: 2, y });
+            std.writeConsole("Press ");
+            std.writeConsole("DEL", {bold: true});
+            std.writeConsole(" to enter BIOS.", {bold: false});
+            y++;
+            std.setConsoleCursorPosition({ x: 2, y });
+            std.writeConsole("Press any key to skip.");
+
+            y += 2;
+
+            const FFbootDelay = 3;
+            let goBios = false;
+            await runAnimationLoop((_, tt) => {
+                std.setConsoleCursorPosition({ x: 0, y });
+                std.writeConsole((FFbootDelay - Math.floor(tt/1000)) + "s to boot");
+                const kbe = keyboard.getNextEvent();
+                if(kbe && Keyboard.isRealKeyPress(kbe)) {
+                    if(kbe.code == "Delete") {
+                        goBios = true;
+                        return true;
+                    }
+                    return true;
+                }
+
+                return tt >= FFbootDelay*1000;
+            });
+            std.setConsoleCursorPosition({ x: 0, y: 5 });
+            std.writeConsole("                        ");
+            std.setConsoleCursorPosition({ x: 0, y: 5 });
+            if(goBios) {
+                await new BIOS(this.pc).run([]);
+                std.resetConsole();
+                std.setConsoleScreenMode(ScreenMode.mode80x25);
+            }
+            return;
+        } else if(hasStartedUp) return;
+
         while (!hasStartedUp) {
             std.setConsoleScreenMode(ScreenMode.mode80x25);
 
             let deletePressed = false;
             const unsubDelete = keyboard.subscribe((data) => {
-                if (data.code === "Delete") {
+                if (data.code === "Delete" && Keyboard.isCharKeyPress(data)) {
                     deletePressed = true;
                     const attrs = std.getConsoleAttributes();
                     const pos = std.getConsoleCursorPosition();

@@ -1,7 +1,7 @@
 export const PATH_SEPARATOR = "/";
 export const LSKEY_FLOPPIES = "floppies";
 
-export const DriveLabelValues: string[] = [
+export const DriveLetterValues: string[] = [
     "A",
     "B",
     "C",
@@ -30,8 +30,16 @@ export const DriveLabelValues: string[] = [
     "Z",
 ] as const;
 
-export type DriveLabel = (typeof DriveLabelValues)[number];
+export type DriveLetter = (typeof DriveLetterValues)[number];
 
-export function isDriveLabel(label: string): label is DriveLabel {
-    return DriveLabelValues.includes(label);
+export function isDriveLetter(letter: string): letter is DriveLetter {
+    return DriveLetterValues.includes(letter);
 }
+
+export enum FileMode {
+    NONE = 0,
+    EXECUTE = 1<<0, /* execute as program or run special action */
+    READ = 1<<1,    /* be read; [should be] needed to execute */
+    WRITE = 1<<2,   /* be written to. only matters for text files */
+    WRX = 7
+};

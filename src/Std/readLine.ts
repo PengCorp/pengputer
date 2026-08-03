@@ -448,8 +448,7 @@ export const readKey = async (
     keyboard.flushEventBuffer();
     while (true) {
         const ev = await keyboard.waitForNextEvent();
-        if (!ev.pressed) continue;
-        if (ev.isModifier) continue;
+        if (!Keyboard.isCharKeyPress(ev)) continue;
         return {
             char: ev.char,
             key: ev.code,

@@ -1,7 +1,7 @@
 import { FileTransferManager } from "@Toolbox/FileTransferManager";
 
 import { type Executable } from "@FileSystem/fileTypes";
-import { type PC } from "./PC";
+import { type PC } from "../PC";
 
 export class FileTransferTest implements Executable {
     private pc: PC;

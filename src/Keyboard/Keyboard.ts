@@ -27,6 +27,11 @@ import {
     type SignalUnsubscribe,
 } from "@Toolbox/Signal";
 
+type AnyKeyPressEvent = Pick<
+    PengKeyboardEvent,
+    "pressed" | "isModifier" | "isAutoRepeat"
+>;
+
 export class Keyboard implements KeyboardSource {
     private _sources: KeyboardSource[];
     private _eventSignal: Signal<PengKeyboardEvent>;
@@ -37,6 +42,17 @@ export class Keyboard implements KeyboardSource {
     private _mods: number = 0;
 
     private _eventBuffer: PengKeyboardEvent[] = [];
+
+    /* Does the event describe a user physically pressing
+     * a non-modifier key on his/her keyboard */
+    static isRealKeyPress(event: AnyKeyPressEvent): boolean {
+        return Keyboard.isCharKeyPress(event) && !event.isAutoRepeat;
+    }
+
+    /* Does the event describe a non-modifier key being pressed */
+    static isCharKeyPress(event: AnyKeyPressEvent): boolean {
+        return event.pressed && !event.isModifier;
+    }
 
     constructor() {
         this._eventSignal = new Signal();

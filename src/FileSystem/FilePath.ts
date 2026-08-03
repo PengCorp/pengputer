@@ -1,4 +1,4 @@
-import { isDriveLabel, PATH_SEPARATOR, type DriveLabel } from "./constants";
+import { isDriveLetter, PATH_SEPARATOR, type DriveLetter } from "./constants";
 
 function collapseSegments(segments: string[], absolute: boolean): string[] {
     const collapsed: string[] = [];
@@ -22,17 +22,19 @@ function collapseSegments(segments: string[], absolute: boolean): string[] {
 }
 
 export class FilePath {
+    // TODO: paths `C:test/` and `C:test` parse into the same thing, which loses context
+    //       distunguishing references to directories vs. files in the specified path.
     static tryParse(
         input: string,
-        defaultDrive: DriveLabel | null = null,
+        defaultDrive: DriveLetter | null = null,
     ): FilePath | null {
         let rest = input;
-        let drive: DriveLabel | null = null;
+        let drive: DriveLetter | null = null;
 
         const colonIndex = rest.indexOf(":");
         if (colonIndex >= 0) {
             const label = rest.slice(0, colonIndex).toUpperCase();
-            if (!isDriveLabel(label)) return null;
+            if (!isDriveLetter(label)) return null;
 
             drive = label;
             rest = rest.slice(colonIndex + 1);
@@ -48,12 +50,12 @@ export class FilePath {
         return new FilePath(drive, segments, rooted);
     }
 
-    #drive: DriveLabel | null;
+    #drive: DriveLetter | null;
     #segments: readonly string[];
     #absolute: boolean;
 
-    private constructor(
-        drive: DriveLabel | null,
+    constructor(
+        drive: DriveLetter | null,
         segments: string[],
         absolute: boolean,
     ) {
@@ -62,7 +64,7 @@ export class FilePath {
         this.#segments = collapseSegments(segments, this.#absolute);
     }
 
-    get drive(): DriveLabel | null {
+    get drive(): DriveLetter | null {
         return this.#drive;
     }
 
@@ -93,7 +95,11 @@ export class FilePath {
     }
 
     combine(other: FilePath): FilePath {
-        if (other.isAbsolute()) return other;
+        if (other.isAbsolute()) {
+            if (other.#drive) return other;
+            else return new FilePath(
+                this.#drive, [...other.#segments], other.#absolute);
+        }
         return new FilePath(
             this.#drive,
             [...this.#segments, ...other.#segments],

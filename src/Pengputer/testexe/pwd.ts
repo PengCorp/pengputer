@@ -1,12 +1,14 @@
+import { type PC } from "../PC";
 import { type Executable } from "@FileSystem/fileTypes";
-import { type PC } from "./PC";
 
-export class HelloWorld implements Executable {
+export class TestPwd implements Executable {
     private pc: PC;
     constructor(pc: PC) {
         this.pc = pc;
     }
+
     async run(args: string[]) {
-        this.pc.std.writeConsole("Hello, world!\n");
+        const { std } = this.pc;
+        std.writeConsole(std.getCwdStr());
     }
 }
