@@ -245,7 +245,7 @@ export class EdApp implements Executable {
                         newLine = range[0];
                     else newLine = range[1];
 
-                    if(newLine >= this.lines.length) std.writeConsole("?\n");
+                    if(newLine > this.lines.length) std.writeConsole("?\n");
                     else {
                         std.writeConsole(this.lines[newLine-1]+"\n");
                         this.lineNo = newLine;

@@ -44,7 +44,7 @@ export class Keyboard implements KeyboardSource {
     private _eventBuffer: PengKeyboardEvent[] = [];
 
     /* Does the event describe a user physically pressing
-     * a character key on his/her keyboard */
+     * a non-modifier key on his/her keyboard */
     static isRealKeyPress(event: AnyKeyPressEvent): boolean {
         return Keyboard.isCharKeyPress(event) && !event.isAutoRepeat;
     }
