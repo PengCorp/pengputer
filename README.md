@@ -13,6 +13,7 @@ Private methods are prefixed by `_`. Internal methods are prefixed with `__`. In
 This couldn't have happened without contributions from:
 
 - Boons
+- Fint
 - Jack
 - Nashiora/Local
 - NicNic
