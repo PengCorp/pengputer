@@ -28,6 +28,7 @@ export class PhysicalKeyboard implements KeyboardSource {
     public onRegister() {
         window.addEventListener("keydown", this._onKey.bind(this));
         window.addEventListener("keyup", this._onKey.bind(this));
+        window.addEventListener("blur", this._onWindowBlur.bind(this));
     }
 
     public onEvent(event: PengKeyboardEvent) {}
@@ -99,6 +100,14 @@ export class PhysicalKeyboard implements KeyboardSource {
         } else {
             this.kb.maskModifiers(0, ~Modifier.CAPS_LOCK);
         }
+    }
+
+    private _onWindowBlur() {
+        const repeatedCode = this.autoRepeat.getCode();
+        if (repeatedCode) this.kb.sendKeyCode(this, repeatedCode, false);
+        this.autoRepeat.reset();
+        this.kb.flushEventBuffer();
+        this.kb.setModifiers(this._caps ? Modifier.CAPS_LOCK : 0);
     }
 
     private _onKey(ev: KeyboardEvent) {
