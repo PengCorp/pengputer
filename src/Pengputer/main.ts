@@ -285,7 +285,7 @@ class PengOS {
                 std.setConsoleCursorPosition({ x: 0, y });
                 std.writeConsole((FFbootDelay - Math.floor(tt/1000)) + "s to boot");
                 const kbe = keyboard.getNextEvent();
-                if(kbe) {
+                if(kbe && Keyboard.isRealKeyPress(kbe)) {
                     if(kbe.code == "Delete") {
                         goBios = true;
                         return true;

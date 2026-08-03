@@ -68,6 +68,22 @@ describe("FileSystem#listDrives", () => {
         ]);
     });
 
+    test("lists each mounted drive once, followed by unmounted drives sorted by label", () => {
+        const fs = new FileSystem();
+        mountDrive(fs, "D", new FileSystemDrive(false, "MOUNTED"));
+        fs.registerDrive(new FileSystemDrive(false, "ZEBRA"));
+        fs.registerDrive(new FileSystemDrive(false, "ALPHA"));
+
+        expect(
+            fs.listAllDrives().map(({ letter, drive }) => [letter, drive.label]),
+        ).toStrictEqual([
+            ["C", "SYSTEM"],
+            ["D", "MOUNTED"],
+            [null, "ALPHA"],
+            [null, "ZEBRA"],
+        ]);
+    });
+
     test("drops a drive from the listing once unmounted", () => {
         const fs = new FileSystem();
         mountDrive(fs, "D", new FileSystemDrive(false));

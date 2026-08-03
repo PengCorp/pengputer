@@ -167,7 +167,7 @@ export class FileSystem {
         return [
             ...this.listMountedDrives(),
             ...(([...this.#drives.entries()] as [string, FileSystemDrive][])
-                .filter(([label, drive]) => !this.getMountpoints(label).length)
+                .filter(([label]) => !this.getMountpoints(label).length)
                 .map(([label, drive]) => {
                     return { letter: null, drive };
                 })
