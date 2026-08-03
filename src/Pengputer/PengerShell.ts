@@ -838,14 +838,7 @@ export class PengerShell implements Executable {
                 return;
             }
             if (!fs.mount(letter, name)) {
-                const [existingMountpoint] = fs.getMountpoints(name);
-                if (existingMountpoint) {
-                    std.writeConsole(
-                        `Disk <${name}> is already inserted at ${existingMountpoint}:\n`,
-                    );
-                } else {
-                    std.writeConsole(`Could not insert disk <${name}>\n`);
-                }
+                std.writeConsole(`Could not insert disk <${name}>\n`);
                 return;
             }
             delete this.workingDirectories[letter];

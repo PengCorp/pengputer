@@ -188,18 +188,19 @@ describe("PengerShell filesystem commands", () => {
         );
     });
 
-    test("reports an already-mounted disk instead of claiming insertion succeeded", () => {
+    test("inserts an already-mounted disk at another free letter", () => {
         const { fileSystem, shell, std } = createShell();
         const drive = new FileSystemDrive(false, "WORK");
         fileSystem.registerDrive(drive);
         fileSystem.mount("D", drive.label);
-        vi.spyOn(console, "error").mockImplementation(() => {});
 
         shell.commandDisk(["insert", "E", "WORK"]);
 
-        expect(fileSystem.isMounted("E")).toBe(false);
+        expect(fileSystem.getDriveByLetter("D")).toBe(drive);
+        expect(fileSystem.getDriveByLetter("E")).toBe(drive);
+        expect(fileSystem.getMountpoints(drive.label)).toStrictEqual(["D", "E"]);
         expect(std.writeConsole).toHaveBeenCalledWith(
-            "Disk <WORK> is already inserted at D:\n",
+            "Installed drive <WORK> to E:\n",
         );
     });
 });

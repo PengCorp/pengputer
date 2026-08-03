@@ -110,15 +110,6 @@ export class FileSystem {
             }
         }
         if(!this.#drives.has(label)) return false;
-        const existingMountpoint = this.getMountpoints(label).find(
-            (mountpoint) => mountpoint !== letter,
-        );
-        if (existingMountpoint) {
-            console.error(
-                `mount("${label}"): drive already mounted at ${existingMountpoint}:`,
-            );
-            return false;
-        }
         const diskMode = this.#drives.get(label)!.readOnly ? ~FileMode.WRITE : FileMode.WRX;
         let mountInfo: MountedDrive = {
             label: label,

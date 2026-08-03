@@ -41,18 +41,35 @@ describe("FileSystem mounting", () => {
         expect(mountDrive(fs, "D", new FileSystemDrive(false))).toBe(true);
     });
 
-    test("refuses to mount the same drive at a second letter", () => {
+    test("mounts one drive at multiple letters with independent modes", () => {
         const fs = new FileSystem();
         const drive = new FileSystemDrive(false, "WORK");
         fs.registerDrive(drive);
-        expect(fs.mount("D", drive.label)).toBe(true);
+        expect(fs.mount("D", drive.label, FileMode.READ)).toBe(true);
+        expect(fs.mount("E", drive.label, FileMode.WRX)).toBe(true);
 
-        const error = vi.spyOn(console, "error").mockImplementation(() => {});
-        expect(fs.mount("E", drive.label)).toBe(false);
-        error.mockRestore();
+        fs.createFile(path("E:/notes.txt"));
+        const readOnlyHandle = fs.openFile(path("D:/notes.txt"))!;
+        const writableHandle = fs.openFile(path("E:/notes.txt"))!;
+        writableHandle.write!("shared");
 
         expect(fs.getDriveByLetter("D")).toBe(drive);
-        expect(fs.getDriveByLetter("E")).toBeNull();
+        expect(fs.getDriveByLetter("E")).toBe(drive);
+        expect(fs.getMountpoints(drive.label)).toStrictEqual(["D", "E"]);
+        expect(readOnlyHandle.read!()).toBe("shared");
+        expect(readOnlyHandle.write).toBeUndefined();
+        expect(writableHandle.write).toBeTypeOf("function");
+        expect(
+            fs
+                .listAllDrives()
+                .filter(({ drive: listedDrive }) => listedDrive === drive)
+                .map(({ letter }) => letter),
+        ).toStrictEqual(["D", "E"]);
+
+        expect(fs.unmount("D")).toBe(true);
+        expect(fs.getDriveByLetter("D")).toBeNull();
+        expect(fs.getDriveByLetter("E")).toBe(drive);
+        expect(fs.getMountpoints(drive.label)).toStrictEqual(["E"]);
     });
 
     test("getDrive returns undefined for a drive letter that was never mounted", () => {
