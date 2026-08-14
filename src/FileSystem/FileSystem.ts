@@ -3,7 +3,8 @@ import type { FileEntry, FileEntryDirectory, FileEntryText } from "./FileInfo";
 import { type DriveLetter, isDriveLetter, FileMode } from "./constants";
 import { FileType } from "./types";
 import { FileSystemDrive } from "./Drive";
-import { TextFile } from "./fileTypes";
+import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
+import _ from "lodash";
 
 export interface DriveMount {
     letter: DriveLetter | null;
@@ -46,17 +47,192 @@ function summarizeContents(dir: FileEntryDirectory): DriveContentsSummary {
 
     return { directoryCount, fileCount };
 }
-
 export interface MountedDrive {
     readonly flags: FileMode,
     readonly label: string
 };
+
+function deepJSONifyDir(dir: FileEntryDirectory): object {
+    var obj = {};
+
+    Object.assign(obj, dir);
+    obj.name = dir.name;
+    obj.entries = [];
+    for (let subent of dir.entries) {
+        let entry = {};
+        if(subent.type === FileType.Directory) {
+            Object.assign(entry, deepJSONifyDir(subent));
+            obj.entries.push(entry);
+            continue;
+        }
+        Object.assign(entry, subent);
+        switch(subent.type) {
+            case FileType.TextFile:
+                entry.data = subent.data.getText();
+                break;
+            case FileType.Executable:
+                continue; /* TODO: should we even try to support exporting executables */
+            case FileType.Link:
+            case FileType.Audio:
+            case FileType.Image:
+                entry.url = subent.data.getURL();
+                break;
+            default:
+                let updateFSexportAndImportImpl = (c: never) => c;
+                // this will error at comptime if switch is not exhaustive
+                updateFSexportAndImportImpl(subent);
+                break;
+        }
+        obj.entries.push(entry)
+    }
+
+    return obj;
+}
+
+async function gzip(data: string): Promise<ArrayBuffer> {
+    const byteArray = new TextEncoder().encode(data);
+    const compressStream = new CompressionStream("gzip");
+    const writer = compressStream.writable.getWriter();
+    writer.write(byteArray);
+    writer.close();
+    return new Response(compressStream.readable).arrayBuffer();
+}
+
+async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
+    const decompStream = new DecompressionStream("gzip");
+    const writer = decompStream.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    return new Response(decompStream.readable).arrayBuffer();
+}
 
 export class FileSystem {
     // mounts["C:"] -> MountedDrive { -rx, "SYSTEM" }
     // drives["SYSTEM"] -> <FileSystemDrive "SYSTEM">
     #mounts = new Map<DriveLetter, MountedDrive>();
     #drives = new Map<string, FileSystemDrive>();
+
+    async exportFS(drivelabel: string): Promise<string|null> {
+        const drive = this.#drives.get(drivelabel);
+        if(!drive) return null;
+
+        const fstree = deepJSONifyDir(drive.rootEntry);
+        const stringfs = JSON.stringify(fstree);
+        const gzipBytes = new Uint8Array(await gzip(stringfs));
+        const encodedfs = gzipBytes.toBase64();
+        //const encodedfs = btoa(Array.from(gzipBytes, b => String.fromCodePoint(b)).join(""));
+        var result = "PENGRFS!"+String(drivelabel.length)+"!"+drivelabel+encodedfs;
+        console.log(result);
+        return result;
+    }
+
+    /** @returns Label of imported drive */
+    async importFS(encoded: string): Promise<string> {
+        console.log({encoded});
+
+        if(encoded.slice(0, 8) != "PENGRFS!") {
+            throw new Error("Uploaded file is not a Penger filesystem [0]");
+        }
+        encoded = encoded.slice(8);
+
+        var labelLen = 0;
+        while(48 <= encoded.charCodeAt(0) && encoded.charCodeAt(0) <= 57) {
+            labelLen *= 10;
+            labelLen += encoded.charCodeAt(0) - 48;
+            encoded = encoded.slice(1);
+        }
+        if(encoded.length < labelLen+1+8
+        || encoded[0] != '!') {
+            throw new Error("Uploaded file is not a Penger filesystem [1]");
+        }
+        encoded = encoded.slice(1);
+
+        const label = encoded.slice(0, labelLen).toUpperCase();
+        if(label.length != labelLen) {
+            throw new Error("Uploaded file is not a Penger filesystem [2]");
+        }
+        encoded = encoded.slice(labelLen);
+        console.log(encoded, encoded.length);
+
+        if(this.#drives.has(label)) {
+            throw new Error("Disk " +label+ " already exists on this PengPuter.");
+        }
+
+        let fstree_bytes: ArrayBuffer;
+
+        // the rest is base64-encoded gzip'ed FS JSON object
+        try {
+            fstree_bytes = await gunzip(Uint8Array.fromBase64(encoded));
+        } catch(e) {
+            // (De-)CompressionStream + Response behaves weirdly in async
+            throw e;
+        }
+        const fstree_str = new TextDecoder().decode(fstree_bytes);
+        const fstree = JSON.parse(fstree_str);
+        console.log(fstree);
+
+        if(fstree.name !== '/'
+        || fstree.type !== FileType.Directory
+        || (fstree.mode & ~FileMode.WRX) != 0
+        ) {
+            throw new Error("Malformed Penger Filesystem: bad root entry");
+        }
+
+        const drive = new FileSystemDrive(!(fstree.mode & FileMode.WRITE), label, "Floppy");
+
+        const import_log = true;
+
+        const importDir = function(dir: FileEntryDirectory, src: object) {
+            if(src.type != FileType.Directory) {
+                throw new Error("Tried to import directory from non-directory ("+String(src.type)+")");
+            }
+            dir.mode = src.mode;
+
+            import_log && console.group("Importing directory", src.name);
+            for(const subent of src.entries) {
+                var entry: Partial<FileEntry> = {};
+                if(subent.type === FileType.Directory) {
+                    entry = dir.mkdir(subent.name);
+                    importDir(entry as FileEntryDirectory, subent);
+                    continue;
+                } else {
+                    entry.type = subent.type;
+                    entry.name = subent.name;
+                    entry.mode = subent.mode;
+                    switch(subent.type) {
+                        case FileType.TextFile:
+                            (<FileEntryText>entry).data = new TextFile();
+                            (<FileEntryText>entry).data.replace(subent.data);
+                            break;
+                        case FileType.Executable:
+                            console.error(subent.name+": Cannot import executables");
+                            break;
+                        case FileType.Link:
+                            (<FileEntryLink>entry).data = new LinkFile(subent.url);
+                            (<FileEntryLink>entry).openType = subent.openType;
+                            break;
+                        case FileType.Audio:
+                            (<FileEntryAudio>entry).data = new AudioFile(subent.url);
+                            break;
+                        case FileType.Image:
+                            (<FileEntryImage>entry).data = new ImageFile(subent.url);
+                            break;
+                        default:
+                            break;
+                    }
+                    import_log && console.log("Importing file", entry.name, "("+entry.type+")");
+                }
+                dir.addItem(entry as Exclude<FileEntryDirectory, FileEntry>);
+            }
+            import_log && console.groupEnd();
+        }
+
+        importDir(drive.rootEntry, fstree);
+
+        this.registerDrive(drive);
+
+        return label;
+    }
 
     constructor() {
         this.registerDrive(new FileSystemDrive(true, "SYSTEM", "Fixed"));

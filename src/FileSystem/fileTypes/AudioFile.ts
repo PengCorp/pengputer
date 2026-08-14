@@ -7,6 +7,10 @@ export class AudioFile {
         this.audio = undefined;
     }
 
+    public getURL(): string {
+        return this.url;
+    }
+
     public play() {
         if (!this.audio) {
             this.audio = new Audio(this.url);

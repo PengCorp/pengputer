@@ -9,6 +9,10 @@ export class ImageFile {
         this.bitmap = undefined;
     }
 
+    public getURL(): string {
+        return this.src;
+    }
+
     public async load() {
         if (this.bitmap) {
             return this.bitmap;

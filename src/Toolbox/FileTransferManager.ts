@@ -3,14 +3,14 @@ class FileTransferManager {
 
     private static _isUploadOpen: boolean = false;
 
-    public static presentDownload(text: string, filename: string) {
+    public static presentDownload(text: string, filename: string, mimeType: string = "text/plain") {
         if (this._actionInProgress) {
             throw new Error("FileTransferManager is busy.");
         }
 
         this._actionInProgress = true;
         return new Promise<void>((resolve, reject) => {
-            const blob = new Blob([text], { type: "text/plain" });
+            const blob = new Blob([text], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;

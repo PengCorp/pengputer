@@ -7,6 +7,10 @@ export class LinkFile {
         this.href = href;
     }
 
+    public getURL(): string {
+        return this.href;
+    }
+
     public open() {
         window.open(this.href, "_blank");
     }

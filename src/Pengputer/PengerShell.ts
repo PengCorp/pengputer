@@ -15,6 +15,7 @@ import { FileSystemDrive } from "../FileSystem/Drive";
 import type { PC } from "./PC";
 
 import { argparse } from "@Toolbox/argparse";
+import { FileTransferManager } from "@Toolbox/FileTransferManager";
 
 import { classicColors } from "@Color/ansi";
 
@@ -790,7 +791,7 @@ export class PengerShell implements Executable {
         return isDriveLetter(letter) ? letter : null;
     }
 
-    private commandDisk(args: string[]) {
+    private async commandDisk(args: string[]) {
         const { std, fileSystem: fs } = this.pc;
         const [command] = args;
 
@@ -896,13 +897,45 @@ export class PengerShell implements Executable {
             }
             fs.unregisterDrive(drive.label);
             std.writeConsole("Burned, destroyed and trashed <"+drive.label+">\n");
-        } else if(
-            command === "import" ||
-            command === "export"
-        ) {
-            std.writeConsole(
-                "Import/export is not implemented\n",
-            );
+        } else if(command === "export") {
+            const [ident] = args.slice(1);
+            if(!ident) {
+                std.writeConsole("Provide a disk label to export\n");
+                return;
+            }
+            const label = ident.toUpperCase();
+            if(!fs.getDriveByLabel(label)) {
+                std.writeConsole("Disk " +label+ " does not exist\n");
+                return;
+            }
+
+            const blob = await fs.exportFS(label);
+            if(!blob) {
+                std.writeConsole("Something went wrong\n");
+                return;
+            }
+            std.writeConsole(blob+"\n");
+            std.writeConsole("Downloading...\n");
+            await FileTransferManager.presentDownload(blob, label+".pfs", "application/pengerfs");
+        } else if(command === "import") {
+            std.writeConsole("Prompting upload...\n");
+            var pengfs: string;
+            try {
+                const { name, text: contents } = await FileTransferManager.askForUpload("pfs", "application/pengerfs");
+                pengfs = contents;
+            } catch (e) {
+                std.writeConsole("Upload cancelled.\n");
+                console.log(e);
+                return;
+            }
+            try {
+                const ret = await fs.importFS(pengfs);
+                std.writeConsole("Successfully imported drive " +ret+ "\n");
+            } catch(e) {
+                std.writeConsole("FS import failed\n");
+                std.writeConsole("Error: " + (<Error>e).message + "\n");
+                return;
+            }
         } else {
             const printEntry = (cmd: string, text: string) => {
                 const cmdFmt =
