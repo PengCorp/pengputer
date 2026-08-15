@@ -914,7 +914,6 @@ export class PengerShell implements Executable {
                 std.writeConsole("Something went wrong\n");
                 return;
             }
-            std.writeConsole(blob+"\n");
             std.writeConsole("Downloading...\n");
             await FileTransferManager.presentDownload(blob, label+".pfs", "application/pengerfs");
         } else if(command === "import") {

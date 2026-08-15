@@ -8,6 +8,7 @@ import type {
     FileEntryAudio, FileEntryImage,
     FileEntryLink, FileEntryText
 } from "./FileInfo";
+import { gzip, gunzip } from "@Toolbox/Compression";
 import _ from "lodash";
 
 export interface DriveMount {
@@ -93,47 +94,6 @@ function deepJSONifyDir(dir: FileEntryDirectory): object {
     return obj;
 }
 
-async function fullReadStream(stream: ReadableStream): Promise<ArrayBuffer> {
-    const reader = stream.getReader();
-    const chunks = [];
-    while(1) {
-        const { value, done } = await reader.read();
-        if(done) break;
-        chunks.push(value);
-    }
-
-    const len = chunks.reduce((a, chunk) => a + chunk.byteLength, 0);
-    const buf = new ArrayBuffer(len);
-    const arr = new Uint8Array(buf);
-    let ptr = 0;
-    for(const c of chunks) {
-        arr.set(c, ptr);
-        ptr += c.byteLength;
-    }
-    return buf;
-}
-
-async function gzip(data: string): Promise<ArrayBuffer> {
-    const byteArray = new TextEncoder().encode(data);
-    const compressStream = new CompressionStream("gzip");
-    const writer = compressStream.writable.getWriter();
-    writer.write(byteArray);
-    writer.close();
-    // must use fullReadStream here and below because
-    // `new Response(...).arrayBuffer()` throws an error
-    // that is impossible to catch on invaild input
-    return await fullReadStream(compressStream.readable);
-}
-
-async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
-    const decompStream = new DecompressionStream("gzip");
-    const writer = decompStream.writable.getWriter();
-    // the error this produces is pure delusion
-    writer.write(bytes as any);
-    writer.close();
-    return await fullReadStream(decompStream.readable);
-}
-
 export class FileSystem {
     // mounts["C:"] -> MountedDrive { -rx, "SYSTEM" }
     // drives["SYSTEM"] -> <FileSystemDrive "SYSTEM">
@@ -149,7 +109,6 @@ export class FileSystem {
         const gzipBytes = new Uint8Array(await gzip(stringfs));
         const encodedfs = btoa(Array.from(gzipBytes, b => String.fromCodePoint(b)).join(""));
         var result = "PENGRFS!"+String(drivelabel.length)+"!"+drivelabel+encodedfs;
-        console.log(result);
         return result;
     }
 
@@ -157,7 +116,7 @@ export class FileSystem {
     async importFS(encoded: string): Promise<string> {
         /* Controls if a tree of files is printed
          * in the console as they are imported */
-        const import_log = true;
+        const import_log = false;
 
         if(encoded.slice(0, 8) != "PENGRFS!") {
             throw new Error("Uploaded file is not a Penger filesystem [0]");
@@ -184,7 +143,6 @@ export class FileSystem {
             throw new Error("Uploaded file is not a Penger filesystem [2]");
         }
         encoded = encoded.slice(labelLen);
-        console.log(encoded, encoded.length);
 
         if(this.#drives.has(label)) {
             throw new Error("Disk " +label+ " already exists on this PengPuter.");
@@ -203,7 +161,6 @@ export class FileSystem {
         }
         const fstree_str = new TextDecoder().decode(fstree_bytes);
         const fstree = JSON.parse(fstree_str);
-        console.log(fstree);
 
         const obligKeys = ["name", "type", "mode"];
         const validKeys = [...obligKeys, "entries", "openType", "data", "url"];
