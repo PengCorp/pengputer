@@ -89,13 +89,36 @@ function deepJSONifyDir(dir: FileEntryDirectory): object {
     return obj;
 }
 
+async function fullReadStream(stream: ReadableStream): ArrayBuffer {
+    const reader = stream.getReader();
+    const chunks = [];
+    while(1) {
+        const { value, done } = await reader.read();
+        if(done) break;
+        chunks.push(value);
+    }
+
+    const len = chunks.reduce((a, chunk) => a + chunk.byteLength, 0);
+    const buf = new ArrayBuffer(len);
+    const arr = new Uint8Array(buf);
+    let ptr = 0;
+    for(const c of chunks) {
+        arr.set(c, ptr);
+        ptr += c.byteLength;
+    }
+    return buf;
+}
+
 async function gzip(data: string): Promise<ArrayBuffer> {
     const byteArray = new TextEncoder().encode(data);
     const compressStream = new CompressionStream("gzip");
     const writer = compressStream.writable.getWriter();
     writer.write(byteArray);
     writer.close();
-    return new Response(compressStream.readable).arrayBuffer();
+    // must use fullReadStream here and below because
+    // `new Response(...).arrayBuffer()` throws an error
+    // that is impossible to catch on invaild input
+    return await fullReadStream(compressStream.readable);
 }
 
 async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
@@ -103,7 +126,7 @@ async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
     const writer = decompStream.writable.getWriter();
     writer.write(bytes);
     writer.close();
-    return new Response(decompStream.readable).arrayBuffer();
+    return await fullReadStream(decompStream.readable);
 }
 
 export class FileSystem {
@@ -128,7 +151,9 @@ export class FileSystem {
 
     /** @returns Label of imported drive */
     async importFS(encoded: string): Promise<string> {
-        console.log({encoded});
+        /* Controls if a tree of files is printed
+         * in the console as they are imported */
+        const import_log = true;
 
         if(encoded.slice(0, 8) != "PENGRFS!") {
             throw new Error("Uploaded file is not a Penger filesystem [0]");
@@ -163,8 +188,9 @@ export class FileSystem {
         // the rest is base64-encoded gzip'ed FS JSON object
         try {
             fstree_bytes = await gunzip(Uint8Array.fromBase64(encoded));
-        } catch(e) {
-            // (De-)CompressionStream + Response behaves weirdly in async
+        } catch(err) {
+            let e = <Error>err;
+            if(e.message) e.message = "GZIP error: " + e.message;
             throw e;
         }
         const fstree_str = new TextDecoder().decode(fstree_bytes);
@@ -178,11 +204,24 @@ export class FileSystem {
             throw new Error("Malformed Penger Filesystem: bad root entry");
         }
 
+        const obligKeys = ["name", "type", "mode"];
+        const validKeys = [...obligKeys, "entries", "openType", "data", "url"];
+
+        const checkEntryKeys = function(obj: any) {
+            if(typeof obj !== "object") return false;
+            const keys = Object.keys(obj);
+            if(keys.some(k => !validKeys.includes(k))) return false;
+            if(obligKeys.some(k => !keys.includes(k))) return false;
+            return true;
+        }
+
         const drive = new FileSystemDrive(!(fstree.mode & FileMode.WRITE), label, "Floppy");
 
-        const import_log = true;
-
         const importDir = function(dir: FileEntryDirectory, src: object) {
+            if(!checkEntryKeys(src)) {
+                throw new Error("Bad FS: Invalid directory entry");
+            }
+
             if(src.type != FileType.Directory) {
                 throw new Error("Tried to import directory from non-directory ("+String(src.type)+")");
             }
@@ -190,7 +229,11 @@ export class FileSystem {
 
             import_log && console.group("Importing directory", src.name);
             for(const subent of src.entries) {
+                const coolName = ".../" + src.name + "/" + subent.name;
                 var entry: Partial<FileEntry> = {};
+                if(!checkEntryKeys(subent)) {
+                    throw new Error("Bad FS: Invalid entry in " + coolName);
+                }
                 if(subent.type === FileType.Directory) {
                     entry = dir.mkdir(subent.name);
                     importDir(entry as FileEntryDirectory, subent);
@@ -201,6 +244,9 @@ export class FileSystem {
                     entry.mode = subent.mode;
                     switch(subent.type) {
                         case FileType.TextFile:
+                            if(!("data" in subent)) {
+                                throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
+                            }
                             (<FileEntryText>entry).data = new TextFile();
                             (<FileEntryText>entry).data.replace(subent.data);
                             break;
@@ -208,13 +254,22 @@ export class FileSystem {
                             console.error(subent.name+": Cannot import executables");
                             break;
                         case FileType.Link:
+                            if(!("url" in subent)) {
+                                throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
+                            }
                             (<FileEntryLink>entry).data = new LinkFile(subent.url);
                             (<FileEntryLink>entry).openType = subent.openType;
                             break;
                         case FileType.Audio:
+                            if(!("url" in subent)) {
+                                throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
+                            }
                             (<FileEntryAudio>entry).data = new AudioFile(subent.url);
                             break;
                         case FileType.Image:
+                            if(!("url" in subent)) {
+                                throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
+                            }
                             (<FileEntryImage>entry).data = new ImageFile(subent.url);
                             break;
                         default:

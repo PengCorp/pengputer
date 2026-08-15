@@ -925,7 +925,6 @@ export class PengerShell implements Executable {
                 pengfs = contents;
             } catch (e) {
                 std.writeConsole("Upload cancelled.\n");
-                console.log(e);
                 return;
             }
             try {
@@ -934,6 +933,7 @@ export class PengerShell implements Executable {
             } catch(e) {
                 std.writeConsole("FS import failed\n");
                 std.writeConsole("Error: " + (<Error>e).message + "\n");
+                console.error(e);
                 return;
             }
         } else {
