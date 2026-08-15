@@ -1,9 +1,13 @@
 import type { FilePath } from "./FilePath";
-import type { FileEntry, FileEntryDirectory, FileEntryText } from "./FileInfo";
 import { type DriveLetter, isDriveLetter, FileMode } from "./constants";
 import { FileType } from "./types";
 import { FileSystemDrive } from "./Drive";
 import { AudioFile, ImageFile, LinkFile, TextFile } from "./fileTypes";
+import type {
+    FileEntry, FileEntryDirectory,
+    FileEntryAudio, FileEntryImage,
+    FileEntryLink, FileEntryText
+} from "./FileInfo";
 import _ from "lodash";
 
 export interface DriveMount {
@@ -53,13 +57,13 @@ export interface MountedDrive {
 };
 
 function deepJSONifyDir(dir: FileEntryDirectory): object {
-    var obj = {};
+    var obj: any = {};
 
     Object.assign(obj, dir);
     obj.name = dir.name;
     obj.entries = [];
     for (let subent of dir.entries) {
-        let entry = {};
+        let entry: any = {};
         if(subent.type === FileType.Directory) {
             Object.assign(entry, deepJSONifyDir(subent));
             obj.entries.push(entry);
@@ -89,7 +93,7 @@ function deepJSONifyDir(dir: FileEntryDirectory): object {
     return obj;
 }
 
-async function fullReadStream(stream: ReadableStream): ArrayBuffer {
+async function fullReadStream(stream: ReadableStream): Promise<ArrayBuffer> {
     const reader = stream.getReader();
     const chunks = [];
     while(1) {
@@ -124,7 +128,8 @@ async function gzip(data: string): Promise<ArrayBuffer> {
 async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
     const decompStream = new DecompressionStream("gzip");
     const writer = decompStream.writable.getWriter();
-    writer.write(bytes);
+    // the error this produces is pure delusion
+    writer.write(bytes as any);
     writer.close();
     return await fullReadStream(decompStream.readable);
 }
@@ -142,8 +147,7 @@ export class FileSystem {
         const fstree = deepJSONifyDir(drive.rootEntry);
         const stringfs = JSON.stringify(fstree);
         const gzipBytes = new Uint8Array(await gzip(stringfs));
-        const encodedfs = gzipBytes.toBase64();
-        //const encodedfs = btoa(Array.from(gzipBytes, b => String.fromCodePoint(b)).join(""));
+        const encodedfs = btoa(Array.from(gzipBytes, b => String.fromCodePoint(b)).join(""));
         var result = "PENGRFS!"+String(drivelabel.length)+"!"+drivelabel+encodedfs;
         console.log(result);
         return result;
@@ -187,10 +191,11 @@ export class FileSystem {
 
         // the rest is base64-encoded gzip'ed FS JSON object
         try {
-            fstree_bytes = await gunzip(Uint8Array.fromBase64(encoded));
+            const bytes = Uint8Array.from(atob(encoded), c=>c.charCodeAt(0));
+            fstree_bytes = await gunzip(bytes);
         } catch(err) {
             let e = <Error>err;
-            if(e.message) e.message = "GZIP error: " + e.message;
+            if(e.message) e.message = "Decode error: " + e.message;
             throw e;
         }
         const fstree_str = new TextDecoder().decode(fstree_bytes);
@@ -217,7 +222,7 @@ export class FileSystem {
 
         const drive = new FileSystemDrive(!(fstree.mode & FileMode.WRITE), label, "Floppy");
 
-        const importDir = function(dir: FileEntryDirectory, src: object) {
+        const importDir = function(dir: FileEntryDirectory, src: any) {
             if(!checkEntryKeys(src)) {
                 throw new Error("Bad FS: Invalid directory entry");
             }
@@ -240,7 +245,6 @@ export class FileSystem {
                     continue;
                 } else {
                     entry.type = subent.type;
-                    entry.name = subent.name;
                     entry.mode = subent.mode;
                     switch(subent.type) {
                         case FileType.TextFile:
@@ -275,9 +279,12 @@ export class FileSystem {
                         default:
                             break;
                     }
-                    import_log && console.log("Importing file", entry.name, "("+entry.type+")");
+                    import_log && console.log("Importing file", subent.name, "("+entry.type+")");
                 }
-                dir.addItem(entry as Exclude<FileEntryDirectory, FileEntry>);
+                dir.addItem({
+                    ...entry,
+                    name: subent.name
+                } as Exclude<FileEntryDirectory, FileEntry>);
             }
             import_log && console.groupEnd();
         }
