@@ -183,8 +183,15 @@ export class Keyboard implements KeyboardSource {
     }
 
     public async waitForNextEvent(): Promise<PengKeyboardEvent> {
-        await this._eventSignal.getPromise();
-        return this.getNextEvent()!;
+        /* The signal is emitted synchronously, but we are woken up a
+         * microtask later, by which time the buffer may have been
+         * flushed (see PhysicalKeyboard's blur handling) -- in that
+         * case just keep waiting instead of returning nothing. */
+        while (true) {
+            await this._eventSignal.getPromise();
+            const event = this.getNextEvent();
+            if (event) return event;
+        }
     }
 
     public subscribe(

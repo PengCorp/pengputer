@@ -19,6 +19,9 @@ export class PhysicalKeyboard implements KeyboardSource {
 
     private _caps: boolean = false;
 
+    /** Codes of the non-modifier keys that are currently held down. */
+    private _keysDown: Set<KeyCode> = new Set();
+
     constructor(kb: Keyboard) {
         this.kb = kb;
 
@@ -102,12 +105,28 @@ export class PhysicalKeyboard implements KeyboardSource {
         }
     }
 
+    /*
+     * While the window is not focused (a link was opened in a new tab,
+     * an <input type="file"> dialog is up, the user alt-tabbed away...)
+     * we receive no keyup events, so every key that gets released
+     * outside of the window would stay down forever: autorepeat would
+     * keep firing it and the modifiers would stay latched.
+     */
     private _onWindowBlur() {
-        const repeatedCode = this.autoRepeat.getCode();
-        if (repeatedCode) this.kb.sendKeyCode(this, repeatedCode, false);
+        const keysDown = [...this._keysDown];
+        this._keysDown.clear();
         this.autoRepeat.reset();
+
+        /* Whatever was typed but not consumed yet is dropped, and the
+         * modifiers are cleared before the releases are sent, so that
+         * they report the correct state. Caps lock is a toggle rather
+         * than a held key, so it is preserved. */
         this.kb.flushEventBuffer();
         this.kb.setModifiers(this._caps ? Modifier.CAPS_LOCK : 0);
+
+        for (const code of keysDown) {
+            this.kb.sendKeyCode(this, code, false);
+        }
     }
 
     private _onKey(ev: KeyboardEvent) {
@@ -119,6 +138,11 @@ export class PhysicalKeyboard implements KeyboardSource {
         this._updateModifierStates(ev);
 
         const pengEvent = this._constructEventFromBrowser(ev);
+
+        if (!pengEvent.isModifier) {
+            if (pengEvent.pressed) this._keysDown.add(pengEvent.code);
+            else this._keysDown.delete(pengEvent.code);
+        }
 
         if (!pengEvent.pressed) this.autoRepeat.reset();
         else if (pengEvent.isModifier) {
