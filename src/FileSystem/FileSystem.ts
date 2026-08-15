@@ -174,6 +174,9 @@ export class FileSystem {
         || encoded[0] != '!') {
             throw new Error("Uploaded file is not a Penger filesystem [1]");
         }
+        if(labelLen == 0) {
+            throw new Error("Malformed Penger Filesystem: bad label");
+        }
         encoded = encoded.slice(1);
 
         const label = encoded.slice(0, labelLen).toUpperCase();
@@ -202,28 +205,31 @@ export class FileSystem {
         const fstree = JSON.parse(fstree_str);
         console.log(fstree);
 
-        if(fstree.name !== '/'
-        || fstree.type !== FileType.Directory
-        || (fstree.mode & ~FileMode.WRX) != 0
-        ) {
-            throw new Error("Malformed Penger Filesystem: bad root entry");
-        }
-
         const obligKeys = ["name", "type", "mode"];
         const validKeys = [...obligKeys, "entries", "openType", "data", "url"];
 
-        const checkEntryKeys = function(obj: any) {
-            if(typeof obj !== "object") return false;
+        const checkEntry = function(obj: any) {
+            if(!obj || typeof obj !== "object") return false;
             const keys = Object.keys(obj);
             if(keys.some(k => !validKeys.includes(k))) return false;
             if(obligKeys.some(k => !keys.includes(k))) return false;
+            if(typeof obj.name !== "string"
+            || typeof obj.type !== "string"
+            || typeof obj.mode !== "number") return false;
+            if((obj.mode & ~FileMode.WRX) != 0) return false;
             return true;
+        }
+
+        if(fstree.name !== '/'
+        || fstree.type !== FileType.Directory
+        || (fstree.mode & ~FileMode.WRX) != 0) {
+            throw new Error("Malformed Penger Filesystem: bad root entry");
         }
 
         const drive = new FileSystemDrive(!(fstree.mode & FileMode.WRITE), label, "Floppy");
 
         const importDir = function(dir: FileEntryDirectory, src: any) {
-            if(!checkEntryKeys(src)) {
+            if(!checkEntry(src)) {
                 throw new Error("Bad FS: Invalid directory entry");
             }
 
@@ -236,7 +242,7 @@ export class FileSystem {
             for(const subent of src.entries) {
                 const coolName = ".../" + src.name + "/" + subent.name;
                 var entry: Partial<FileEntry> = {};
-                if(!checkEntryKeys(subent)) {
+                if(!checkEntry(subent)) {
                     throw new Error("Bad FS: Invalid entry in " + coolName);
                 }
                 if(subent.type === FileType.Directory) {
@@ -248,7 +254,7 @@ export class FileSystem {
                     entry.mode = subent.mode;
                     switch(subent.type) {
                         case FileType.TextFile:
-                            if(!("data" in subent)) {
+                            if(!("data" in subent) || typeof subent.data != "string") {
                                 throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
                             }
                             (<FileEntryText>entry).data = new TextFile();
@@ -256,22 +262,23 @@ export class FileSystem {
                             break;
                         case FileType.Executable:
                             console.error(subent.name+": Cannot import executables");
-                            break;
+                            continue;
                         case FileType.Link:
-                            if(!("url" in subent)) {
+                            if(!("url" in subent) || typeof subent.url != "string"
+                            || !("openType" in subent) || typeof subent.openType != "string") {
                                 throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
                             }
                             (<FileEntryLink>entry).data = new LinkFile(subent.url);
                             (<FileEntryLink>entry).openType = subent.openType;
                             break;
                         case FileType.Audio:
-                            if(!("url" in subent)) {
+                            if(!("url" in subent) || typeof subent.url != "string") {
                                 throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
                             }
                             (<FileEntryAudio>entry).data = new AudioFile(subent.url);
                             break;
                         case FileType.Image:
-                            if(!("url" in subent)) {
+                            if(!("url" in subent) || typeof subent.url != "string") {
                                 throw new Error("Bad FS: Bad file entry (missing data) in " + coolName);
                             }
                             (<FileEntryImage>entry).data = new ImageFile(subent.url);
