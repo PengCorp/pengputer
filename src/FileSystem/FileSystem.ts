@@ -209,6 +209,17 @@ export class FileSystem {
                 } else {
                     entry.type = subent.type;
                     entry.mode = subent.mode;
+                    if("url" in subent && typeof subent.url === "string") {
+                        // only allow http and file protocols
+                        try {
+                            const parsed = new URL(subent.url);
+                            if(!/(https?|file)/.match(parsed.protocol)) {
+                                throw "ERROR_REPORT_BUG";
+                            }
+                        } catch(e) {
+                            throw new Error("Bad FS: Bad entry URL");
+                        }
+                    }
                     switch(subent.type) {
                         case FileType.TextFile:
                             if(!("data" in subent) || typeof subent.data != "string") {
@@ -241,7 +252,7 @@ export class FileSystem {
                             (<FileEntryImage>entry).data = new ImageFile(subent.url);
                             break;
                         default:
-                            break;
+                            throw new Error(`Bad FS: Bad file type ("${subent.type}") at ${coolName}`);
                     }
                     import_log && console.log("Importing file", subent.name, "("+entry.type+")");
                 }
