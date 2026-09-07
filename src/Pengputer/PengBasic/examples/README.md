@@ -32,6 +32,7 @@ runs it, and checks the output, so a broken example fails the suite.
 | `invoice.bas` | `PRINT USING` |
 | `colors.bas` | `CLS`, `LOCATE`, `COLOR` — all sixteen |
 | `bounce.bas` | A ball, `DELAY` to pace it, `INKEY$` to stop it |
+| `chars.bas` | The whole character set, and the blocks you draw with |
 
 `guess.bas` seeds the generator with `RANDOMIZE 7` so it plays the same
 way every time. Delete line 20 to get a different number each run.
@@ -39,3 +40,7 @@ way every time. Delete line 20 to get a different number each run.
 `DELAY <ms>` is ours, not Microsoft's. Listings of the era paced
 themselves with `FOR I=1 TO 500: NEXT`, which finishes instantly here —
 so anything meant to be watched needs a `DELAY` in its main loop.
+
+`DOWNLOAD` writes whatever is in memory out as a `.bas` file, and
+`UPLOAD` reads one back after a `NEW` — so a program you write here can
+be kept, and a listing can come in without going through the clipboard.

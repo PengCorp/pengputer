@@ -76,8 +76,11 @@ export class StatementParser extends Parser {
                     return { kind: "run" };
                 case "NEW":
                     return { kind: "new" };
-                case "CLEAR":
-                    return { kind: "clear" };
+                case "CLEAR": {
+                    const [stringSpace, stackSpace] =
+                        this.parseOptionalExpressions(2);
+                    return { kind: "clear", stringSpace, stackSpace };
+                }
                 case "LIST":
                     return this.parseList();
                 case "DELETE": {
@@ -97,14 +100,24 @@ export class StatementParser extends Parser {
                     return { kind: "auto", start, increment };
                 }
                 case "EDIT":
-                    return { kind: "edit", line: this.parseLineNumber() };
+                    return {
+                        kind: "edit",
+                        line: this.atStatementEnd() ? null : this.parseLineNumber(),
+                    };
                 case "CLS":
                     return { kind: "cls" };
                 case "DELAY":
                     return { kind: "delay", milliseconds: this.parseExpression() };
+                case "DOWNLOAD":
+                    return {
+                        kind: "download",
+                        filename: this.atStatementEnd() ? null : this.parseExpression(),
+                    };
+                case "UPLOAD":
+                    return { kind: "upload" };
                 case "LOCATE": {
-                    const [row, column] = this.parseOptionalExpressions(2);
-                    return { kind: "locate", row, column };
+                    const [row, column, cursor] = this.parseOptionalExpressions(3);
+                    return { kind: "locate", row, column, cursor };
                 }
                 case "COLOR": {
                     const [foreground, background] = this.parseOptionalExpressions(2);
@@ -458,11 +471,13 @@ export class StatementParser extends Parser {
         }
 
         this.expectPunct("(");
-        const parameterToken = this.peek();
-        if (parameterToken.kind !== "name") {
-            throw new BasicError("SYNTAX", parameterToken.pos);
-        }
-        this.pos += 1;
+        const parameters: { name: string; sigil: Sigil }[] = [];
+        do {
+            const token = this.peek();
+            if (token.kind !== "name") throw new BasicError("SYNTAX", token.pos);
+            this.pos += 1;
+            parameters.push({ name: token.name, sigil: token.sigil });
+        } while (this.takePunct(","));
         this.expectPunct(")");
 
         if (this.takeOperator("=") === null) {
@@ -471,15 +486,7 @@ export class StatementParser extends Parser {
 
         return {
             kind: "defFn",
-            definition: {
-                name,
-                sigil,
-                parameter: {
-                    name: parameterToken.name,
-                    sigil: parameterToken.sigil,
-                },
-                body: this.parseExpression(),
-            },
+            definition: { name, sigil, parameters, body: this.parseExpression() },
         };
     }
 

@@ -18,7 +18,7 @@ function sexp(e: Expr): string {
         case "call":
             return `(${e.name}${e.sigil} ${e.args.map(sexp).join(" ")})`;
         case "fnCall":
-            return `(FN:${e.name}${e.sigil} ${sexp(e.argument)})`;
+            return `(FN:${e.name}${e.sigil} ${e.args.map(sexp).join(" ")})`;
         case "unary":
             return `(${e.op} ${sexp(e.operand)})`;
         case "binary":

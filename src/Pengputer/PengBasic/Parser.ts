@@ -212,15 +212,11 @@ export class Parser {
                 if (next.kind === "punct" && next.punct === "(") {
                     const fnName = userFunctionName(token.name);
                     if (fnName !== null) {
-                        const args = this.parseArguments();
-                        if (args.length !== 1) {
-                            throw new BasicError("SYNTAX", token.pos);
-                        }
                         return {
                             kind: "fnCall",
                             name: fnName,
                             sigil: token.sigil,
-                            argument: args[0],
+                            args: this.parseArguments(),
                         };
                     }
                     return {

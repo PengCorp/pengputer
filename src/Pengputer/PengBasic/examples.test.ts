@@ -86,6 +86,7 @@ const EXPECTED: Record<string, string | RegExp> = {
      * stream of bytes. Here they only have to run. */
     "colors.bas": /COLOUR 15 {2}/,
     "bounce.bas": /STOPPED\n$/,
+    "chars.bas": /SHADES: {2}/,
 };
 
 /** Lines the reader would type, for listings that ask questions. */

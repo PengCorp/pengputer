@@ -126,15 +126,32 @@ export class Evaluator {
         const definition = this.functions.get(expr.name + expr.sigil);
         if (!definition) throw new BasicError("UNDEF'D FUNCTION");
 
-        const { parameter } = definition;
-        const argument = this.evaluate(expr.argument);
-        const saved = this.variables.getScalar(parameter.name, parameter.sigil);
+        const { parameters } = definition;
+        if (expr.args.length !== parameters.length) {
+            throw new BasicError("SYNTAX");
+        }
 
-        this.variables.setScalar(parameter.name, parameter.sigil, argument);
+        /* Arguments are worked out before any binding happens, so a
+         * call like FNA(X, FNA(1, 2)) sees the caller's X rather than a
+         * half-applied set of parameters. */
+        const args = expr.args.map((arg) => this.evaluate(arg));
+        const saved = parameters.map((parameter) =>
+            this.variables.getScalar(parameter.name, parameter.sigil),
+        );
+
+        parameters.forEach((parameter, index) => {
+            this.variables.setScalar(parameter.name, parameter.sigil, args[index]);
+        });
         try {
             return this.evaluate(definition.body);
         } finally {
-            this.variables.setScalar(parameter.name, parameter.sigil, saved);
+            parameters.forEach((parameter, index) => {
+                this.variables.setScalar(
+                    parameter.name,
+                    parameter.sigil,
+                    saved[index],
+                );
+            });
         }
     }
 

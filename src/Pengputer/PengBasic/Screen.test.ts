@@ -91,9 +91,36 @@ describe("COLOR", () => {
 
     it("refuses a colour that does not exist", async () => {
         const { interpreter } = machine();
-        await expect(interpreter.executeLine("COLOR 16")).rejects.toThrow(
+        await expect(interpreter.executeLine("COLOR 32")).rejects.toThrow(
             /ILLEGAL QUANTITY/,
         );
+        await expect(interpreter.executeLine("COLOR 1,16")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
+    });
+
+    /**
+     * CGA kept blink in the top bit of the foreground, so sixteen
+     * colours and a flag arrive as one number: 30 is blinking yellow.
+     */
+    it("blinks for a foreground of 16 or more", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, '10 COLOR 30:PRINT "!"', "RUN");
+        const cell = console.getCellColors(0, 0);
+        expect(cell?.blink).toBe(true);
+        expect(cell?.fg).toEqual(LIGHT_YELLOW);
+    });
+
+    it("does not blink below 16", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, '10 COLOR 14:PRINT "!"', "RUN");
+        expect(console.getCellColors(0, 0)?.blink).toBe(false);
+    });
+
+    it("leaves blink alone when only the background is given", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, '10 COLOR 30:COLOR ,4:PRINT "!"', "RUN");
+        expect(console.getCellColors(0, 0)?.blink).toBe(true);
     });
 
     /**
@@ -106,6 +133,83 @@ describe("COLOR", () => {
         expect(cgaColor(4)).toEqual(RED);
         expect(cgaColor(6)).toEqual(YELLOW);
         expect(cgaColor(14)).toEqual(LIGHT_YELLOW);
+    });
+});
+
+describe("LOCATE's third argument", () => {
+    it("hides and shows the cursor", async () => {
+        const { console, interpreter } = machine();
+        expect(console.getIsCursorVisible()).toBe(true);
+
+        await feed(interpreter, "10 LOCATE ,,0", "RUN");
+        expect(console.getIsCursorVisible()).toBe(false);
+
+        await feed(interpreter, "10 LOCATE ,,1", "RUN");
+        expect(console.getIsCursorVisible()).toBe(true);
+    });
+
+    it("moves and hides at once", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, '10 LOCATE 3,5,0:PRINT "X"', "RUN");
+        expect(console.getRow(2)).toBe("    X");
+        expect(console.getIsCursorVisible()).toBe(false);
+    });
+
+    it("refuses anything but 0 or 1", async () => {
+        const { interpreter } = machine();
+        await expect(interpreter.executeLine("LOCATE ,,2")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
+    });
+});
+
+describe("SCREEN()", () => {
+    it("reads back a character that was printed", async () => {
+        const { console, interpreter } = machine();
+        await feed(
+            interpreter,
+            '10 LOCATE 2,3:PRINT "Q";',
+            "20 LOCATE 5,1",
+            "30 PRINT SCREEN(2,3)",
+            "RUN",
+        );
+        expect(console.getText()).toContain(" 81 ");
+    });
+
+    it("reads a space where nothing was written", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, "10 PRINT SCREEN(10,10)", "RUN");
+        expect(console.getText()).toBe(" 32 \n");
+    });
+
+    it("counts from one, like LOCATE", async () => {
+        const { console, interpreter } = machine();
+        await feed(
+            interpreter,
+            '10 LOCATE 1,1:PRINT "A";',
+            "20 LOCATE 3,1:PRINT SCREEN(1,1)",
+            "RUN",
+        );
+        expect(console.getRow(2)).toBe(" 65");
+    });
+
+    it("lets a program find what it is about to hit", async () => {
+        const { console, interpreter } = machine();
+        await feed(
+            interpreter,
+            '10 LOCATE 5,10:PRINT "#";',
+            "20 LOCATE 20,1",
+            '30 IF SCREEN(5,10)=35 THEN PRINT "WALL" ELSE PRINT "CLEAR"',
+            "RUN",
+        );
+        expect(console.getRow(19)).toBe("WALL");
+    });
+
+    it("refuses a cell off the screen", async () => {
+        const { interpreter } = machine();
+        await expect(interpreter.executeLine("PRINT SCREEN(0,1)")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
     });
 });
 
@@ -245,5 +349,24 @@ describe("DEFINT and friends", () => {
         const { console, interpreter } = machine();
         await feed(interpreter, "DEFINT A-Z", "10 X=2.7", "20 PRINT X", "RUN");
         expect(console.getText()).toBe(" 2.7 \n");
+    });
+});
+
+describe("carriage return", () => {
+    it("goes back to the start of the line without moving down", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, '10 PRINT "ABC";CHR$(13);"X"', "RUN");
+        expect(console.getRow(0)).toBe("XBC");
+    });
+
+    it("is how a program overwrites what it just printed", async () => {
+        const { console, interpreter } = machine();
+        await feed(
+            interpreter,
+            '10 PRINT "WORKING";',
+            '20 PRINT CHR$(13);"DONE   "',
+            "RUN",
+        );
+        expect(console.getRow(0)).toBe("DONE");
     });
 });

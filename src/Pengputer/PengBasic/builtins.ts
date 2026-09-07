@@ -15,6 +15,8 @@
  * all: `RND` on its own means `RND(1)`.
  */
 import { BasicError } from "./errors";
+import { characterForCode, codeForCharacter } from "./cp437";
+import { splitStringIntoCharacters } from "@Toolbox/String";
 import { formatNumberForStr } from "./format";
 import type { Builtin, Builtins } from "./Evaluator";
 import type { Console } from "./console";
@@ -104,6 +106,17 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
      */
     define("INKEY$", 0, 1, () => deps.machine.readKey());
 
+    /**
+     * SCREEN(row, col) -- the code of the character at that cell,
+     * counting from 1. How a text-mode game reads its own screen back
+     * to find out what it is about to run into.
+     */
+    define("SCREEN", 2, 2, (a) => {
+        const row = positionArgument(a[0]);
+        const column = positionArgument(a[1]);
+        return codeForCharacter(deps.machine.readCharacter(row - 1, column - 1));
+    });
+
     /** Seconds since midnight, as GW-BASIC reckoned it. */
     define("TIMER", 0, 1, () => {
         const now = deps.now();
@@ -155,16 +168,17 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
         return text.slice(start - 1, start - 1 + countArgument(a[2]));
     });
 
+    /* Through the machine's character ROM, not Latin-1: see cp437.ts. */
     define("CHR$", 1, 1, (a) => {
         const code = Math.trunc(asNumber(a[0]));
         if (code < 0 || code > 255) throw new BasicError("ILLEGAL QUANTITY");
-        return String.fromCharCode(code);
+        return characterForCode(code);
     });
 
     define("ASC", 1, 1, (a) => {
         const text = asString(a[0]);
         if (text.length === 0) throw new BasicError("ILLEGAL QUANTITY");
-        return text.charCodeAt(0);
+        return codeForCharacter(splitStringIntoCharacters(text)[0]);
     });
 
     /**
@@ -197,8 +211,8 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
         const source = a[1];
         const char =
             typeof source === "string"
-                ? source.slice(0, 1)
-                : String.fromCharCode(Math.trunc(source));
+                ? (splitStringIntoCharacters(source)[0] ?? "")
+                : characterForCode(Math.trunc(source));
         if (char.length === 0) throw new BasicError("ILLEGAL QUANTITY");
         return checkStringLength(char.repeat(count));
     });

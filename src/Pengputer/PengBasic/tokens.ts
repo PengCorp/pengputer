@@ -37,7 +37,7 @@ export const KEYWORDS = [
     "RENUM", "AUTO", "DELETE", "EDIT",
     "CLS", "LOCATE", "COLOR",
     "DEFINT", "DEFSNG", "DEFDBL", "DEFSTR",
-    "DELAY",
+    "DELAY", "DOWNLOAD", "UPLOAD",
 ] as const;
 export type Keyword = (typeof KEYWORDS)[number];
 

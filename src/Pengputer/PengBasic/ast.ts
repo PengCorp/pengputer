@@ -44,7 +44,7 @@ export type Expr =
      * `FNA(3)'. Separate from `call' because a user function is never
      * ambiguous with an array -- the FN prefix says what it is.
      */
-    | { kind: "fnCall"; name: string; sigil: Sigil; argument: Expr }
+    | { kind: "fnCall"; name: string; sigil: Sigil; args: Expr[] }
     | { kind: "unary"; op: UnaryOp; operand: Expr }
     | { kind: "binary"; op: BinaryOp; left: Expr; right: Expr };
 
@@ -70,11 +70,16 @@ export type PrintItem =
     | { kind: "zone" }
     | { kind: "adjacent" };
 
-/** `DEF FN A(X) = X*X'. One parameter: that is all 8K allowed. */
+/**
+ * `DEF FN A(X) = X*X'.
+ *
+ * 8K allowed exactly one parameter; later versions allowed several, and
+ * accepting several costs nothing and rejects nothing that used to work.
+ */
 export interface FnDefinition {
     name: string;
     sigil: Sigil;
-    parameter: { name: string; sigil: Sigil };
+    parameters: { name: string; sigil: Sigil }[];
     body: Expr;
 }
 
@@ -151,7 +156,8 @@ export type Statement =
           increment: number | null;
       }
     | { kind: "auto"; start: number | null; increment: number | null }
-    | { kind: "edit"; line: number }
+    /** `EDIT 100', or bare `EDIT' for whichever line last failed. */
+    | { kind: "edit"; line: number | null }
     | { kind: "cls" }
     /**
      * `DELAY 50' -- wait that many milliseconds.
@@ -162,8 +168,25 @@ export type Statement =
      * as a 2MHz 6502 by accident.
      */
     | { kind: "delay"; milliseconds: Expr }
-    /** Both one-based, as BASIC counts. Either may be left out. */
-    | { kind: "locate"; row: Expr | null; column: Expr | null }
+    /**
+     * Getting a program in and out of the machine, through the host
+     * rather than through a filesystem of our own. `LOAD` and `SAVE`
+     * stay out of scope (§1); these are the browser's file picker and
+     * download, which is a different thing wearing similar clothes.
+     */
+    | { kind: "download"; filename: Expr | null }
+    | { kind: "upload" }
+    /**
+     * `LOCATE [row][,[col][,cursor]]'. Row and column count from 1; the
+     * third argument shows (1) or hides (0) the hardware cursor. Any
+     * part may be left out, so `LOCATE ,,0' only hides the cursor.
+     */
+    | {
+          kind: "locate";
+          row: Expr | null;
+          column: Expr | null;
+          cursor: Expr | null;
+      }
     | { kind: "color"; foreground: Expr | null; background: Expr | null }
     /** `DEFINT A-Z' -- the default type for names starting with those letters. */
     | { kind: "defType"; suffix: "%" | "!" | "#" | "$"; ranges: LetterRange[] }
@@ -190,4 +213,11 @@ export type Statement =
     | { kind: "run" }
     | { kind: "list"; from: number | null; to: number | null }
     | { kind: "new" }
-    | { kind: "clear" };
+    /**
+     * `CLEAR', `CLEAR 500', `CLEAR ,32768'.
+     *
+     * The numbers set string space and stack space on a real machine.
+     * We have neither to reserve, so they are evaluated and discarded --
+     * but they must *parse*, because listings open with them.
+     */
+    | { kind: "clear"; stringSpace: Expr | null; stackSpace: Expr | null };

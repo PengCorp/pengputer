@@ -12,7 +12,7 @@
  * hook stage 5 needs: GOTO sets the position and lets the loop carry
  * on, rather than the loop being rewritten around it.
  */
-import { BasicError } from "./errors";
+import { BasicError, isBasicError } from "./errors";
 import { Evaluator, type Builtins } from "./Evaluator";
 import { createBuiltins } from "./builtins";
 import { printUsing } from "./printUsing";
@@ -80,6 +80,22 @@ const STEPS_PER_YIELD = 2000;
 
 /** How long DELAY sleeps before looking for a Ctrl+C. */
 const BREAK_CHECK_SLICE_MS = 50;
+
+const DEFAULT_PROGRAM_FILENAME = "PROGRAM.BAS";
+
+/**
+ * Stack limits.
+ *
+ * A real machine had a few hundred bytes for these and said
+ * `?OUT OF MEMORY' when they filled. We have no such wall, so
+ * `10 GOSUB 10' would grow the return stack until the tab died --
+ * which is a mistyped listing turning into a hung browser instead of
+ * an error you can read. Generous enough that no sane program notices.
+ */
+const MAX_GOSUB_DEPTH = 1000;
+const MAX_LOOP_DEPTH = 256;
+
+const LIST_MORE_PROMPT = "-- MORE --";
 
 function yieldToHost(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, 0));
@@ -161,6 +177,9 @@ export class Interpreter {
     /** Set by STOP, consumed by CONT. */
     private continuePosition: Position | null = null;
 
+    /** Where the last error happened, for a bare EDIT. */
+    private lastErrorLine: number | null = null;
+
     private tracing: boolean = false;
 
     /** Walks the program's DATA statements in line order. */
@@ -214,6 +233,17 @@ export class Interpreter {
      * listing works without a LOAD command.
      */
     async executeLine(source: string): Promise<LineOutcome> {
+        try {
+            return await this.runLine(source);
+        } catch (e) {
+            /* Remember where it went wrong, so a bare EDIT can offer
+             * that line back. */
+            if (isBasicError(e)) this.lastErrorLine = this.runningLine;
+            throw e;
+        }
+    }
+
+    private async runLine(source: string): Promise<LineOutcome> {
         this.runningLine = null;
 
         const tokens = tokenize(source);
@@ -340,6 +370,9 @@ export class Interpreter {
             case "gosub":
                 /* The position has already stepped past the GOSUB, so
                  * this is where RETURN comes back to. */
+                if (this.returnStack.length >= MAX_GOSUB_DEPTH) {
+                    throw new BasicError("OUT OF MEMORY");
+                }
                 this.returnStack.push({ ...this.position });
                 this.jumpTo(statement.line);
                 return;
@@ -435,9 +468,12 @@ export class Interpreter {
                 return;
 
             case "edit": {
-                const line = this.program.at(
-                    this.program.findIndex(statement.line) ?? -1,
-                );
+                /* Bare EDIT means "the one that just went wrong", which
+                 * is almost always what you want after an error. */
+                const wanted = statement.line ?? this.lastErrorLine;
+                if (wanted === null) throw new BasicError("UNDEF'D STATEMENT");
+
+                const line = this.program.at(this.program.findIndex(wanted) ?? -1);
                 if (line === null) throw new BasicError("UNDEF'D STATEMENT");
                 this.pendingPrefill = `${line.number} ${line.source}`;
                 return;
@@ -449,6 +485,19 @@ export class Interpreter {
 
             case "delay":
                 await this.delay(this.number(statement.milliseconds));
+                return;
+
+            case "download": {
+                const filename =
+                    statement.filename === null
+                        ? DEFAULT_PROGRAM_FILENAME
+                        : asString(this.evaluator.evaluate(statement.filename));
+                await this.console.download(filename, this.getProgramText());
+                return;
+            }
+
+            case "upload":
+                await this.executeUpload();
                 return;
 
             case "locate": {
@@ -465,21 +514,35 @@ export class Interpreter {
                     throw new BasicError("ILLEGAL QUANTITY");
                 }
                 this.console.locate(row, column);
+
+                if (statement.cursor !== null) {
+                    const visible = Math.trunc(this.number(statement.cursor));
+                    if (visible !== 0 && visible !== 1) {
+                        throw new BasicError("ILLEGAL QUANTITY");
+                    }
+                    this.console.setCursorVisible(visible === 1);
+                }
                 return;
             }
 
             case "color": {
-                const pick = (expr: Expr | null): number | null => {
+                const pick = (expr: Expr | null, highest: number) => {
                     if (expr === null) return null;
                     const index = Math.trunc(this.number(expr));
-                    if (index < 0 || index > 15) {
+                    if (index < 0 || index > highest) {
                         throw new BasicError("ILLEGAL QUANTITY");
                     }
                     return index;
                 };
+
+                /* CGA put blink in the top bit of the foreground, so
+                 * COLOR 30 is blinking yellow rather than a 31st
+                 * colour. Sixteen colours and a flag, in one number. */
+                const foreground = pick(statement.foreground, 31);
                 this.console.setColor(
-                    pick(statement.foreground),
-                    pick(statement.background),
+                    foreground === null ? null : foreground % 16,
+                    pick(statement.background, 15),
+                    foreground === null ? null : foreground >= 16,
                 );
                 return;
             }
@@ -535,14 +598,16 @@ export class Interpreter {
                 return;
 
             case "clear":
+                /* Evaluated for their errors, then discarded: there is
+                 * no fixed string space here to reserve. */
+                if (statement.stringSpace !== null) this.number(statement.stringSpace);
+                if (statement.stackSpace !== null) this.number(statement.stackSpace);
                 this.variables.clear();
                 this.functions.clear();
                 return;
 
             case "list":
-                for (const line of this.program.list(statement.from, statement.to)) {
-                    this.console.write(`${line.number} ${line.source}\n`);
-                }
+                await this.executeList(statement);
                 return;
         }
     }
@@ -583,6 +648,9 @@ export class Interpreter {
         );
         if (existing >= 0) this.forStack.length = existing;
 
+        if (this.forStack.length >= MAX_LOOP_DEPTH) {
+            throw new BasicError("OUT OF MEMORY");
+        }
         this.forStack.push({
             variable,
             limit: this.number(statement.to),
@@ -662,6 +730,9 @@ export class Interpreter {
 
     private executeWhile(statement: Extract<Statement, { kind: "while" }>) {
         if (asNumber(this.evaluator.evaluate(statement.condition)) !== 0) {
+            if (this.whileStack.length >= MAX_LOOP_DEPTH) {
+                throw new BasicError("OUT OF MEMORY");
+            }
             this.whileStack.push({
                 condition: statement.condition,
                 resume: { ...this.position },
@@ -847,6 +918,70 @@ export class Interpreter {
             statement.line === null ? 0 : this.program.findIndex(statement.line);
         if (lineIndex === null) throw new BasicError("UNDEF'D STATEMENT");
         this.dataPointer = { lineIndex, statementIndex: 0, itemIndex: 0 };
+    }
+
+    /**
+     * LIST, a screenful at a time.
+     *
+     * A sixty-line program does not fit a twenty-five-line screen, and
+     * without pausing the top of it is gone before you can read it.
+     * The page size comes from the console, so it is right in whichever
+     * screen mode the machine happens to be in.
+     *
+     * Not something Microsoft did -- there you held Ctrl+S. This is the
+     * more useful behaviour and the less authentic one.
+     */
+    private async executeList(statement: Extract<Statement, { kind: "list" }>) {
+        const lines = this.program.list(statement.from, statement.to);
+        /* One row short of the screen, leaving room for the prompt. */
+        const perPage = Math.max(1, this.console.getHeight() - 1);
+
+        for (let i = 0; i < lines.length; i += 1) {
+            if (i > 0 && i % perPage === 0) {
+                this.console.write(LIST_MORE_PROMPT);
+                const key = await this.console.waitForKey();
+
+                const blank = " ".repeat(LIST_MORE_PROMPT.length);
+                this.console.write(`\r${blank}\r`);
+
+                if (key === "\x03") return;
+            }
+            this.console.write(`${lines[i].number} ${lines[i].source}\n`);
+        }
+    }
+
+    /** The program as LIST would show it, which is what DOWNLOAD saves. */
+    private getProgramText(): string {
+        return this.program
+            .list(null, null)
+            .map((line) => `${line.number} ${line.source}\n`)
+            .join("");
+    }
+
+    /**
+     * Reads a file in exactly as pasting it would, after a NEW.
+     *
+     * Feeding the lines through executeLine rather than storing them
+     * directly means an uploaded file behaves identically to a pasted
+     * one, down to which lines are stored and which are obeyed -- one
+     * path, not two that can disagree.
+     */
+    private async executeUpload() {
+        const contents = await this.console.upload();
+        if (contents === null) return;
+
+        this.program.clear();
+        this.variables.clear();
+        this.functions.clear();
+        this.continuePosition = null;
+
+        for (const line of contents.split("\n")) {
+            if (line.trim().length === 0) continue;
+            await this.executeLine(line);
+        }
+
+        /* The program that was running has just been replaced. */
+        if (this.runningLine !== null) this.stopped = true;
     }
 
     /**

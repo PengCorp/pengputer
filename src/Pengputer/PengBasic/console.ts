@@ -35,6 +35,7 @@ export interface Console {
     write(text: string): void;
     getColumn(): number;
     getWidth(): number;
+    getHeight(): number;
 
     /** A line from the keyboard, or null if the user broke out. */
     readLine(prompt: string): Promise<string | null>;
@@ -49,14 +50,36 @@ export interface Console {
     /** A key if one is waiting, "" otherwise. Never blocks: INKEY$. */
     readKey(): string;
 
+    /**
+     * Waits for a keypress. Answers "\x03" if the user broke out
+     * instead, so a caller can tell "carry on" from "stop".
+     */
+    waitForKey(): Promise<string>;
+
     clear(): void;
 
     /** Both zero-based; BASIC's own numbering starts at 1. */
     locate(row: number, column: number): void;
     getCursorRow(): number;
 
-    /** COLOR numbers, or null to leave that half alone. */
-    setColor(foreground: number | null, background: number | null): void;
+    /** COLOR numbers, or null to leave that part alone. */
+    setColor(
+        foreground: number | null,
+        background: number | null,
+        blink: boolean | null,
+    ): void;
+
+    /** LOCATE's third argument: the hardware cursor. */
+    setCursorVisible(visible: boolean): void;
+
+    /** The character at a cell, for SCREEN(). Both zero-based. */
+    readCharacter(row: number, column: number): string;
+
+    /** Hands the host a file to save. */
+    download(filename: string, contents: string): Promise<void>;
+
+    /** Asks the host for a file. Null if the user thought better of it. */
+    upload(): Promise<string | null>;
 
     /**
      * Waits, and lets the host repaint while it does. On the port
@@ -86,6 +109,9 @@ export class TestConsole implements Console {
     private pendingKeys: string[] = [];
     private breaking: boolean = false;
     private waited: number = 0;
+    private cursorVisible: boolean = true;
+    private downloads: { filename: string; contents: string }[] = [];
+    private pendingUploads: string[] = [];
 
     constructor(width: number = 80, height: number = 25) {
         this.buffer = new TextBuffer({ pageSize: { w: width, h: height } });
@@ -102,6 +128,10 @@ export class TestConsole implements Console {
 
     getWidth(): number {
         return this.buffer.getPageSize().w;
+    }
+
+    getHeight(): number {
+        return this.buffer.getPageSize().h;
     }
 
     /**
@@ -127,6 +157,11 @@ export class TestConsole implements Console {
         return this.pendingKeys.shift() ?? "";
     }
 
+    /** Never actually waits, so a test short of keys cannot hang. */
+    async waitForKey(): Promise<string> {
+        return this.pendingKeys.shift() ?? "";
+    }
+
     clear() {
         this.buffer.eraseScreen();
         this.buffer.cursor.setPosition({ x: 0, y: 0 });
@@ -140,13 +175,28 @@ export class TestConsole implements Console {
         return this.buffer.cursor.getPosition().y;
     }
 
-    setColor(foreground: number | null, background: number | null) {
+    setColor(
+        foreground: number | null,
+        background: number | null,
+        blink: boolean | null,
+    ) {
         if (foreground !== null) {
             this.buffer.updateCurrentAttributes({ fgColor: cgaColor(foreground) });
         }
         if (background !== null) {
             this.buffer.updateCurrentAttributes({ bgColor: cgaColor(background) });
         }
+        if (blink !== null) this.buffer.updateCurrentAttributes({ blink });
+    }
+
+    setCursorVisible(visible: boolean) {
+        this.cursorVisible = visible;
+    }
+
+    readCharacter(row: number, column: number): string {
+        const cell = this.buffer.getPage(0).lines[row]?.cells[column];
+        if (!cell) return " ";
+        return cell.rune === "\x00" ? " " : cell.rune;
     }
 
     /* ---------- for tests ---------- */
@@ -154,6 +204,14 @@ export class TestConsole implements Console {
     /** Queues what the user will type, in order. */
     provideInput(...lines: string[]) {
         this.pendingInput.push(...lines);
+    }
+
+    async download(filename: string, contents: string): Promise<void> {
+        this.downloads.push({ filename, contents });
+    }
+
+    async upload(): Promise<string | null> {
+        return this.pendingUploads.shift() ?? null;
     }
 
     /** Returns at once, but remembers how long it was asked for. */
@@ -172,11 +230,32 @@ export class TestConsole implements Console {
     }
 
     /** The colour attributes of one cell, for checking COLOR. */
-    getCellColors(y: number, x: number): { fg: Color; bg: Color } | null {
+    getCellColors(
+        y: number,
+        x: number,
+    ): { fg: Color; bg: Color; blink: boolean } | null {
         const cell = this.buffer.getPage(0).lines[y]?.cells[x];
         if (!cell) return null;
         const attributes = cell.getAttributes();
-        return { fg: attributes.fgColor, bg: attributes.bgColor };
+        return {
+            fg: attributes.fgColor,
+            bg: attributes.bgColor,
+            blink: attributes.blink,
+        };
+    }
+
+    getIsCursorVisible(): boolean {
+        return this.cursorVisible;
+    }
+
+    /** Everything DOWNLOAD has been asked to save. */
+    getDownloads(): { filename: string; contents: string }[] {
+        return this.downloads;
+    }
+
+    /** Queues file contents for UPLOAD to find; nothing means cancelled. */
+    provideUpload(...contents: string[]) {
+        this.pendingUploads.push(...contents);
     }
 
     /** Makes the next break check say yes, as Ctrl+C would. */

@@ -329,6 +329,13 @@ export class Std {
         this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NONE });
     }
 
+    /** The character on screen at a cell, or " " if nothing was written. */
+    getConsoleCharacterAt(position: Vector): string {
+        const cell = this.textBuffer.getPage(0).lines[position.y]?.cells[position.x];
+        if (!cell) return " ";
+        return cell.rune === "\x00" ? " " : cell.rune;
+    }
+
     writeConsoleError(e: any) {
         this.writeConsole("\n\n", { reset: true });
         const messageFieldWidth = this.getConsoleSize().w - 4;

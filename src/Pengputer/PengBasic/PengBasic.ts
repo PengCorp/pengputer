@@ -37,6 +37,7 @@ import { cgaColor, type Console } from "./console";
 const KEYBOARD_BUFFER = 16;
 import { Keyboard } from "@src/Keyboard";
 import { waitFor } from "@Toolbox/waitFor";
+import { FileTransferManager } from "@Toolbox/FileTransferManager";
 
 /**
  * The machine, wired to PengOS.
@@ -64,6 +65,10 @@ class StdConsole implements Console {
 
     getWidth(): number {
         return this.pc.std.getConsoleSize().w;
+    }
+
+    getHeight(): number {
+        return this.pc.std.getConsoleSize().h;
     }
 
     async readLine(prompt: string): Promise<string | null> {
@@ -116,6 +121,22 @@ class StdConsole implements Console {
         return this.pendingKeys.shift() ?? "";
     }
 
+    /**
+     * Polls rather than calling readConsoleKey, so that the same
+     * drain-and-sort sees a Ctrl+C and can report it as a break.
+     */
+    async waitForKey(): Promise<string> {
+        for (;;) {
+            const key = this.readKey();
+            if (key !== "") return key;
+            if (this.breakRequested) {
+                this.breakRequested = false;
+                return "\x03";
+            }
+            await waitFor(20);
+        }
+    }
+
     clear() {
         this.pc.std.clearConsole();
     }
@@ -132,12 +153,39 @@ class StdConsole implements Console {
         return waitFor(milliseconds);
     }
 
-    setColor(foreground: number | null, background: number | null) {
+    setColor(
+        foreground: number | null,
+        background: number | null,
+        blink: boolean | null,
+    ) {
         if (foreground !== null) {
             this.pc.std.updateConsoleAttributes({ fgColor: cgaColor(foreground) });
         }
         if (background !== null) {
             this.pc.std.updateConsoleAttributes({ bgColor: cgaColor(background) });
+        }
+        if (blink !== null) this.pc.std.updateConsoleAttributes({ blink });
+    }
+
+    setCursorVisible(visible: boolean) {
+        this.pc.std.setIsConsoleCursorVisible(visible);
+    }
+
+    readCharacter(row: number, column: number): string {
+        return this.pc.std.getConsoleCharacterAt({ x: column, y: row });
+    }
+
+    download(filename: string, contents: string): Promise<void> {
+        return FileTransferManager.presentDownload(contents, filename);
+    }
+
+    /** Rejects when the picker is dismissed, which is not an error here. */
+    async upload(): Promise<string | null> {
+        try {
+            const { text } = await FileTransferManager.askForUpload();
+            return text;
+        } catch {
+            return null;
         }
     }
 }

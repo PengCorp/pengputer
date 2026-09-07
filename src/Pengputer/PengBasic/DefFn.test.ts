@@ -60,6 +60,49 @@ describe("defining and calling", () => {
     });
 });
 
+describe("more than one parameter", () => {
+    it("takes several", async () => {
+        expect(
+            await run("10 DEF FNA(X,Y)=X*Y", "20 PRINT FNA(3,4)", "RUN"),
+        ).toBe(" 12 \n");
+    });
+
+    it("mixes types", async () => {
+        expect(
+            await run(
+                '10 DEF FNP$(N$,C)=N$+STR$(C)',
+                '20 PRINT FNP$("ITEM",7)',
+                "RUN",
+            ),
+        ).toBe("ITEM 7\n");
+    });
+
+    it("works out every argument before binding any", async () => {
+        /* The inner call must see the caller's X, not a half-applied
+         * set of parameters. */
+        expect(
+            await run(
+                "10 X=100",
+                "20 DEF FNA(X,Y)=X-Y",
+                "30 PRINT FNA(X,FNA(10,4))",
+                "RUN",
+            ),
+        ).toBe(" 94 \n");
+    });
+
+    it("restores every parameter afterwards", async () => {
+        expect(
+            await run(
+                "10 X=1:Y=2",
+                "20 DEF FNA(X,Y)=X+Y",
+                "30 A=FNA(90,9)",
+                "40 PRINT A;X;Y",
+                "RUN",
+            ),
+        ).toBe(" 99  1  2 \n");
+    });
+});
+
 describe("the parameter is a dummy", () => {
     it("leaves the caller's variable alone", async () => {
         expect(
@@ -96,8 +139,13 @@ describe("errors", () => {
         );
     });
 
-    it("refuses more than one argument", async () => {
-        await expect(run("10 PRINT FNA(1,2)", "RUN")).rejects.toThrow(/SYNTAX/);
+    it("refuses the wrong number of arguments", async () => {
+        await expect(
+            run("10 DEF FNA(X)=X", "20 PRINT FNA(1,2)", "RUN"),
+        ).rejects.toThrow(/SYNTAX/);
+        await expect(
+            run("10 DEF FNA(X,Y)=X+Y", "20 PRINT FNA(1)", "RUN"),
+        ).rejects.toThrow(/SYNTAX/);
     });
 
     it("forgets definitions on RUN", async () => {
@@ -136,7 +184,7 @@ describe("the FN prefix rule", () => {
             kind: "fnCall",
             name: "AME",
             sigil: "",
-            argument: { kind: "number", value: 1 },
+            args: [{ kind: "number", value: 1 }],
         });
     });
 });

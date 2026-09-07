@@ -242,3 +242,126 @@ describe("EDIT", () => {
         );
     });
 });
+
+describe("LIST a screenful at a time", () => {
+    /** A program of `count' numbered lines. */
+    function program(count: number): string[] {
+        const lines: string[] = [];
+        for (let i = 1; i <= count; i += 1) lines.push(`${i * 10} PRINT ${i}`);
+        return lines;
+    }
+
+    it("shows everything when it fits", async () => {
+        const console = new TestConsole(80, 10);
+        const interpreter = new Interpreter(console);
+        await feed(interpreter, ...program(5));
+        const before = console.getText().length;
+        await interpreter.executeLine("LIST");
+        expect(console.getText().slice(before).split("\n")).toHaveLength(6);
+    });
+
+    it("pauses once a screenful has gone by", async () => {
+        const console = new TestConsole(80, 10);
+        const interpreter = new Interpreter(console);
+        await feed(interpreter, ...program(20));
+        console.provideKeys(" ", " ", " ");
+
+        const before = console.getText().length;
+        await interpreter.executeLine("LIST");
+        const listing = console.getText().slice(before);
+
+        expect(listing).toContain("-- MORE --");
+        /* Every line still arrives, prompt or no prompt. */
+        for (let i = 1; i <= 20; i += 1) {
+            expect(listing).toContain(`${i * 10} PRINT ${i}`);
+        }
+    });
+
+    it("takes its page size from the screen", async () => {
+        const short = new TestConsole(80, 5);
+        const tall = new TestConsole(80, 40);
+        for (const console of [short, tall]) {
+            const interpreter = new Interpreter(console);
+            await feed(interpreter, ...program(20));
+            console.provideKeys(...Array(10).fill(" "));
+            await interpreter.executeLine("LIST");
+        }
+        const pauses = (text: string) => text.split("-- MORE --").length - 1;
+        expect(pauses(short.getText())).toBeGreaterThan(pauses(tall.getText()));
+    });
+
+    it("stops when the user breaks out at the prompt", async () => {
+        const console = new TestConsole(80, 10);
+        const interpreter = new Interpreter(console);
+        await feed(interpreter, ...program(30));
+        console.provideKeys("\x03");
+
+        const before = console.getText().length;
+        await interpreter.executeLine("LIST");
+        const listing = console.getText().slice(before);
+
+        expect(listing).toContain("10 PRINT 1");
+        expect(listing).not.toContain("300 PRINT 30");
+    });
+});
+
+describe("EDIT with no line number", () => {
+    it("offers back the line that just failed", async () => {
+        const { interpreter } = machine();
+        await feed(interpreter, "10 PRINT 1", "20 PRINT 1/0");
+        await expect(interpreter.executeLine("RUN")).rejects.toThrow(
+            /DIVISION BY ZERO/,
+        );
+        await interpreter.executeLine("EDIT");
+        expect(interpreter.takePendingPrefill()).toBe("20 PRINT 1/0");
+    });
+
+    it("refuses when nothing has gone wrong yet", async () => {
+        const { interpreter } = machine();
+        await feed(interpreter, "10 PRINT 1");
+        await expect(interpreter.executeLine("EDIT")).rejects.toThrow(
+            /UNDEF'D STATEMENT/,
+        );
+    });
+});
+
+describe("CLEAR with arguments", () => {
+    it("accepts the string space a listing asks for", async () => {
+        const { interpreter } = machine();
+        await expect(interpreter.executeLine("CLEAR 500")).resolves.toBeDefined();
+        await expect(interpreter.executeLine("CLEAR ,32768")).resolves.toBeDefined();
+        await expect(interpreter.executeLine("CLEAR 500,32768")).resolves.toBeDefined();
+    });
+
+    it("still forgets the variables", async () => {
+        const { console, interpreter } = machine();
+        await feed(interpreter, "A=7", "CLEAR 500", "PRINT A");
+        expect(console.getText()).toBe(" 0 \n");
+    });
+});
+
+describe("runaway programs stop with an error", () => {
+    it("catches endless GOSUB", async () => {
+        const { interpreter } = machine();
+        await feed(interpreter, "10 GOSUB 10");
+        await expect(interpreter.executeLine("RUN")).rejects.toThrow(
+            /OUT OF MEMORY/,
+        );
+    });
+
+    it("leaves ordinary nesting alone", async () => {
+        /* A hundred deep, which the limit is set well clear of. */
+        const { console, interpreter } = machine();
+        await feed(
+            interpreter,
+            "10 GOSUB 100",
+            "20 PRINT D",
+            "30 END",
+            "100 D=D+1",
+            "110 IF D<100 THEN GOSUB 100",
+            "120 RETURN",
+            "RUN",
+        );
+        expect(console.getText()).toBe(" 100 \n");
+    });
+});
