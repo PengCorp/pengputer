@@ -12,6 +12,8 @@
 
         "skipLibCheck": true,
 
+        "types": ["node"],
+
         "strict": true,
         "alwaysStrict": true,
         "exactOptionalPropertyTypes": true,

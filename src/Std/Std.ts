@@ -406,11 +406,11 @@ export class Std {
     /* ===================== KEYBOARD ========================= */
 
     readConsoleLine(
-        ...args: Parameters<typeof readLine> extends [any, any, any, ...infer R]
+        ...args: Parameters<typeof readLine> extends [any, any, ...infer R]
             ? R
             : never
     ) {
-        return readLine(this.screen, this.keyboard, this.textBuffer, ...args);
+        return readLine(this.keyboard, this.textBuffer, ...args);
     }
 
     readConsoleKey() {

@@ -16,6 +16,7 @@
     "type": "commonjs",
     "devDependencies": {
         "@types/lodash": "4.17.24",
+        "@types/node": "^26.2.0",
         "@types/tinycolor2": "1.4.6",
         "husky": "9.1.7",
         "lint-staged": "16.1.2",
@@ -31,7 +32,7 @@
         "tinycolor2": "1.6.0"
     },
     "engines": {
-        "node": ">=24 <25",
+        "node": ">=26 <27",
         "npm": ">=11"
     },
     "lint-staged": {
