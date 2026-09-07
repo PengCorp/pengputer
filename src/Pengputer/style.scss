@@ -1,3 +1,44 @@
+/* One warm greige ramp (hue 40, sat 15%) at different lightnesses: the
+ * beige every PC case was moulded in, before they all yellowed past it. */
+
+/* Monitor case. */
+$case-face: #c2bbad;
+$case-light: #dfdbd3;
+$case-dark: #847862;
+
+/* Screen recess. Deepest shadow of the three -- it sits inside the
+ * case, so it is shaded by the bezel around it. */
+$panel-face: #b5ad9b;
+$panel-light: #cbc5b9;
+$panel-dark: #6f6652;
+
+/* Keycaps. Lightest face and the widest spread: a 5px bevel has little
+ * area to work with, so it needs the most separation to read as raised. */
+$key-face: #d4cfc4;
+$key-light: #e5e2dc;
+$key-dark: #9d927b;
+
+/* A held key drops below the chassis it sits in. */
+$key-pressed-face: #c7c0b3;
+
+/* The keyboard chassis. Only a step under the caps -- board and caps
+ * were moulded from the same beige, and a big dark tray under pale keys
+ * reads as two separate objects. The gaps between caps and their own
+ * bevels do the separating. */
+$chassis-face: #cbc5b9;
+
+/* Raised. */
+@mixin bevel-out($width, $light, $dark) {
+    border: $width solid;
+    border-color: $light $dark $dark $light;
+}
+
+/* Sunken. */
+@mixin bevel-in($width, $light, $dark) {
+    border: $width solid;
+    border-color: $dark $light $light $dark;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -32,8 +73,8 @@ header a {
     padding: 20px;
     padding-bottom: 100px;
     padding-right: 0px;
-    background: #aaaaaa;
-    border: 15px outset #aaa;
+    background: $case-face;
+    @include bevel-out(15px, $case-light, $case-dark);
     border-radius: 5px;
 
     width: fit-content;
@@ -66,13 +107,13 @@ header a {
     padding: 5px;
     padding-left: 12px;
     padding-right: 12px;
-    border: 3px inset #999;
-    background: #a2a2a2;
+    @include bevel-in(3px, $case-light, $case-dark);
+    background: $panel-face;
     height: auto;
 }
 
 #screen-container {
-    border: 10px inset #999;
+    @include bevel-in(10px, $panel-light, $panel-dark);
     padding: 24px;
     background-color: black;
     position: relative;
@@ -113,7 +154,7 @@ header a {
 .keyboard {
     transform-origin: bottom;
     transform: perspective(1000px) rotateX(45deg);
-    background-color: #999;
+    background-color: $chassis-face;
     user-select: none;
     padding: 10px;
     display: flex;
@@ -124,7 +165,7 @@ header a {
 .keyboard-bottom {
     height: 30px;
     width: 100%;
-    background: #aaa;
+    background: $case-face;
     box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
 }
 
@@ -134,15 +175,15 @@ header a {
     text-align: center;
     padding: 5px;
     font-family: sans-serif;
-    background: #bbb;
-    border: 5px outset #aaa;
+    background: $key-face;
+    @include bevel-out(5px, $key-light, $key-dark);
     box-sizing: border-box;
 }
 
 .keyboard span:active,
 .keyboard span.key-down {
-    background: #aaa;
-    border: 4px solid #666;
+    background: $key-pressed-face;
+    @include bevel-in(4px, $key-light, $key-dark);
     padding-top: 10px;
 }
 
@@ -264,7 +305,7 @@ header a {
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #aaa;
+        background-color: $case-face;
     }
 
     #screen {
@@ -274,7 +315,7 @@ header a {
     }
 
     #screen {
-        border: 10px inset #999;
+        @include bevel-in(10px, $panel-light, $panel-dark);
         padding: 24px;
         background-color: black;
     }
