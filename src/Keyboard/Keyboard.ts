@@ -26,11 +26,14 @@ import {
     type SignalListener,
     type SignalUnsubscribe,
 } from "@Toolbox/Signal";
+import { normalizePastedText, pastedCharToEvent } from "./Paste";
 
 type AnyKeyPressEvent = Pick<
     PengKeyboardEvent,
     "pressed" | "isModifier" | "isAutoRepeat"
 >;
+
+const PASTE_CHARACTERS_PER_SECOND = 600;
 
 export class Keyboard implements KeyboardSource {
     private _sources: KeyboardSource[];
@@ -42,6 +45,12 @@ export class Keyboard implements KeyboardSource {
     private _mods: number = 0;
 
     private _eventBuffer: PengKeyboardEvent[] = [];
+
+    private _pasteText: string = "";
+    private _pasteIndex: number = 0;
+    private _pasteCredit: number = 0;
+
+    private _pasteQueue: PengKeyboardEvent[] = [];
 
     /* Does the event describe a user physically pressing
      * a non-modifier key on his/her keyboard */
@@ -75,6 +84,8 @@ export class Keyboard implements KeyboardSource {
                 src.update(dt);
             }
         }
+
+        this._updatePaste(dt);
     }
 
     /* Keyboard API functions */
@@ -182,15 +193,68 @@ export class Keyboard implements KeyboardSource {
         this._eventBuffer.length = 0;
     }
 
+    /* ===================== PASTING ========================= */
+
+    public pasteText(text: string) {
+        const normalized = normalizePastedText(text);
+        if (!normalized) return;
+
+        this._pasteText = this._pasteText.slice(this._pasteIndex) + normalized;
+        this._pasteIndex = 0;
+    }
+
+    /** Is there pasted text still waiting to be delivered or read? */
+    public getIsPasting(): boolean {
+        return (
+            this._pasteIndex < this._pasteText.length ||
+            this._pasteQueue.length > 0
+        );
+    }
+
+    /** Abandons a paste in progress, including anything already queued. */
+    public cancelPaste() {
+        this._pasteText = "";
+        this._pasteIndex = 0;
+        this._pasteCredit = 0;
+        this._pasteQueue.length = 0;
+    }
+
+    private _updatePaste(dt: number) {
+        if (this._pasteIndex >= this._pasteText.length) {
+            this._pasteCredit = 0;
+            return;
+        }
+
+        this._pasteCredit += (dt / 1000) * PASTE_CHARACTERS_PER_SECOND;
+        let budget = Math.floor(this._pasteCredit);
+        if (budget <= 0) return;
+        this._pasteCredit -= budget;
+
+        while (budget > 0 && this._pasteIndex < this._pasteText.length) {
+            const char = this._pasteText[this._pasteIndex];
+            this._pasteIndex += 1;
+            budget -= 1;
+
+            const event = pastedCharToEvent(char);
+            if (event) this._sendPasteEvent(event);
+        }
+
+        if (this._pasteIndex >= this._pasteText.length) {
+            this._pasteText = "";
+            this._pasteIndex = 0;
+        }
+    }
+
+    private _sendPasteEvent(event: PengKeyboardEvent) {
+        this._pasteQueue.push(event);
+        this._eventSignal.emit(event);
+    }
+
     public async waitForNextEvent(): Promise<PengKeyboardEvent> {
-        /* The signal is emitted synchronously, but we are woken up a
-         * microtask later, by which time the buffer may have been
-         * flushed (see PhysicalKeyboard's blur handling) -- in that
-         * case just keep waiting instead of returning nothing. */
         while (true) {
-            await this._eventSignal.getPromise();
             const event = this.getNextEvent();
             if (event) return event;
+            await this._eventSignal.getPromise();
         }
     }
 
@@ -201,12 +265,11 @@ export class Keyboard implements KeyboardSource {
     }
 
     /**
-     * Shifts out a single event from the Keyboard event buffer for processing.
-     *
-     * Returns null if no events available.
+     * Shifts out a single event, or null if none. Real keystrokes come before
+     * pasted ones, so Ctrl+C during a paste is seen promptly.
      */
     public getNextEvent(): PengKeyboardEvent | null {
-        return this._eventBuffer.shift() ?? null;
+        return this._eventBuffer.shift() ?? this._pasteQueue.shift() ?? null;
     }
 
     public constructEvent(code: KeyCode, pressed: boolean): PengKeyboardEvent {
