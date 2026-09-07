@@ -262,6 +262,8 @@ class PengOS {
         let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
 
         if(import.meta.env.DEV) {
+            if(hasStartedUp) return;
+
             let y = 0;
 
             std.setConsoleScreenMode(ScreenMode.mode80x25);
@@ -298,6 +300,9 @@ class PengOS {
             std.setConsoleCursorPosition({ x: 0, y: 5 });
             std.writeConsole("                        ");
             std.setConsoleCursorPosition({ x: 0, y: 5 });
+
+            localStorage.setItem("hasStartedUp", "yes");
+
             if(goBios) {
                 await new BIOS(this.pc).run([]);
                 std.resetConsole();

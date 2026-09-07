@@ -210,10 +210,11 @@ export class FileSystem {
                     entry.type = subent.type;
                     entry.mode = subent.mode;
                     if("url" in subent && typeof subent.url === "string") {
-                        // only allow http and file protocols
+                        // only allow http and file protocols; anchored,
+                        // or "filesystem:" and friends would slip through
                         try {
                             const parsed = new URL(subent.url);
-                            if(!/(https?|file)/.match(parsed.protocol)) {
+                            if(!/^(https?|file):$/.test(parsed.protocol)) {
                                 throw "ERROR_REPORT_BUG";
                             }
                         } catch(e) {

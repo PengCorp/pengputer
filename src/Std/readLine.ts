@@ -1,16 +1,15 @@
-import { Screen } from "../Screen";
 import { Keyboard } from "../Keyboard";
 import { type Vector } from "@Toolbox/Vector";
 import { TextBuffer } from "../TextBuffer";
 import { type KeyCode } from "../Keyboard/types";
 
-interface AutoCompleteInfo {
+export interface ReadLineOptions {
     autoCompleteStrings?: string[];
     previousEntries?: string[];
+    initialText?: string;
 }
 
 class ReadLine {
-    private screen: Screen;
     private keyboard: Keyboard;
     private buffer: TextBuffer;
     private previousEntries: string[];
@@ -23,16 +22,16 @@ class ReadLine {
     private curIndex = 0;
 
     constructor(
-        screen: Screen,
         keyboard: Keyboard,
         buffer: TextBuffer,
-        autoCompleteInfo: AutoCompleteInfo = {},
+        options: ReadLineOptions = {},
     ) {
-        this.screen = screen;
         this.keyboard = keyboard;
         this.buffer = buffer;
-        this.previousEntries = autoCompleteInfo.previousEntries ?? [];
-        this.autoCompleteStrings = autoCompleteInfo.autoCompleteStrings ?? [];
+        this.previousEntries = options.previousEntries ?? [];
+        this.autoCompleteStrings = options.autoCompleteStrings ?? [];
+        this.result = options.initialText ?? "";
+        this.curIndex = this.result.length;
 
         keyboard.flushEventBuffer();
     }
@@ -49,6 +48,8 @@ class ReadLine {
     }
 
     public run() {
+        if (this.result.length > 0) this.buffer.printString(this.result);
+
         const promise = new Promise<string | null>(async (resolve) => {
             eventLoop: while (true) {
                 const ev = await this.keyboard.waitForNextEvent();
@@ -435,12 +436,11 @@ class ReadLine {
 }
 
 export const readLine = async (
-    screen: Screen,
     keyboard: Keyboard,
     buffer: TextBuffer,
-    autoCompleteInfo: AutoCompleteInfo = {},
+    options: ReadLineOptions = {},
 ) => {
-    const rl = new ReadLine(screen, keyboard, buffer, autoCompleteInfo);
+    const rl = new ReadLine(keyboard, buffer, options);
     return rl.run();
 };
 
