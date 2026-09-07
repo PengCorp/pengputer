@@ -32,6 +32,7 @@ export class PhysicalKeyboard implements KeyboardSource {
         window.addEventListener("keydown", this._onKey.bind(this));
         window.addEventListener("keyup", this._onKey.bind(this));
         window.addEventListener("blur", this._onWindowBlur.bind(this));
+        window.addEventListener("paste", this._onPaste.bind(this));
     }
 
     public onEvent(event: PengKeyboardEvent) {}
@@ -129,7 +130,30 @@ export class PhysicalKeyboard implements KeyboardSource {
         }
     }
 
+    /**
+     * Determine whether it's a paste chord - Ctrl+V (Cmd+V on a Mac) and the older Shift+Insert.
+     */
+    private _getIsPasteChord(ev: KeyboardEvent): boolean {
+        if (ev.altKey) return false;
+        if (ev.code === "KeyV" && (ev.ctrlKey || ev.metaKey)) return true;
+        if (ev.code === "Insert" && ev.shiftKey) return true;
+        return false;
+    }
+
+    private _onPaste(ev: ClipboardEvent) {
+        ev.preventDefault();
+
+        const text = ev.clipboardData?.getData("text/plain");
+        // let through paste event
+        if (text) this.kb.pasteText(text);
+    }
+
     private _onKey(ev: KeyboardEvent) {
+        if (this._getIsPasteChord(ev)) {
+            this.autoRepeat.reset();
+            return;
+        }
+
         ev.preventDefault();
         ev.stopPropagation();
 

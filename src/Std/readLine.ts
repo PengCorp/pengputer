@@ -60,6 +60,8 @@ class ReadLine {
 
                 if (ev.isControlDown) {
                     if (key === "KeyC") {
+                        // Cancel paste in progress
+                        this.keyboard.cancelPaste();
                         this.goToEnd();
                         this.buffer.printString("^C");
                         resolve(null);

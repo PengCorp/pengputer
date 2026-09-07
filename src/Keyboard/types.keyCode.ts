@@ -3,6 +3,8 @@
  * See <https://w3.org/TR/uievents-code/>.
  */
 export type KeyCode =
+    | "Unidentified"
+
     /* ————————————————— Alphanumeric ————————————————— */
     | "KeyA"
     | "KeyB"
