@@ -85,7 +85,7 @@ const EXPECTED: Record<string, string | RegExp> = {
     /* Screen listings are about *where* things land, so they are
      * checked by position in Screen.test.ts rather than by their
      * stream of bytes. Here they only have to run. */
-    "colors.bas": /COLOUR 15 {2}/,
+    "colors.bas": /0-15  THE CGA SIXTEEN\n[\s\S]*BLINKING\n$/,
     "bounce.bas": /STOPPED\n$/,
     "chars.bas": /SHADES: {2}/,
 

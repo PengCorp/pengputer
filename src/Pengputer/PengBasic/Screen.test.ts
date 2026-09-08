@@ -3,7 +3,7 @@ import { Interpreter } from "./Interpreter";
 import { TestConsole, cgaColor } from "./console";
 import { classicColors } from "@Color/ansi";
 
-/* Indices rather than names, because these assertions compare colour
+/* Indices rather than names, because these assertions compare color
  * *identity*, not appearance. The classic palette pads its unfilled
  * tertiary slots with black, and the name "black" ends up pointing at
  * the last of them -- which paints black, but is not index 0. */
@@ -100,19 +100,100 @@ describe("COLOR", () => {
         expect(console.getCellColors(0, 0)?.bg).toEqual(BLACK);
     });
 
-    it("refuses a colour that does not exist", async () => {
+    it("refuses a color that does not exist", async () => {
         const { interpreter } = machine();
-        await expect(interpreter.executeLine("COLOR 32")).rejects.toThrow(
+        await expect(interpreter.executeLine("COLOR 56")).rejects.toThrow(
             /ILLEGAL QUANTITY/,
         );
-        await expect(interpreter.executeLine("COLOR 1,16")).rejects.toThrow(
+        await expect(interpreter.executeLine("COLOR -1")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
+        await expect(interpreter.executeLine("COLOR 1,44")).rejects.toThrow(
             /ILLEGAL QUANTITY/,
         );
     });
 
+    /*
+     * A background cannot blink -- blink is a bit of the foreground
+     * attribute -- so the numbers that mean "blinking" name nothing a
+     * background can be, in either block.
+     */
+    it("refuses a blinking number as a background", async () => {
+        const { interpreter } = machine();
+        await expect(interpreter.executeLine("COLOR 1,16")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
+        await expect(interpreter.executeLine("COLOR 1,31")).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
+    });
+
+    describe("the tertiary colors", () => {
+        const tertiary = (name: string) => classicColors[name as never];
+
+        it("start at 32, dim before bright", async () => {
+            const { console: machineConsole, interpreter } = machine();
+            await interpreter.executeLine("COLOR 32");
+            await interpreter.executeLine('PRINT "X";');
+            expect(machineConsole.getCellColors(0, 0)?.fg).toEqual(
+                tertiary("orange"),
+            );
+
+            await interpreter.executeLine("COLOR 38");
+            await interpreter.executeLine('PRINT "Y";');
+            expect(machineConsole.getCellColors(0, 1)?.fg).toEqual(
+                tertiary("lightOrange"),
+            );
+        });
+
+        it("run to rose at each end of the block", async () => {
+            const { console: machineConsole, interpreter } = machine();
+            await interpreter.executeLine("COLOR 37");
+            await interpreter.executeLine('PRINT "X";');
+            expect(machineConsole.getCellColors(0, 0)?.fg).toEqual(
+                tertiary("rose"),
+            );
+
+            await interpreter.executeLine("COLOR 43");
+            await interpreter.executeLine('PRINT "Y";');
+            expect(machineConsole.getCellColors(0, 1)?.fg).toEqual(
+                tertiary("lightRose"),
+            );
+        });
+
+        /* Same colors again, blinking -- the upper half of the block,
+         * exactly as 16-31 is the upper half of the CGA one. */
+        it("blink from 44, in the same order", async () => {
+            const { console: machineConsole, interpreter } = machine();
+            await interpreter.executeLine("COLOR 44");
+            await interpreter.executeLine('PRINT "X";');
+            expect(machineConsole.getCellColors(0, 0)).toEqual({
+                fg: tertiary("orange"),
+                bg: classicColors[0],
+                blink: true,
+            });
+
+            await interpreter.executeLine("COLOR 55");
+            await interpreter.executeLine('PRINT "Y";');
+            expect(machineConsole.getCellColors(0, 1)?.fg).toEqual(
+                tertiary("lightRose"),
+            );
+            expect(machineConsole.getCellColors(0, 1)?.blink).toBe(true);
+        });
+
+        it("work as a background too", async () => {
+            const { console: machineConsole, interpreter } = machine();
+            await interpreter.executeLine("COLOR 15,38");
+            await interpreter.executeLine('PRINT "X";');
+            expect(machineConsole.getCellColors(0, 0)?.bg).toEqual(
+                tertiary("lightOrange"),
+            );
+        });
+    });
+
     /**
      * CGA kept blink in the top bit of the foreground, so sixteen
-     * colours and a flag arrive as one number: 30 is blinking yellow.
+     * colors and a flag arrive as one number: 30 is blinking yellow.
      */
     it("blinks for a foreground of 16 or more", async () => {
         const { console, interpreter } = machine();
@@ -135,7 +216,7 @@ describe("COLOR", () => {
     });
 
     /**
-     * BASIC numbers colours the way IBM did, which is not the order the
+     * BASIC numbers colors the way IBM did, which is not the order the
      * machine's palette is in: 1 is blue and 4 is red, and the palette
      * has those swapped.
      */

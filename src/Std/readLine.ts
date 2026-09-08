@@ -4,23 +4,23 @@ import { TextBuffer } from "../TextBuffer";
 import { type KeyCode } from "../Keyboard/types";
 import type { Color } from "@Color/Color";
 
-/** A run of the line that should be drawn in one colour. */
+/** A run of the line that should be drawn in one color. */
 export interface ReadLineSpan {
     text: string;
     color: Color;
 }
 
 /**
- * Splits the line being typed into coloured runs.
+ * Splits the line being typed into colored runs.
  *
  * A function rather than anything cleverer because `readLine' is used by
  * the shell, the editors and any program that asks a question, and none
- * of them should have to know what the others colour. The one caller
+ * of them should have to know what the others color. The one caller
  * that does -- BASIC -- hands its own highlighter in.
  *
  * Supplying one switches the line to being redrawn whole on every
  * keystroke, which it has to be: typing a closing quote changes the
- * colour of everything back to the opening one, so painting only from
+ * color of everything back to the opening one, so painting only from
  * the cursor onward is not enough. Without a highlighter nothing about
  * the drawing changes.
  */
@@ -70,7 +70,7 @@ class ReadLine {
     }
 
     /**
-     * Paints the whole line again, in colour.
+     * Paints the whole line again, in color.
      *
      * Does nothing at all without a highlighter, which is what keeps
      * every other caller of `readLine' drawing exactly as it did.

@@ -360,7 +360,7 @@ export class StatementParser extends Parser {
     /**
      * TAB( and SPC( are not really functions -- they are only legal
      * here, and they move the cursor rather than producing a value --
-     * so PRINT recognises them itself before falling back to an
+     * so PRINT recognizes them itself before falling back to an
      * ordinary expression.
      */
     private tryParsePrintFunction(): PrintItem | null {

@@ -1,5 +1,5 @@
 /**
- * What the colours *mean*, for anything that shows BASIC source.
+ * What the colors *mean*, for anything that shows BASIC source.
  *
  * The machine's classic palette is the usual 16 plus a tertiary set --
  * orange, chartreuse, spring green, azure, violet, rose -- in a dark and
@@ -10,13 +10,13 @@
  * That last detail is why this file could be built by measurement. OKLCH
  * holds perceptual lightness steady around the hue circle, so the
  * tertiaries sit at the same apparent brightness as the primaries they
- * came from -- which means matching a target colour to the nearest
+ * came from -- which means matching a target color to the nearest
  * palette entry gives one clear winner rather than a tie between
  * something too dark and something too bright. Seven of the eight roles
  * below were settled that way with no argument.
  *
  * Roles are named for what they *are*, not for how they look, so that
- * changing a colour is a change in one line here rather than a hunt
+ * changing a color is a change in one line here rather than a hunt
  * through whatever draws things.
  *
  * More roles are defined than PengBASIC currently uses. That is on
@@ -31,29 +31,29 @@
  * apart -- the same reason `cp437.ts` is built from the font's value map.
  * Indices are also what a port can carry: `Console.setColor` speaks CGA
  * numbers, which only reach the first 16, so anything wanting the
- * tertiary colours needs a route that takes a palette index directly.
+ * tertiary colors needs a route that takes a palette index directly.
  */
 import { classicColors } from "@Color/ansi";
 import { ColorType, type Color } from "@Color/Color";
 import type { ColorName } from "@Color/types";
 
 /**
- * The classic-palette index a colour name stands for.
+ * The classic-palette index a color name stands for.
  *
  * `classicColors` is typed as the general `Color` union, so this
  * narrows -- and throws rather than guessing if the table ever stops
- * holding classic colours, which is the failure worth being loud about.
+ * holding classic colors, which is the failure worth being loud about.
  */
 function index(name: ColorName): number {
     const color = classicColors[name];
     if (color.type !== ColorType.Classic) {
-        throw new Error(`${name} is not a classic palette colour`);
+        throw new Error(`${name} is not a classic palette color`);
     }
     return color.index;
 }
 
 /**
- * A part of a program, as far as colouring is concerned.
+ * A part of a program, as far as coloring is concerned.
  *
  * The distinctions are the ones a *reader* cares about, which are not
  * quite the ones a tokenizer makes. `LEN` and `SQR` are names to the
@@ -91,7 +91,7 @@ export type SyntaxRole =
 /**
  * The scheme.
  *
- * Matched to a set of target colours by perceptual distance, which
+ * Matched to a set of target colors by perceptual distance, which
  * picked seven of the eight on its own. Numbers were the exception: the
  * metric preferred light magenta by a hair, but the target reads as
  * purple and magenta reads as pink, so violet won on character.
@@ -102,15 +102,15 @@ export type SyntaxRole =
  *     that move you somewhere -- IF, FOR, GOTO, RETURN; orange for the
  *     ones that declare something -- DIM, DEF, CONST. Reading a listing
  *     is mostly following the first kind, so they get the loudest
- *     colour on the screen.
+ *     color on the screen.
  *   - **Built-ins against a program's own functions.** Cyan for
  *     everything the machine supplies, whether statement or function --
  *     PRINT and CLS sit with LEN and SQR, because to a reader they are
  *     the same thing: something that was already here. Chartreuse for
  *     what the program added.
- *   - **Variables are the quiet ones.** Plain grey, the same as
- *     spacing, because a listing is mostly variables and colouring them
- *     would leave nothing for the colour to mean.
+ *   - **Variables are the quiet ones.** Plain gray, the same as
+ *     spacing, because a listing is mostly variables and coloring them
+ *     would leave nothing for the color to mean.
  */
 export const SYNTAX_COLORS: Readonly<Record<SyntaxRole, number>> = {
     text: index("lightGray"),
@@ -122,7 +122,7 @@ export const SYNTAX_COLORS: Readonly<Record<SyntaxRole, number>> = {
     /*
      * The one role the scheme did not name. Rose, which the control-flow
      * red freed up: an operator is grammar rather than content, so it
-     * earns a colour of its own, and pink against red reads as a
+     * earns a color of its own, and pink against red reads as a
      * relation between them rather than as a clash.
      */
     operator: index("lightRose"),
@@ -137,7 +137,7 @@ export const SYNTAX_COLORS: Readonly<Record<SyntaxRole, number>> = {
 
     /*
      * The three below have no producer. `DEFINT' and friends declare,
-     * so they are coloured as structural keywords rather than as their
+     * so they are colored as structural keywords rather than as their
      * own thing, which leaves `type' spare. Kept because the set is
      * meant to be a scheme rather than an inventory of today's needs --
      * and because a role with no user costs a line.
@@ -148,7 +148,7 @@ export const SYNTAX_COLORS: Readonly<Record<SyntaxRole, number>> = {
 };
 
 /**
- * The colour a listing sits on.
+ * The color a listing sits on.
  *
  * This comes out as index 31 rather than 0: the tertiary rows do not
  * fill their 32 slots, and the spare ones are deliberately set to black,
@@ -158,7 +158,7 @@ export const SYNTAX_COLORS: Readonly<Record<SyntaxRole, number>> = {
  */
 export const SYNTAX_BACKGROUND = index("black");
 
-/** A palette index as the machine's own colour type. */
+/** A palette index as the machine's own color type. */
 export function paletteColor(index: number): Color {
     return classicColors[index];
 }

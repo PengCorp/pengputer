@@ -1,5 +1,5 @@
 /**
- * Colouring a listing.
+ * Coloring a listing.
  *
  * The load-bearing property is the first describe block: the spans
  * always rejoin to exactly the source they came from. `LIST` promises to
@@ -64,7 +64,7 @@ describe("the source survives exactly", () => {
 });
 
 describe("roles", () => {
-    it("colours a whole control statement as control flow", () => {
+    it("colors a whole control statement as control flow", () => {
         expect(roles("IF A<>1 THEN 20")).toEqual([
             "controlFlow:IF",
             "text: A",
@@ -91,7 +91,7 @@ describe("roles", () => {
 
     /* A statement the machine supplies sits with the functions it
      * supplies: to a reader both are simply "already here". */
-    it("colours PRINT as a built-in, like LEN", () => {
+    it("colors PRINT as a built-in, like LEN", () => {
         expect(roles("PRINT 1")[0]).toBe("builtin:PRINT");
         expect(roles("A=LEN(B$)")).toContain("builtin:LEN");
     });
@@ -126,12 +126,12 @@ describe("roles", () => {
         expect(roles("DEFDBL P")[0]).toBe("keyword:DEFDBL");
     });
 
-    it("colours a REM as a comment", () => {
+    it("colors a REM as a comment", () => {
         expect(roles("REM HELLO")).toEqual(["comment:REM HELLO"]);
     });
 
-    /* A DATA item is coloured as the value it is, not as program text. */
-    it("colours DATA items by what they are", () => {
+    /* A DATA item is colored as the value it is, not as program text. */
+    it("colors DATA items by what they are", () => {
         expect(roles("DATA 95,HELLO")).toEqual([
             "keyword:DATA",
             "text: ",
@@ -156,7 +156,7 @@ describe("LIST paints the line", () => {
         return fg && "index" in fg ? fg.index : null;
     }
 
-    it("puts the line number and the keyword in different colours", async () => {
+    it("puts the line number and the keyword in different colors", async () => {
         const machine = await listed("10 PRINT 1", "LIST");
         expect(colorAt(machine, 0, 0)).toBe(SYNTAX_COLORS.strong);
         expect(colorAt(machine, 0, 3)).toBe(SYNTAX_COLORS.builtin);
@@ -166,14 +166,14 @@ describe("LIST paints the line", () => {
     /*
      * Every space survives, indentation included -- a line is stored
      * from the end of its number token, not from the first thing after
-     * the space. Colouring changes none of it.
+     * the space. Coloring changes none of it.
      */
     it("shows the text with the typist's spacing", async () => {
         const machine = await listed("10   PRINT    1", "LIST");
         expect(machine.getRow(0)).toBe("10   PRINT    1");
     });
 
-    /* A program that set a colour should not find it changed by LIST. */
+    /* A program that set a color should not find it changed by LIST. */
     it("leaves COLOR alone", async () => {
         const machine = new TestConsole();
         const interpreter = new Interpreter(machine);

@@ -289,7 +289,7 @@ export class PengBasic implements Executable {
      * clean instead of interleaving a hundred of them.
      */
     /**
-     * Colours the line being typed, the same way LIST colours a stored
+     * Colors the line being typed, the same way LIST colors a stored
      * one.
      *
      * A line at the prompt has no number in front of it, so this is the

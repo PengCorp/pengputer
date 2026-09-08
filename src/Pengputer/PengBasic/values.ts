@@ -156,7 +156,7 @@ export function checkStringLength(s: string): string {
  * converted by taking the magnitude, adding a half and truncating, then
  * reapplying the sign -- which is symmetric, and gives -3.
  *
- * The zero normalisation matters too: `Math.round(-0.2)` is -0, and -0
+ * The zero normalization matters too: `Math.round(-0.2)` is -0, and -0
  * survives arithmetic invisibly until something prints it as "-0".
  */
 export function roundToInteger(n: number): number {

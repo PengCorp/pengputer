@@ -1,5 +1,5 @@
 /**
- * Splitting a line of BASIC into coloured pieces.
+ * Splitting a line of BASIC into colored pieces.
  *
  * The tokenizer already knows what everything is, so this is mostly a
  * table from token kind to role (§palette). Two things make it more than
@@ -61,7 +61,7 @@ function spansOf(source: string, isBuiltin: IsBuiltin): HighlightSpan[] {
         if (text.length === 0) return;
         const last = spans[spans.length - 1];
         /* Runs of the same role join up, which keeps the span list short
-         * and the colour changes down to the ones that matter. */
+         * and the color changes down to the ones that matter. */
         if (last && last.role === role) last.text += text;
         else spans.push({ text, role });
     };
@@ -81,7 +81,7 @@ function spansOf(source: string, isBuiltin: IsBuiltin): HighlightSpan[] {
          * A DATA item takes the comma after it with it -- the scanner
          * eats the separator rather than emitting a token for it -- so
          * the comma is handed back to the punctuation here, or a row of
-         * numbers comes out with its commas coloured as digits.
+         * numbers comes out with its commas colored as digits.
          */
         const separator = token.kind === "data" && text.endsWith(",");
         if (separator) text = text.slice(0, -1);
@@ -111,7 +111,7 @@ function roleOf(
         /*
          * Which sort of keyword it is comes from the keyword table
          * itself (`KeywordKind'), not from a list kept here -- the
-         * colouring has no business holding its own opinion about what
+         * coloring has no business holding its own opinion about what
          * IF is.
          */
         case "keyword":
@@ -138,7 +138,7 @@ function roleOf(
             return "comment";
 
         /* A DATA item is a value written where a value goes, so it is
-         * coloured as the value it is rather than as program text. */
+         * colored as the value it is rather than as program text. */
         case "data":
             if (token.quoted) return "string";
             return Number.isNaN(Number(token.value)) ? "text" : "number";

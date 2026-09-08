@@ -1,7 +1,7 @@
 /**
  * The random number generator behind RND.
  *
- * Microsoft's RND has three behaviours picked by the sign of its
+ * Microsoft's RND has three behaviors picked by the sign of its
  * argument, which is unusual enough to be worth stating plainly:
  *
  *     RND(1)   any positive number: the next value
@@ -17,7 +17,7 @@
  * would not line those up either. Left alone.
  *
  * What *is* Microsoft's, and checked against a real GW-BASIC, is the
- * behaviour around it: the three argument forms, and the fact that RUN
+ * behavior around it: the three argument forms, and the fact that RUN
  * restarts the sequence so an unseeded program deals the same cards
  * every time.
  */

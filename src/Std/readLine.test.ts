@@ -1,5 +1,5 @@
 /**
- * Typing at a coloured prompt.
+ * Typing at a colored prompt.
  *
  * `readLine` is shared by the shell, the editors and any program that
  * asks a question, so the first thing these check is that supplying no
@@ -18,7 +18,7 @@ import { ColorType } from "@Color/Color";
 const RED = classicColors["lightRed"];
 const YELLOW = classicColors["lightYellow"];
 
-/** The palette index of a colour we know to be a classic one. */
+/** The palette index of a color we know to be a classic one. */
 const indexOf = (color: typeof RED) =>
     color.type === ColorType.Classic ? color.index : null;
 const RED_INDEX = indexOf(RED);
@@ -58,7 +58,7 @@ function row(buffer: TextBuffer, y: number) {
         .trimEnd();
 }
 
-/** The palette index of one cell, or null if it is not a classic colour. */
+/** The palette index of one cell, or null if it is not a classic color. */
 function colorAt(buffer: TextBuffer, y: number, x: number) {
     const fg = buffer.getPage(0).lines[y].cells[x].getAttributes().fgColor;
     return fg.type === ColorType.Classic ? fg.index : null;
@@ -83,7 +83,7 @@ describe("without a highlighter", () => {
         expect(row(buffer, 0)).toBe("PRINT 1");
     });
 
-    it("leaves the colour alone", async () => {
+    it("leaves the color alone", async () => {
         const { keyboard, buffer } = machine();
         const before = buffer.getCurrentAttributes().fgColor;
         const line = readLine(keyboard, buffer);
@@ -95,7 +95,7 @@ describe("without a highlighter", () => {
 });
 
 describe("with a highlighter", () => {
-    it("colours as it goes", async () => {
+    it("colors as it goes", async () => {
         const { keyboard, buffer } = machine();
         const line = readLine(keyboard, buffer, { highlight: splitAtA });
         await type(keyboard, "XYA\n");
@@ -109,10 +109,10 @@ describe("with a highlighter", () => {
 
     /*
      * The point of redrawing the whole line rather than painting from
-     * the cursor: a character typed at the end can change the colour of
+     * the cursor: a character typed at the end can change the color of
      * everything before it, exactly as a closing quote does.
      */
-    it("recolours what was already on screen", async () => {
+    it("recolors what was already on screen", async () => {
         const { keyboard, buffer } = machine();
         const line = readLine(keyboard, buffer, { highlight: splitAtA });
 
@@ -139,7 +139,7 @@ describe("with a highlighter", () => {
         expect(row(buffer, 0)).toBe("XX");
     });
 
-    it("puts the colour back for whatever prints next", async () => {
+    it("puts the color back for whatever prints next", async () => {
         const { keyboard, buffer } = machine();
         const before = buffer.getCurrentAttributes().fgColor;
         const line = readLine(keyboard, buffer, { highlight: splitAtA });
@@ -161,7 +161,7 @@ describe("with a highlighter", () => {
         expect(colorAt(buffer, 1, 4)).toBe(YELLOW_INDEX);
     });
 
-    it("keeps an initial text and colours it", async () => {
+    it("keeps an initial text and colors it", async () => {
         const { keyboard, buffer } = machine();
         const line = readLine(keyboard, buffer, {
             highlight: splitAtA,

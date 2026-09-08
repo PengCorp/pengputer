@@ -102,7 +102,7 @@ export class Variables {
     }
 
     /**
-     * Name plus normalised suffix. `A' and `A!' collapse to the same key
+     * Name plus normalized suffix. `A' and `A!' collapse to the same key
      * because both mean single precision; `A%' and `A$' do not.
      */
     private keyOf(name: string, sigil: Sigil): Key {

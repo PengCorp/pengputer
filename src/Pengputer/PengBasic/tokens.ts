@@ -29,7 +29,7 @@ export type Sigil = "" | "$" | "%" | "!" | "#";
  *
  * Kept here, beside the keyword itself, rather than in a set belonging
  * to whoever happens to care. Anything that wants to treat control flow
- * differently from declarations -- the syntax colouring is the first,
+ * differently from declarations -- the syntax coloring is the first,
  * and will not be the last -- asks this table instead of keeping its own
  * copy, which is the arrangement that cannot drift.
  */

@@ -21,7 +21,7 @@
  * The parser refused to guess whether that was an array or a function,
  * because the syntax genuinely does not say. It is settled here, and
  * the order is: built-in first, array second. That reproduces the
- * original's behaviour, where function names were effectively reserved
+ * original's behavior, where function names were effectively reserved
  * and an array called LEN was simply not available to you.
  */
 import { BasicError } from "./errors";

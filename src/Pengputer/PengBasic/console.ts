@@ -25,10 +25,68 @@ import type { Vector } from "@Toolbox/Vector";
  */
 const CGA_TO_CLASSIC = [0, 4, 2, 6, 1, 5, 3, 7, 8, 12, 10, 14, 9, 13, 11, 15];
 
+/**
+ * The tertiary hues, in the order they sit in the palette: the six dim
+ * ones and then the six bright. Not IBM's -- IBM had no such colors --
+ * so no reordering is needed and the numbers run straight.
+ */
+const TERTIARY_TO_CLASSIC = [
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d,
+];
+
+/** How many color numbers there are, counting the blinking ones. */
+export const MAX_COLOR_NUMBER = 55;
+
+/** The highest number that names a color rather than a blinking one. */
+export const MAX_STEADY_COLOR_NUMBER = 43;
+
+/**
+ * THE COLOR NUMBERS
+ *
+ * ```
+ *   0- 15  the CGA sixteen                        black .. white
+ *  16- 31  the same, blinking
+ *  32- 37  tertiary, dim      orange chartreuse spring azure violet rose
+ *  38- 43  tertiary, bright   the same six, light
+ *  44- 49  tertiary dim, blinking
+ *  50- 55  tertiary bright, blinking
+ * ```
+ *
+ * 0-31 is what a real machine had, blink and all: CGA put the blink flag
+ * in the top bit of the foreground attribute, which is why sixteen
+ * colors take thirty-two numbers. Everything from 32 up is ours, and it
+ * exists because this machine's palette carries twelve colors that
+ * IBM's numbering has no way to name (§28 -- the tertiaries were
+ * interpolated in OKLCH from the CGA sixteen).
+ *
+ * A background takes 0-15 or 32-43 only: blink is a property of the
+ * foreground, so the blinking numbers name nothing a background can be.
+ */
 export function cgaColor(index: number): Color {
-    const classic = CGA_TO_CLASSIC[index];
-    if (classic === undefined) throw new RangeError(`no such colour: ${index}`);
+    if (index >= 32) {
+        const tertiary = TERTIARY_TO_CLASSIC[(index - 32) % 12];
+        if (tertiary === undefined || index > MAX_COLOR_NUMBER) {
+            throw new RangeError(`no such color: ${index}`);
+        }
+        return classicColors[tertiary];
+    }
+
+    const classic = CGA_TO_CLASSIC[index % 16];
+    if (classic === undefined || index < 0) {
+        throw new RangeError(`no such color: ${index}`);
+    }
     return classicColors[classic];
+}
+
+/**
+ * Whether a color number is one of the blinking ones.
+ *
+ * The two ranges blink for the same reason and by the same rule -- the
+ * upper half of each block -- which is why this is arithmetic rather
+ * than a table.
+ */
+export function cgaBlinks(index: number): boolean {
+    return index >= 32 ? index >= 44 : index >= 16;
 }
 
 export interface Console {
@@ -73,14 +131,14 @@ export interface Console {
     setCursorVisible(visible: boolean): void;
 
     /**
-     * The foreground, as the machine's own colour rather than a CGA
+     * The foreground, as the machine's own color rather than a CGA
      * number.
      *
      * `setColor` above is BASIC's `COLOR` statement and only reaches the
      * first sixteen, because that is all `COLOR` can name. These two are
-     * for output the interpreter produces itself -- a coloured `LIST` --
-     * where the whole 32-colour palette is available and the program's
-     * own colour has to be put back afterwards.
+     * for output the interpreter produces itself -- a colored `LIST` --
+     * where the whole 32-color palette is available and the program's
+     * own color has to be put back afterwards.
      */
     getForeground(): Color;
     setForeground(color: Color): void;
@@ -108,7 +166,7 @@ export interface Console {
  * A plain string would have been simpler, but then column tracking here
  * and column tracking on the real console would be two implementations
  * free to disagree, and everything interesting about PRINT is columns.
- * Using the real buffer means wrapping, scrolling and cursor behaviour
+ * Using the real buffer means wrapping, scrolling and cursor behavior
  * are whatever the machine actually does, and tests can ask *where on
  * screen* something landed rather than only what was emitted.
  *
@@ -254,7 +312,7 @@ export class TestConsole implements Console {
         this.pendingKeys.push(...keys);
     }
 
-    /** The colour attributes of one cell, for checking COLOR. */
+    /** The color attributes of one cell, for checking COLOR. */
     getCellColors(
         y: number,
         x: number,

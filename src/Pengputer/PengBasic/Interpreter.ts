@@ -35,7 +35,12 @@ import type {
     LValue,
     Statement,
 } from "./ast";
-import type { Console } from "./console";
+import {
+    cgaBlinks,
+    MAX_COLOR_NUMBER,
+    MAX_STEADY_COLOR_NUMBER,
+    type Console,
+} from "./console";
 import { asNumber, asString, typeOfSigil, type Value } from "./values";
 
 /**
@@ -176,7 +181,7 @@ export class Interpreter {
 
     private random: Random = new Random();
 
-    /** Kept so a coloured LIST can tell a built-in from a variable. */
+    /** Kept so a colored LIST can tell a built-in from a variable. */
     private builtins: Builtins;
 
     /**
@@ -223,7 +228,7 @@ export class Interpreter {
      * Error trapping.
      *
      * `errorHandler' is the line ON ERROR named, or null for the normal
-     * behaviour of reporting and stopping.
+     * behavior of reporting and stopping.
      *
      * `errorReturn' is where to go back to, and it doubles as the flag
      * for "a handler is running": while it is set, trapping is
@@ -276,7 +281,7 @@ export class Interpreter {
         );
     }
 
-    /** Is this name one the machine supplies? For colouring a listing. */
+    /** Is this name one the machine supplies? For coloring a listing. */
     hasBuiltin(name: string): boolean {
         return this.builtins.has(name);
     }
@@ -910,14 +915,30 @@ export class Interpreter {
                     return index;
                 };
 
-                /* CGA put blink in the top bit of the foreground, so
+                /*
+                 * CGA put blink in the top bit of the foreground, so
                  * COLOR 30 is blinking yellow rather than a 31st
-                 * colour. Sixteen colours and a flag, in one number. */
-                const foreground = pick(statement.foreground, 31);
+                 * color: sixteen colors and a flag, in one number.
+                 * The tertiaries above 32 follow the same shape, dim
+                 * then bright, then both again blinking. See the table
+                 * beside `cgaColor'.
+                 */
+                const foreground = pick(statement.foreground, MAX_COLOR_NUMBER);
+
+                /* A background cannot blink, so it takes only the
+                 * numbers that name a color on their own. */
+                const background = pick(
+                    statement.background,
+                    MAX_STEADY_COLOR_NUMBER,
+                );
+                if (background !== null && background > 15 && background < 32) {
+                    throw new BasicError("ILLEGAL QUANTITY");
+                }
+
                 this.console.setColor(
-                    foreground === null ? null : foreground % 16,
-                    pick(statement.background, 15),
-                    foreground === null ? null : foreground >= 16,
+                    foreground,
+                    background,
+                    foreground === null ? null : cgaBlinks(foreground),
                 );
                 return;
             }
@@ -1549,7 +1570,7 @@ export class Interpreter {
      * screen mode the machine happens to be in.
      *
      * Not something Microsoft did -- there you held Ctrl+S. This is the
-     * more useful behaviour and the less authentic one.
+     * more useful behavior and the less authentic one.
      */
     private async executeList(statement: Extract<Statement, { kind: "list" }>) {
         const lines = this.program.list(statement.from, statement.to);
@@ -1571,11 +1592,11 @@ export class Interpreter {
     }
 
     /**
-     * One line of a listing, in colour.
+     * One line of a listing, in color.
      *
      * The program's own foreground is put back afterwards, because a
      * program that set `COLOR 4` and then `LIST`ed should not find its
-     * colour changed underneath it.
+     * color changed underneath it.
      */
     private writeListing(number: number, source: string) {
         const saved = this.console.getForeground();
