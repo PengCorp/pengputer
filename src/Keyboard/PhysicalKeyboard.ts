@@ -22,6 +22,9 @@ export class PhysicalKeyboard implements KeyboardSource {
     /** Codes of the non-modifier keys that are currently held down. */
     private _keysDown: Set<KeyCode> = new Set();
 
+    /** Does the page still have the keyboard? Always yes off-browser. */
+    private _hasFocus: () => boolean = () => true;
+
     constructor(kb: Keyboard) {
         this.kb = kb;
 
@@ -33,13 +36,27 @@ export class PhysicalKeyboard implements KeyboardSource {
         window.addEventListener("keyup", this._onKey.bind(this));
         window.addEventListener("blur", this._onWindowBlur.bind(this));
         window.addEventListener("paste", this._onPaste.bind(this));
+
+        if (typeof document !== "undefined") {
+            this._hasFocus = () => document.hasFocus();
+        }
     }
 
     public onEvent(event: PengKeyboardEvent) {}
 
     public update(dt: number) {
+        if (!this._hasFocus() && this._isHoldingAnything()) {
+            this._releaseEverything();
+        }
+
         if (this.autoRepeat.update(dt)) {
             const code = this.autoRepeat.getCode()!;
+            /* Repeat only what we still believe is being held, so that
+             * anything clearing _keysDown also stops the repeat. */
+            if (!this._keysDown.has(code)) {
+                this.autoRepeat.reset();
+                return;
+            }
             const event = this.kb.constructEvent(code, true);
             event.isAutoRepeat = true;
             this.kb.sendEvent(this, event);
@@ -114,6 +131,19 @@ export class PhysicalKeyboard implements KeyboardSource {
      * keep firing it and the modifiers would stay latched.
      */
     private _onWindowBlur() {
+        this._releaseEverything();
+    }
+
+    /** Is there any key or transient modifier we still think is down? */
+    private _isHoldingAnything(): boolean {
+        return (
+            this._keysDown.size > 0 ||
+            this.autoRepeat.getCode() !== null ||
+            (this.kb.getModifiers() & ~Modifier.CAPS_LOCK) !== 0
+        );
+    }
+
+    private _releaseEverything() {
         const keysDown = [...this._keysDown];
         this._keysDown.clear();
         this.autoRepeat.reset();

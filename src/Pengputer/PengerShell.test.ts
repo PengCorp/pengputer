@@ -198,7 +198,10 @@ describe("PengerShell filesystem commands", () => {
 
         expect(fileSystem.getDriveByLetter("D")).toBe(drive);
         expect(fileSystem.getDriveByLetter("E")).toBe(drive);
-        expect(fileSystem.getMountpoints(drive.label)).toStrictEqual(["D", "E"]);
+        expect(fileSystem.getMountpoints(drive.label)).toStrictEqual([
+            "D",
+            "E",
+        ]);
         expect(std.writeConsole).toHaveBeenCalledWith(
             "Installed drive <WORK> to E:\n",
         );

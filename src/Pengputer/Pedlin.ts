@@ -623,11 +623,7 @@ class CommandParser {
         if (lineNumbers.length === 2) {
             const [defaultFrom, defaultTo] =
                 this.getDefaultSearchReplaceRange();
-            const from = clamp(
-                fromLine ?? defaultFrom,
-                0,
-                this.totalLines - 1,
-            );
+            const from = clamp(fromLine ?? defaultFrom, 0, this.totalLines - 1);
             const to = clamp(toLine ?? defaultTo, 0, this.totalLines - 1);
 
             if (to < from) {
@@ -655,7 +651,13 @@ class CommandParser {
         }
 
         if (searchText === null) {
-            return { type: CommandType.Search, fromLine, toLine, isQuery, reuseLastPattern: true };
+            return {
+                type: CommandType.Search,
+                fromLine,
+                toLine,
+                isQuery,
+                reuseLastPattern: true,
+            };
         }
 
         return {
@@ -690,7 +692,13 @@ class CommandParser {
         }
 
         if (oldText === null) {
-            return { type: CommandType.Replace, fromLine, toLine, isQuery, reuseLastPattern: true };
+            return {
+                type: CommandType.Replace,
+                fromLine,
+                toLine,
+                isQuery,
+                reuseLastPattern: true,
+            };
         }
 
         return {

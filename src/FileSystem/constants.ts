@@ -38,8 +38,8 @@ export function isDriveLetter(letter: string): letter is DriveLetter {
 
 export enum FileMode {
     NONE = 0,
-    EXECUTE = 1<<0, /* execute as program or run special action */
-    READ = 1<<1,    /* be read; [should be] needed to execute */
-    WRITE = 1<<2,   /* be written to. only matters for text files */
-    WRX = 7
-};
+    EXECUTE = 1 << 0 /* execute as program or run special action */,
+    READ = 1 << 1 /* be read; [should be] needed to execute */,
+    WRITE = 1 << 2 /* be written to. only matters for text files */,
+    WRX = 7,
+}

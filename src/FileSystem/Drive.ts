@@ -9,7 +9,11 @@ export class FileSystemDrive {
 
     #root: FileEntryDirectory;
 
-    constructor(readOnly: boolean = true, label: string = "UNTITLED", kind: DriveKind = "RAMFloppy") {
+    constructor(
+        readOnly: boolean = true,
+        label: string = "UNTITLED",
+        kind: DriveKind = "RAMFloppy",
+    ) {
         this.readOnly = readOnly;
         this.label = label;
         this.kind = kind;
