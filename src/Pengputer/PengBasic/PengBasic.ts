@@ -190,6 +190,24 @@ class StdConsole implements Console {
         return this.pc.std.getConsoleCharacterAt({ x: column, y: row });
     }
 
+    /**
+     * Opens the manual in another window.
+     *
+     * Resolved against the page rather than written absolute, so it
+     * follows wherever the machine is mounted. A topic becomes a
+     * fragment, which is why every entry in the page carries an id.
+     *
+     * `window.open` answers null when a browser refuses -- it wants a
+     * recent keypress to justify a new window, and a program that has
+     * been running a while has not got one. The caller says where the
+     * manual is instead.
+     */
+    showHelp(topic: string | null): boolean {
+        const anchor = topic === null ? "" : `#${topic.toLowerCase()}`;
+        const url = new URL(`BASIC.html${anchor}`, document.baseURI);
+        return window.open(url.href, "_blank") !== null;
+    }
+
     download(filename: string, contents: string): Promise<void> {
         return FileTransferManager.presentDownload(contents, filename);
     }

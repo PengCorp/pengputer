@@ -97,6 +97,7 @@ export const KEYWORDS = {
     DELETE: "command",
     EDIT: "command",
     CLS: "command",
+    HELP: "command",
     LOCATE: "command",
     COLOR: "command",
     DEFINT: "declaration",

@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>PengBASIC Reference</title>
+        <style>
+            :root {
+                --bg: #101014;
+                --fg: #c4c4c4;
+                --bright: #fff;
+                --dim: #7a7a7a;
+                --rule: #2a2a32;
+                --keyword: #ff9b00;
+                --control: #dc4e4e;
+                --builtin: #4ef3f3;
+                --string: #f3f34e;
+                --number: #b13fab;
+                --ours: #b1e83d;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--fg);
+                font:
+                    16px/1.6 ui-monospace,
+                    "Cascadia Mono",
+                    Menlo,
+                    Consolas,
+                    monospace;
+            }
+            .wrap {
+                max-width: 60rem;
+                margin: 0 auto;
+                padding: 2rem 1.25rem 6rem;
+            }
+            h1 {
+                color: var(--bright);
+                font-size: 1.9rem;
+                margin: 0 0 0.25rem;
+            }
+            .sub {
+                color: var(--dim);
+                margin: 0 0 2rem;
+            }
+            h2 {
+                color: var(--bright);
+                font-size: 1.25rem;
+                margin: 2.75rem 0 0.75rem;
+                padding-bottom: 0.35rem;
+                border-bottom: 1px solid var(--rule);
+            }
+            h3 {
+                color: var(--builtin);
+                font-size: 1rem;
+                margin: 1.75rem 0 0.4rem;
+            }
+            code,
+            pre {
+                font-family: inherit;
+            }
+            pre {
+                background: #16161c;
+                border: 1px solid var(--rule);
+                border-radius: 4px;
+                padding: 0.75rem 1rem;
+                overflow-x: auto;
+                margin: 0.75rem 0;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 0.75rem 0;
+            }
+            th,
+            td {
+                text-align: left;
+                padding: 0.3rem 0.75rem 0.3rem 0;
+                border-bottom: 1px solid var(--rule);
+                vertical-align: top;
+            }
+            th {
+                color: var(--dim);
+                font-weight: normal;
+            }
+            td:first-child {
+                white-space: nowrap;
+                color: var(--bright);
+            }
+            .k {
+                color: var(--keyword);
+            }
+            .c {
+                color: var(--control);
+            }
+            .f {
+                color: var(--builtin);
+            }
+            .s {
+                color: var(--string);
+            }
+            .n {
+                color: var(--number);
+            }
+            .ours {
+                color: var(--ours);
+            }
+            .note {
+                border-left: 3px solid var(--rule);
+                padding-left: 1rem;
+                color: var(--dim);
+            }
+            .toc {
+                columns: 2;
+                column-gap: 2rem;
+                padding: 0;
+                list-style: none;
+                margin: 0 0 1rem;
+            }
+            .toc a {
+                color: var(--fg);
+            }
+            a {
+                color: var(--builtin);
+            }
+            .entry {
+                margin-bottom: 1.4rem;
+            }
+            .entry > .form {
+                color: var(--bright);
+            }
+            .entry > p {
+                margin: 0.25rem 0 0;
+            }
+            @media (max-width: 40rem) {
+                .toc {
+                    columns: 1;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <h1>PengBASIC</h1>
+            <p class="sub">
+                Reference manual &mdash; type <code class="k">HELP</code> at the
+                <code>Ok</code> prompt to get back here, or
+                <code class="k">HELP PRINT</code> for one entry.
+            </p>
+
+            <ul class="toc">
+                <li><a href="#start">Getting started</a></li>
+                <li><a href="#lines">Lines and editing</a></li>
+                <li><a href="#numbers">Numbers</a></li>
+                <li><a href="#strings">Strings</a></li>
+                <li><a href="#operators">Operators</a></li>
+                <li><a href="#statements">Statements</a></li>
+                <li><a href="#functions">Functions</a></li>
+                <li><a href="#colors">Colors</a></li>
+                <li><a href="#errors">Errors</a></li>
+                <li><a href="#ours">What is not Microsoft's</a></li>
+            </ul>
+
+            <p class="note">
+                PengBASIC is Microsoft 8K BASIC with most of Extended and some
+                of QuickBASIC on top. A program from
+                <em>BASIC Computer Games</em> (1978) should run as printed.
+                Where a behavior has been checked against a real GW-BASIC or
+                QuickBASIC 4.5 it is marked <b>&#10003;</b>.
+            </p>
+
+            <h2 id="start">Getting started</h2>
+            <p>
+                A line beginning with a number is stored. Anything else runs at
+                once.
+            </p>
+            <pre><span class="n">10</span> <span class="f">PRINT</span> <span class="s">"HELLO"</span>
+<span class="n">20</span> <span class="c">GOTO</span> <span class="n">10</span>
+<span class="k">RUN</span></pre>
+            <p>
+                <code class="c">STOP</code> or Ctrl+C interrupts;
+                <code class="k">CONT</code> resumes.
+                <code class="k">LIST</code> shows the program,
+                <code class="k">NEW</code> throws it away. Paste a whole listing
+                in and it types itself; <code class="k">DOWNLOAD</code> saves
+                one and <code class="k">UPLOAD</code> reads one back.
+            </p>
+
+            <h2 id="lines">Lines and editing</h2>
+            <p>
+                A line is kept exactly as typed, spacing and indentation
+                included, and <code class="k">LIST</code> gives it back the same
+                way. Several statements fit on one line separated by
+                <code>:</code>.
+            </p>
+            <table>
+                <tr>
+                    <td id="list"><span class="k">LIST</span> [n][-[m]]</td>
+                    <td>
+                        Show the program, or a range. Pauses every screenful;
+                        Ctrl+C stops it.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="delete"><span class="k">DELETE</span> n[-m]</td>
+                    <td>Remove lines. A bare DELETE is refused.</td>
+                </tr>
+                <tr>
+                    <td id="renum">
+                        <span class="k">RENUM</span> [new][,old][,step]
+                    </td>
+                    <td>
+                        Renumber, rewriting every GOTO, GOSUB, THEN and RESTORE
+                        that pointed at a moved line.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="auto">
+                        <span class="k">AUTO</span> [start][,step]
+                    </td>
+                    <td>Offer line numbers as you type. Ctrl+C leaves.</td>
+                </tr>
+                <tr>
+                    <td id="edit"><span class="k">EDIT</span> [n]</td>
+                    <td>
+                        Fetch a line back to the prompt. Bare EDIT fetches
+                        whichever line last failed.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="new"><span class="k">NEW</span></td>
+                    <td>Erase the program and everything it made.</td>
+                </tr>
+                <tr>
+                    <td id="run"><span class="k">RUN</span> [n]</td>
+                    <td>
+                        Start, optionally at a line. Clears variables and
+                        restarts the random sequence.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="cont"><span class="k">CONT</span></td>
+                    <td>Carry on after STOP or Ctrl+C.</td>
+                </tr>
+                <tr>
+                    <td id="tron">
+                        <span class="k">TRON</span> /
+                        <span class="k">TROFF</span>
+                    </td>
+                    <td>
+                        Print each line number as it runs, or stop doing so.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="help"><span class="k">HELP</span> [topic]</td>
+                    <td class="ours">
+                        This manual. <code>HELP PRINT</code> opens one entry.
+                    </td>
+                </tr>
+            </table>
+
+            <h2 id="numbers">Numbers</h2>
+            <p>
+                Four types, chosen by a suffix on the name or by
+                <code class="k">DEFINT</code> and friends.
+            </p>
+            <table>
+                <tr>
+                    <th>Suffix</th>
+                    <th>Type</th>
+                    <th>Holds</th>
+                </tr>
+                <tr>
+                    <td><span class="n">%</span></td>
+                    <td>integer</td>
+                    <td>&minus;32768 to 32767</td>
+                </tr>
+                <tr>
+                    <td><span class="n">!</span> or none</td>
+                    <td>single</td>
+                    <td>about 7 digits</td>
+                </tr>
+                <tr>
+                    <td><span class="n">#</span></td>
+                    <td>double</td>
+                    <td>about 16 digits</td>
+                </tr>
+                <tr>
+                    <td><span class="n">$</span></td>
+                    <td>string</td>
+                    <td>up to 255 characters</td>
+                </tr>
+            </table>
+            <p>
+                Single precision is a real 32-bit float and rounds like one, at
+                every step. <b>&#10003;</b> This is not a defect:
+            </p>
+            <pre><span class="n">10</span> <span class="f">PRINT</span> <span class="n">1</span>/<span class="n">3</span>            <span class="dim">' .3333333</span>
+<span class="n">20</span> S=<span class="n">0</span>: <span class="c">FOR</span> I=<span class="n">1</span> <span class="c">TO</span> <span class="n">10</span>: S=S+<span class="n">.1</span>: <span class="c">NEXT</span>
+<span class="n">30</span> <span class="f">PRINT</span> S, S=<span class="n">1</span>       <span class="dim">' 1 and 0 -- prints as one, is not one</span></pre>
+            <p>
+                How a constant is written decides its type:
+                <code>1.5</code> is single, <code>1.5#</code> and
+                <code>1D10</code> are double, and so is anything with more than
+                seven digits. Printing follows: seven digits and
+                <code>E</code> for a single, sixteen and <code>D</code> for a
+                double.
+            </p>
+            <table>
+                <tr>
+                    <td id="defint">
+                        <span class="k">DEFINT</span> /
+                        <span class="k">DEFSNG</span> /
+                        <span class="k">DEFDBL</span> /
+                        <span class="k">DEFSTR</span> letter[-letter]
+                    </td>
+                    <td>
+                        Give a range of initial letters a default type.
+                        <code>DEFINT A-Z</code> opens many listings.
+                    </td>
+                </tr>
+            </table>
+
+            <h2 id="strings">Strings</h2>
+            <p>
+                Joined with <code>+</code>, compared by character code, up to
+                255 long. Characters are <b>CP437</b>, not Latin-1, so
+                <code class="f">CHR$(176)</code> is a shade block and
+                <code class="f">CHR$(218)</code> a box corner.
+                <code class="f">MID$</code> also assigns:
+            </p>
+            <pre><span class="n">10</span> A$=<span class="s">"PENGER"</span>: <span class="f">MID$</span>(A$,<span class="n">2</span>,<span class="n">3</span>)=<span class="s">"XYZ"</span>: <span class="f">PRINT</span> A$   <span class="dim">' PXYZER</span></pre>
+
+            <h2 id="operators">Operators</h2>
+            <p>
+                Tightest first. Every one groups left to right. <b>&#10003;</b>
+            </p>
+            <table>
+                <tr>
+                    <td><span class="n">^</span></td>
+                    <td>
+                        Power. <code>2^3^2</code> is 64, not 512 &mdash; left to
+                        right, unlike mathematics. <b>&#10003;</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="n">- (unary)</span></td>
+                    <td>
+                        Negate. Binds looser than <code>^</code>:
+                        <code>-2^2</code> is &minus;4.
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="n">* /</span></td>
+                    <td>Multiply, divide.</td>
+                </tr>
+                <tr>
+                    <td><span class="n">+ -</span></td>
+                    <td>Add, subtract. <code>+</code> also joins strings.</td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="n">= &lt;&gt; &lt; &gt; &lt;= &gt;=</span>
+                    </td>
+                    <td>
+                        Compare. The answer is a number: &minus;1 true, 0 false.
+                    </td>
+                </tr>
+                <tr>
+                    <td><span class="k">NOT</span></td>
+                    <td>Bitwise complement of a 16-bit integer.</td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="k">AND</span> <span class="k">OR</span>
+                    </td>
+                    <td>
+                        Bitwise, not logical &mdash; which is why true is
+                        &minus;1, with every bit set.
+                    </td>
+                </tr>
+            </table>
+
+            <h2 id="statements">Statements</h2>
+
+            <h3>Printing and asking</h3>
+            <div class="entry" id="print">
+                <div class="form"><span class="f">PRINT</span> [items]</div>
+                <p>
+                    <code>;</code> joins, <code>,</code> moves to the next
+                    14-column zone, and either at the end holds the line open.
+                    <code class="f">TAB(n)</code> and
+                    <code class="f">SPC(n)</code> place things. Every number
+                    prints with a leading sign position and a trailing space,
+                    which is why columns line up on their own. <code>?</code> is
+                    short for PRINT.
+                </p>
+            </div>
+            <div class="entry" id="using">
+                <div class="form">
+                    <span class="f">PRINT</span> <span class="k">USING</span>
+                    format$; items
+                </div>
+                <p>
+                    Formatted output. <b>&#10003;</b> <code>#</code> a digit,
+                    <code>.</code> the point, <code>,</code> groups thousands,
+                    <code>+</code> or <code>-</code> a sign, <code>$$</code> a
+                    floating currency sign, <code>**</code> asterisk fill,
+                    <code>**$</code> both, <code>^^^^</code> an exponent. For
+                    strings: <code>!</code> one character,
+                    <code>\&nbsp;&nbsp;\</code> a fixed width,
+                    <code>&amp;</code> the whole thing. <code>_</code> quotes
+                    the next character. A number too wide for its field is
+                    printed in full behind a <code>%</code> rather than quietly
+                    truncated.
+                </p>
+                <pre><span class="f">PRINT</span> <span class="k">USING</span> <span class="s">"##,###.##"</span>; <span class="n">1234.5</span>     <span class="dim">'  1,234.50</span>
+<span class="f">PRINT</span> <span class="k">USING</span> <span class="s">"##.##^^^^"</span>; <span class="n">1234</span>      <span class="dim">'  1.23E+03</span></pre>
+            </div>
+            <div class="entry" id="input">
+                <div class="form">
+                    <span class="f">INPUT</span> ["prompt";] variables
+                </div>
+                <p>
+                    Ask and assign. <code>;</code> after the prompt adds
+                    <code>?&nbsp;</code>; <code>,</code> adds nothing at all.
+                    Anything wrong with the answer &mdash; too few values, too
+                    many, or the wrong kind &mdash; gives
+                    <code>?REDO FROM START</code> and asks again from the
+                    beginning. <b>&#10003;</b> An empty line is zero.
+                </p>
+            </div>
+            <div class="entry" id="line">
+                <div class="form">
+                    <span class="f">LINE</span> <span class="f">INPUT</span>
+                    ["prompt";] string$
+                </div>
+                <p>
+                    Take the whole line, commas and spaces and all. How you read
+                    a name like <code>SMITH, JOHN</code>.
+                </p>
+            </div>
+            <div class="entry" id="data">
+                <div class="form">
+                    <span class="k">DATA</span> items &middot;
+                    <span class="f">READ</span> variables &middot;
+                    <span class="f">RESTORE</span> [line]
+                </div>
+                <p>
+                    Constants carried in the program. READ walks them in order
+                    wherever they sit; RESTORE goes back to the start, or to a
+                    line. DATA ends at a colon. <b>&#10003;</b>
+                </p>
+            </div>
+
+            <h3>Choosing</h3>
+            <div class="entry" id="if">
+                <div class="form">
+                    <span class="c">IF</span> test
+                    <span class="c">THEN</span> ... [<span class="c">ELSE</span>
+                    ...]
+                </div>
+                <p>
+                    A number after THEN means GOTO. With nothing after THEN it
+                    is a block, closed by <code class="c">END IF</code> and with
+                    any number of <code class="c">ELSEIF</code> arms.
+                </p>
+                <pre><span class="n">10</span> <span class="c">IF</span> S&gt;=<span class="n">90</span> <span class="c">THEN</span>
+<span class="n">20</span>   <span class="f">PRINT</span> <span class="s">"EXCELLENT"</span>
+<span class="n">30</span> <span class="c">ELSEIF</span> S&gt;=<span class="n">70</span> <span class="c">THEN</span>
+<span class="n">40</span>   <span class="f">PRINT</span> <span class="s">"GOOD"</span>
+<span class="n">50</span> <span class="c">ELSE</span>
+<span class="n">60</span>   <span class="f">PRINT</span> <span class="s">"POOR"</span>
+<span class="n">70</span> <span class="c">END IF</span></pre>
+            </div>
+            <div class="entry" id="select">
+                <div class="form">
+                    <span class="c">SELECT</span> <span class="c">CASE</span>
+                    value
+                </div>
+                <p>
+                    Arms are <code class="c">CASE</code> with a value, a list, a
+                    range (<code class="c">CASE 70 TO 89</code>) or a comparison
+                    (<code class="c">CASE IS &gt;= 90</code>), plus an optional
+                    <code class="c">CASE ELSE</code>, closed by
+                    <code class="c">END SELECT</code>. Exactly one arm runs; the
+                    value is worked out once.
+                </p>
+            </div>
+            <div class="entry" id="on">
+                <div class="form">
+                    <span class="c">ON</span> n
+                    <span class="c">GOTO</span>/<span class="c">GOSUB</span>
+                    lines
+                </div>
+                <p>A jump table: 1 takes the first line, 2 the second.</p>
+            </div>
+
+            <h3>Repeating</h3>
+            <div class="entry" id="for">
+                <div class="form">
+                    <span class="c">FOR</span> v=a <span class="c">TO</span> b
+                    [<span class="c">STEP</span> s] &hellip;
+                    <span class="c">NEXT</span> [v[,v]]
+                </div>
+                <p>
+                    The limit is tested <em>before</em> the body, so
+                    <code>FOR I=1 TO 0</code> runs nothing and leaves I as 1.
+                    <b>&#10003;</b> <code class="c">EXIT FOR</code> leaves
+                    early, with the counter where it stood.
+                </p>
+            </div>
+            <div class="entry" id="while">
+                <div class="form">
+                    <span class="c">WHILE</span> test &hellip;
+                    <span class="c">WEND</span>
+                </div>
+                <p>Test at the top. May run no times.</p>
+            </div>
+            <div class="entry" id="do">
+                <div class="form">
+                    <span class="c">DO</span>
+                    [<span class="c">WHILE</span>/<span class="c">UNTIL</span>
+                    test] &hellip; <span class="c">LOOP</span> [<span class="c"
+                        >WHILE</span
+                    >/<span class="c">UNTIL</span>
+                    test]
+                </div>
+                <p>
+                    Put the test at either end, not both. At the top it may run
+                    no times; at the bottom it always runs once.
+                    <code class="c">EXIT DO</code> leaves.
+                </p>
+            </div>
+            <div class="entry" id="gosub">
+                <div class="form">
+                    <span class="c">GOSUB</span> line &hellip;
+                    <span class="c">RETURN</span>
+                </div>
+                <p>
+                    A subroutine. Variables are shared &mdash; there are no
+                    locals and no parameters.
+                </p>
+            </div>
+            <div class="entry" id="goto">
+                <div class="form"><span class="c">GOTO</span> line</div>
+                <p>Go there.</p>
+            </div>
+            <div class="entry" id="end">
+                <div class="form">
+                    <span class="c">END</span> &middot;
+                    <span class="c">STOP</span>
+                </div>
+                <p>
+                    END finishes. STOP finishes and says where, so
+                    <code class="k">CONT</code> can carry on.
+                </p>
+            </div>
+
+            <h3>Variables and arrays</h3>
+            <div class="entry" id="let">
+                <div class="form">
+                    [<span class="k">LET</span>] variable = value
+                </div>
+                <p>LET is optional and nobody writes it.</p>
+            </div>
+            <div class="entry" id="dim">
+                <div class="form">
+                    <span class="k">DIM</span> name(bounds) &middot;
+                    <span class="k">REDIM</span> &middot;
+                    <span class="k">ERASE</span>
+                </div>
+                <p>
+                    Bounds are inclusive upper bounds counting from 0, so
+                    <code>DIM A(10)</code> makes eleven. An array used without
+                    DIM gets 0&ndash;10. ERASE throws one away; REDIM does both
+                    at once. A scalar <code>A</code> and an array
+                    <code>A()</code> are different variables.
+                </p>
+            </div>
+            <div class="entry" id="option">
+                <div class="form">
+                    <span class="k">OPTION</span> <span class="k">BASE</span>
+                    0|1
+                </div>
+                <p>
+                    Move the first subscript. Must come before any array exists.
+                </p>
+            </div>
+            <div class="entry" id="const">
+                <div class="form">
+                    <span class="k">CONST</span> name = value
+                </div>
+                <p>A name that cannot be assigned to.</p>
+            </div>
+            <div class="entry" id="def">
+                <div class="form">
+                    <span class="k">DEF</span>
+                    <span class="k">FN</span>name(args) = expression
+                </div>
+                <p>
+                    A function of your own, one expression long. Parameters are
+                    borrowed and put back, so a global of the same name
+                    survives.
+                </p>
+            </div>
+            <div class="entry" id="swap">
+                <div class="form"><span class="k">SWAP</span> a, b</div>
+                <p>Exchange two variables.</p>
+            </div>
+            <div class="entry" id="clear">
+                <div class="form"><span class="k">CLEAR</span> [n][,m]</div>
+                <p>
+                    Forget every variable. The numbers set string and stack
+                    space on a real machine; here they are read and discarded.
+                </p>
+            </div>
+
+            <h3>The screen</h3>
+            <div class="entry" id="cls">
+                <div class="form"><span class="k">CLS</span></div>
+                <p>Clear the screen and go home.</p>
+            </div>
+            <div class="entry" id="locate">
+                <div class="form">
+                    <span class="k">LOCATE</span> [row][,col][,cursor]
+                </div>
+                <p>
+                    Move the cursor, counting from 1. The third argument shows
+                    or hides it.
+                </p>
+            </div>
+            <div class="entry" id="color">
+                <div class="form">
+                    <span class="k">COLOR</span> [foreground][,background]
+                </div>
+                <p>See <a href="#colors">Colors</a>.</p>
+            </div>
+            <div class="entry" id="delay">
+                <div class="form">
+                    <span class="k">DELAY</span> milliseconds
+                </div>
+                <p class="ours">
+                    Wait. Not a Microsoft statement: this machine is far faster
+                    than the ones these listings were written for, so a
+                    <code>FOR I=1 TO 500: NEXT</code> pause finishes instantly
+                    and anything meant to be watched needs a real one.
+                </p>
+            </div>
+
+            <h3>Trouble</h3>
+            <div class="entry" id="error">
+                <div class="form">
+                    <span class="c">ON</span> <span class="c">ERROR</span>
+                    <span class="c">GOTO</span> line
+                </div>
+                <p>
+                    Send errors to a handler instead of stopping.
+                    <code class="c">ON ERROR GOTO 0</code> stops trapping
+                    &mdash; and inside a handler it re-reports the error being
+                    handled, which is how a program says "not mine".
+                </p>
+            </div>
+            <div class="entry" id="resume">
+                <div class="form">
+                    <span class="c">RESUME</span> [<span class="c">NEXT</span
+                    >|line]
+                </div>
+                <p>
+                    Leave the handler: retry the statement that failed, step
+                    past it, or go somewhere. Statements, not lines &mdash;
+                    RESUME NEXT lands on the next statement even if it is on the
+                    same line. Trapping is suspended while a handler runs, so a
+                    mistake in one is reported rather than looping.
+                </p>
+            </div>
+            <div class="entry" id="err">
+                <div class="form">
+                    <span class="c">ERROR</span> n &middot;
+                    <span class="f">ERR</span> &middot;
+                    <span class="f">ERL</span>
+                </div>
+                <p>
+                    Raise an error deliberately; report the code and line of the
+                    last one. See <a href="#errors">Errors</a>.
+                </p>
+            </div>
+
+            <h3>Elsewhere</h3>
+            <div class="entry" id="randomize">
+                <div class="form"><span class="k">RANDOMIZE</span> [seed]</div>
+                <p>
+                    Seed the generator. With no seed it stops and asks.
+                    <b>&#10003;</b> <code class="k">RUN</code> restarts the
+                    sequence, so a program that never seeds deals the same cards
+                    every time &mdash; which is why listings open with this.
+                </p>
+            </div>
+            <div class="entry" id="download">
+                <div class="form">
+                    <span class="k">DOWNLOAD</span> ["name"] &middot;
+                    <span class="k">UPLOAD</span>
+                </div>
+                <p class="ours">
+                    Save the program as a file, or read one back after clearing.
+                    Ours, not Microsoft's: this machine has a host rather than a
+                    disk.
+                </p>
+            </div>
+            <div class="entry" id="rem">
+                <div class="form">
+                    <span class="k">REM</span> text &middot; <code>'</code> text
+                </div>
+                <p>A comment, to the end of the line.</p>
+            </div>
+
+            <h2 id="functions">Functions</h2>
+            <table>
+                <tr>
+                    <td id="abs"><span class="f">ABS</span>(n)</td>
+                    <td>Magnitude.</td>
+                </tr>
+                <tr>
+                    <td id="sgn"><span class="f">SGN</span>(n)</td>
+                    <td>&minus;1, 0 or 1.</td>
+                </tr>
+                <tr>
+                    <td id="int"><span class="f">INT</span>(n)</td>
+                    <td>Round down. <code>INT(-2.4)</code> is &minus;3.</td>
+                </tr>
+                <tr>
+                    <td id="fix"><span class="f">FIX</span>(n)</td>
+                    <td>
+                        Truncate toward zero. <code>FIX(-2.4)</code> is &minus;2
+                        &mdash; the only place it differs from INT.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="sqr"><span class="f">SQR</span>(n)</td>
+                    <td>Square root.</td>
+                </tr>
+                <tr>
+                    <td id="exp"><span class="f">EXP</span>(n)</td>
+                    <td>e to the n.</td>
+                </tr>
+                <tr>
+                    <td id="log"><span class="f">LOG</span>(n)</td>
+                    <td>Natural logarithm.</td>
+                </tr>
+                <tr>
+                    <td id="sin">
+                        <span class="f">SIN</span> <span class="f">COS</span>
+                        <span class="f">TAN</span> <span class="f">ATN</span>
+                    </td>
+                    <td>Trigonometry, in radians.</td>
+                </tr>
+                <tr>
+                    <td id="rnd"><span class="f">RND</span>[(n)]</td>
+                    <td>
+                        A number from 0 up to but not including 1. A positive
+                        argument or none advances; 0 repeats the last one; a
+                        negative one reseeds. <b>&#10003;</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td id="cint">
+                        <span class="f">CINT</span> <span class="f">CSNG</span>
+                        <span class="f">CDBL</span>
+                    </td>
+                    <td>
+                        Convert between the numeric widths. CINT rounds to
+                        nearest and must fit in 16 bits.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="len"><span class="f">LEN</span>(a$)</td>
+                    <td>Length.</td>
+                </tr>
+                <tr>
+                    <td id="left$">
+                        <span class="f">LEFT$</span>(a$,n) &middot;
+                        <span class="f">RIGHT$</span>(a$,n)
+                    </td>
+                    <td>The first or last n characters.</td>
+                </tr>
+                <tr>
+                    <td id="mid$">
+                        <span class="f">MID$</span>(a$,start[,len])
+                    </td>
+                    <td>
+                        A piece, counting from 1. Also assignable, replacing in
+                        place without changing the length.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="instr">
+                        <span class="f">INSTR</span>([start,]a$,b$)
+                    </td>
+                    <td>
+                        Where b$ appears in a$, counting from 1; 0 if it does
+                        not.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="chr$"><span class="f">CHR$</span>(n)</td>
+                    <td>The CP437 character with that code.</td>
+                </tr>
+                <tr>
+                    <td id="asc"><span class="f">ASC</span>(a$)</td>
+                    <td>The code of the first character.</td>
+                </tr>
+                <tr>
+                    <td id="str$"><span class="f">STR$</span>(n)</td>
+                    <td>
+                        A number as text, with PRINT's leading sign position.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="val"><span class="f">VAL</span>(a$)</td>
+                    <td>The leading number in a string, or 0.</td>
+                </tr>
+                <tr>
+                    <td id="string$">
+                        <span class="f">STRING$</span>(n,c) &middot;
+                        <span class="f">SPACE$</span>(n)
+                    </td>
+                    <td>n copies of a character; n spaces.</td>
+                </tr>
+                <tr>
+                    <td id="ucase$">
+                        <span class="f">UCASE$</span>
+                        <span class="f">LCASE$</span>
+                    </td>
+                    <td>
+                        Change case &mdash; A&ndash;Z only, so the rest of CP437
+                        is left alone and the length never changes.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="ltrim$">
+                        <span class="f">LTRIM$</span>
+                        <span class="f">RTRIM$</span>
+                    </td>
+                    <td>Take spaces off one end.</td>
+                </tr>
+                <tr>
+                    <td id="hex$">
+                        <span class="f">HEX$</span>(n) &middot;
+                        <span class="f">OCT$</span>(n)
+                    </td>
+                    <td>
+                        Base 16 or 8, sixteen-bit and unsigned:
+                        <code>HEX$(-1)</code> is <code>FFFF</code>.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="lbound">
+                        <span class="f">LBOUND</span>(a) &middot;
+                        <span class="f">UBOUND</span>(a[,dim])
+                    </td>
+                    <td>
+                        The ends of an array. Takes a name, not a value, and
+                        refuses an array that was never defined.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="inkey$"><span class="f">INKEY$</span></td>
+                    <td>
+                        A key if one is waiting, <code>""</code> otherwise.
+                        Never waits.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="screen"><span class="f">SCREEN</span>(row,col)</td>
+                    <td>
+                        The code of the character at a cell, counting from 1.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="pos">
+                        <span class="f">POS</span>(0) &middot;
+                        <span class="f">CSRLIN</span>
+                    </td>
+                    <td>Where the cursor is, counting from 1.</td>
+                </tr>
+                <tr>
+                    <td id="tab">
+                        <span class="f">TAB</span>(n) &middot;
+                        <span class="f">SPC</span>(n)
+                    </td>
+                    <td>Inside PRINT: go to a column, or emit n spaces.</td>
+                </tr>
+                <tr>
+                    <td id="timer">
+                        <span class="f">TIMER</span> &middot;
+                        <span class="f">TIME$</span> &middot;
+                        <span class="f">DATE$</span>
+                    </td>
+                    <td>
+                        Seconds since midnight, and the clock and calendar as
+                        text. <code>RANDOMIZE TIMER</code> is the usual seed.
+                    </td>
+                </tr>
+                <tr>
+                    <td id="fre"><span class="f">FRE</span>(0)</td>
+                    <td>Bytes free. Cosmetic.</td>
+                </tr>
+            </table>
+
+            <h2 id="colors">Colors</h2>
+            <p>
+                <code class="k">COLOR</code> takes a foreground and a
+                background. The blinking numbers are foreground only &mdash;
+                blink is part of the foreground attribute &mdash; so a
+                background takes 0&ndash;15 or 32&ndash;43.
+            </p>
+            <table>
+                <tr>
+                    <td>0&ndash;15</td>
+                    <td>
+                        black, blue, green, cyan, red, magenta, brown, white,
+                        then the bright eight
+                    </td>
+                </tr>
+                <tr>
+                    <td>16&ndash;31</td>
+                    <td>the same sixteen, blinking</td>
+                </tr>
+                <tr>
+                    <td class="ours">32&ndash;37</td>
+                    <td class="ours">
+                        orange, chartreuse, spring green, azure, violet, rose
+                    </td>
+                </tr>
+                <tr>
+                    <td class="ours">38&ndash;43</td>
+                    <td class="ours">the same six, bright</td>
+                </tr>
+                <tr>
+                    <td class="ours">44&ndash;55</td>
+                    <td class="ours">32&ndash;43 again, blinking</td>
+                </tr>
+            </table>
+            <p class="note">
+                The upper half of each block blinks, so the step is +16 in the
+                first block and +12 in the second. 32+16 is a blinking
+                chartreuse, not a blinking orange. Run
+                <code>colors.bas</code> to see them.
+            </p>
+
+            <h2 id="errors">Errors</h2>
+            <p>
+                Reported as <code>?SYNTAX ERROR IN 100</code>. The numbers are
+                Microsoft's, so <code>IF ERR=11</code> means what it always
+                meant. <b>&#10003;</b>
+            </p>
+            <table>
+                <tr>
+                    <td>1</td>
+                    <td>NEXT WITHOUT FOR</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>SYNTAX</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>RETURN WITHOUT GOSUB</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>OUT OF DATA</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>ILLEGAL QUANTITY</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>OVERFLOW</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>OUT OF MEMORY</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>UNDEF'D STATEMENT</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>SUBSCRIPT OUT OF RANGE</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>REDIM'D ARRAY, DUPLICATE DEFINITION</td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>DIVISION BY ZERO</td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>TYPE MISMATCH</td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>STRING TOO LONG</td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td>CAN'T CONTINUE</td>
+                </tr>
+                <tr>
+                    <td>18</td>
+                    <td>UNDEF'D FUNCTION</td>
+                </tr>
+                <tr>
+                    <td>20</td>
+                    <td>RESUME WITHOUT ERROR</td>
+                </tr>
+                <tr>
+                    <td>29</td>
+                    <td>WHILE WITHOUT WEND</td>
+                </tr>
+                <tr>
+                    <td>30</td>
+                    <td>WEND WITHOUT WHILE</td>
+                </tr>
+            </table>
+            <p class="note">
+                Also <code>LOOP WITHOUT DO</code> and
+                <code>ARRAY NOT DEFINED</code>, which have no classic numbers of
+                their own, and <code>UNPRINTABLE</code> for
+                <code class="c">ERROR n</code> with a code that has no message.
+            </p>
+
+            <h2 id="ours">What is not Microsoft's</h2>
+            <p>
+                Everything on this page is Microsoft's except the following,
+                which are marked <span class="ours">in green</span> where they
+                appear.
+            </p>
+            <table>
+                <tr>
+                    <td><span class="k">DELAY</span></td>
+                    <td>Pacing, because this machine is too fast.</td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="k">DOWNLOAD</span>
+                        <span class="k">UPLOAD</span>
+                    </td>
+                    <td>A host instead of a disk.</td>
+                </tr>
+                <tr>
+                    <td><span class="k">HELP</span></td>
+                    <td>This page.</td>
+                </tr>
+                <tr>
+                    <td><span class="k">COLOR</span> above 31</td>
+                    <td>Twelve colors IBM's numbering cannot name.</td>
+                </tr>
+            </table>
+            <p class="note">
+                Missing on purpose: sound, <code>PEEK</code> and
+                <code>POKE</code>, machine code, printers, and file handling.
+                Pasting a listing does what <code>LOAD</code> would.
+            </p>
+        </div>
+    </body>
+</html>

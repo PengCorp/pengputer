@@ -8,6 +8,7 @@
  */
 import { BasicError } from "./errors";
 import { Parser, userFunctionName } from "./Parser";
+import { nameWithSigil } from "./tokens";
 import { tokenize } from "./Tokenizer";
 import type {
     CaseClause,
@@ -151,6 +152,8 @@ export class StatementParser extends Parser {
                     };
                 case "CLS":
                     return { kind: "cls" };
+                case "HELP":
+                    return { kind: "help", topic: this.parseHelpTopic() };
                 case "DELAY":
                     return {
                         kind: "delay",
@@ -438,6 +441,28 @@ export class StatementParser extends Parser {
         }
         this.pos += 1;
         return { kind: "optionBase", base: token.value };
+    }
+
+    /**
+     * The word after HELP, if there is one.
+     *
+     * Keywords and function names both name topics, and the two arrive
+     * as different tokens -- PRINT is a keyword, LEN is a name -- so
+     * this takes either and hands back its text.
+     */
+    private parseHelpTopic(): string | null {
+        if (this.atStatementEnd()) return null;
+
+        const token = this.peek();
+        if (token.kind === "keyword") {
+            this.pos += 1;
+            return token.keyword;
+        }
+        if (token.kind === "name") {
+            this.pos += 1;
+            return nameWithSigil(token);
+        }
+        throw new BasicError("SYNTAX", token.pos);
     }
 
     /** `ERASE A, B$' -- bare names, no subscripts. */

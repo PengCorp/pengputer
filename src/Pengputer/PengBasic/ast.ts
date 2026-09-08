@@ -215,6 +215,15 @@ export type Statement =
     | { kind: "edit"; line: number | null }
     | { kind: "cls" }
     /**
+     * `HELP', or `HELP PRINT' for one entry.
+     *
+     * The topic is whatever word followed, keyword or function name
+     * alike, so it is a string rather than anything the parser has
+     * already made sense of -- the manual is the only thing that knows
+     * which topics exist.
+     */
+    | { kind: "help"; topic: string | null }
+    /**
      * `DELAY 50' -- wait that many milliseconds.
      *
      * Not a Microsoft statement. Programs of the era paced themselves

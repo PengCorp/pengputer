@@ -180,6 +180,14 @@ class PengOS {
             name: "pbasic.exe",
             createInstance: () => new PengBasic(this.pc),
         });
+        /* The same manual `HELP' opens from inside BASIC. Relative, so
+         * it follows wherever the machine is mounted. */
+        softwareDir.addItem({
+            type: FileType.Link,
+            name: "pbasic.hlp",
+            data: new LinkFile("BASIC.html"),
+            openType: "open",
+        });
         softwareDir.addItem({
             type: FileType.Executable,
             name: "pedlin.exe",

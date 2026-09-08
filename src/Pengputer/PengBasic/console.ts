@@ -146,6 +146,21 @@ export interface Console {
     /** The character at a cell, for SCREEN(). Both zero-based. */
     readCharacter(row: number, column: number): string;
 
+    /**
+     * Shows the manual, at one entry if a topic was named.
+     *
+     * A host capability like `download' rather than something the
+     * interpreter does, because how a manual gets shown is the host's
+     * business -- here it is a page in another window, and the port
+     * says nothing about that.
+     *
+     * Answers false if it could not be shown, so `HELP' can say where
+     * to look instead. A browser will refuse to open a window for a
+     * program that has been running a while, which is exactly when a
+     * program might ask.
+     */
+    showHelp(topic: string | null): boolean;
+
     /** Hands the host a file to save. */
     download(filename: string, contents: string): Promise<void>;
 
@@ -182,6 +197,8 @@ export class TestConsole implements Console {
     private waited: number = 0;
     private cursorVisible: boolean = true;
     private downloads: { filename: string; contents: string }[] = [];
+    private helpRequests: (string | null)[] = [];
+    private helpOpens: boolean = true;
     private pendingUploads: string[] = [];
 
     constructor(width: number = 80, height: number = 25) {
@@ -289,6 +306,11 @@ export class TestConsole implements Console {
         this.pendingInput.push(...lines);
     }
 
+    showHelp(topic: string | null): boolean {
+        this.helpRequests.push(topic);
+        return this.helpOpens;
+    }
+
     async download(filename: string, contents: string): Promise<void> {
         this.downloads.push({ filename, contents });
     }
@@ -329,6 +351,16 @@ export class TestConsole implements Console {
 
     getIsCursorVisible(): boolean {
         return this.cursorVisible;
+    }
+
+    /** Every topic HELP has asked for, in order. */
+    getHelpRequests(): (string | null)[] {
+        return this.helpRequests;
+    }
+
+    /** Makes the next HELP fail to open, as a blocked popup would. */
+    setHelpOpens(opens: boolean) {
+        this.helpOpens = opens;
     }
 
     /** Everything DOWNLOAD has been asked to save. */

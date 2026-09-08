@@ -101,6 +101,9 @@ const DEFAULT_PROGRAM_FILENAME = "PROGRAM.BAS";
  * which is a mistyped listing turning into a hung browser instead of
  * an error you can read. Generous enough that no sane program notices.
  */
+/** Where the manual is, for when a window cannot be opened. */
+const HELP_LOCATION = "SEE BASIC.HTML";
+
 const MAX_GOSUB_DEPTH = 1000;
 const MAX_LOOP_DEPTH = 256;
 
@@ -861,6 +864,15 @@ export class Interpreter {
 
             case "cls":
                 this.console.clear();
+                return;
+
+            case "help":
+                /* If the host could not show it, say where it is rather
+                 * than failing: a refused window is not the program's
+                 * fault and not something it can do anything about. */
+                if (!this.console.showHelp(statement.topic)) {
+                    this.console.write(`${HELP_LOCATION}\n`);
+                }
                 return;
 
             case "delay":
