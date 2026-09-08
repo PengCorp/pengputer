@@ -1,9 +1,5 @@
 import { padStart } from "lodash";
-import {
-    Keyboard,
-    PhysicalKeyboard,
-    ScreenKeyboard,
-} from "../Keyboard";
+import { Keyboard, PhysicalKeyboard, ScreenKeyboard } from "../Keyboard";
 import { Screen } from "../Screen";
 import { loadImageBitmapFromUrl } from "@Toolbox/loadImage";
 import { waitFor } from "@Toolbox/waitFor";
@@ -185,7 +181,7 @@ class PengOS {
         softwareDir.addItem({
             type: FileType.Executable,
             name: "ped.exe",
-            createInstance: () => new EdApp(this.pc)
+            createInstance: () => new EdApp(this.pc),
         });
 
         const gamesDir = rootDir.mkdir("games");
@@ -261,20 +257,22 @@ class PengOS {
         std.clearConsole();
         let hasStartedUp = Boolean(localStorage.getItem("hasStartedUp"));
 
-        if(import.meta.env.DEV) {
-            if(hasStartedUp) return;
+        if (import.meta.env.DEV) {
+            if (hasStartedUp) return;
 
             let y = 0;
 
             std.setConsoleScreenMode(ScreenMode.mode80x25);
 
             std.setConsoleCursorPosition({ x: 0, y });
-            std.writeConsole("[i] You are a dev; fast-forwarding boot sequence.");
+            std.writeConsole(
+                "[i] You are a dev; fast-forwarding boot sequence.",
+            );
             y = 2;
             std.setConsoleCursorPosition({ x: 2, y });
             std.writeConsole("Press ");
-            std.writeConsole("DEL", {bold: true});
-            std.writeConsole(" to enter BIOS.", {bold: false});
+            std.writeConsole("DEL", { bold: true });
+            std.writeConsole(" to enter BIOS.", { bold: false });
             y++;
             std.setConsoleCursorPosition({ x: 2, y });
             std.writeConsole("Press any key to skip.");
@@ -285,17 +283,19 @@ class PengOS {
             let goBios = false;
             await runAnimationLoop((_, tt) => {
                 std.setConsoleCursorPosition({ x: 0, y });
-                std.writeConsole((FFbootDelay - Math.floor(tt/1000)) + "s to boot");
+                std.writeConsole(
+                    FFbootDelay - Math.floor(tt / 1000) + "s to boot",
+                );
                 const kbe = keyboard.getNextEvent();
-                if(kbe && Keyboard.isRealKeyPress(kbe)) {
-                    if(kbe.code == "Delete") {
+                if (kbe && Keyboard.isRealKeyPress(kbe)) {
+                    if (kbe.code == "Delete") {
                         goBios = true;
                         return true;
                     }
                     return true;
                 }
 
-                return tt >= FFbootDelay*1000;
+                return tt >= FFbootDelay * 1000;
             });
             std.setConsoleCursorPosition({ x: 0, y: 5 });
             std.writeConsole("                        ");
@@ -303,13 +303,13 @@ class PengOS {
 
             localStorage.setItem("hasStartedUp", "yes");
 
-            if(goBios) {
+            if (goBios) {
                 await new BIOS(this.pc).run([]);
                 std.resetConsole();
                 std.setConsoleScreenMode(ScreenMode.mode80x25);
             }
             return;
-        } else if(hasStartedUp) return;
+        } else if (hasStartedUp) return;
 
         while (!hasStartedUp) {
             std.setConsoleScreenMode(ScreenMode.mode80x25);

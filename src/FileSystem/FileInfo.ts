@@ -12,7 +12,9 @@ import { FileMode } from "./constants";
 import { type PartialBy } from "../util";
 
 type AddFileEntryInput = PartialBy<
-    Exclude<FileEntry, FileEntryDirectory>, "mode">;
+    Exclude<FileEntry, FileEntryDirectory>,
+    "mode"
+>;
 
 export class FileEntryDirectory {
     type: FileType.Directory = FileType.Directory;

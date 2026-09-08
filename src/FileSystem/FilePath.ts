@@ -97,8 +97,12 @@ export class FilePath {
     combine(other: FilePath): FilePath {
         if (other.isAbsolute()) {
             if (other.#drive) return other;
-            else return new FilePath(
-                this.#drive, [...other.#segments], other.#absolute);
+            else
+                return new FilePath(
+                    this.#drive,
+                    [...other.#segments],
+                    other.#absolute,
+                );
         }
         return new FilePath(
             this.#drive,

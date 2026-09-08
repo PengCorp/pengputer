@@ -25,11 +25,13 @@ const CHAR_TO_KEY_CODE: Map<string, KeyCode> = (() => {
  * so a stray ^C in the text cannot pose as a keypress.
  */
 export function normalizePastedText(text: string): string {
-    return text
-        .replace(/\r\n?/g, "\n")
-        .replace(/\t/g, " ")
-        /* eslint-disable-next-line no-control-regex */
-        .replace(/[\x00-\x09\x0b-\x1f\x7f]/g, "");
+    return (
+        text
+            .replace(/\r\n?/g, "\n")
+            .replace(/\t/g, " ")
+            /* eslint-disable-next-line no-control-regex */
+            .replace(/[\x00-\x09\x0b-\x1f\x7f]/g, "")
+    );
 }
 
 /**

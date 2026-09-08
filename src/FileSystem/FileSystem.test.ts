@@ -10,7 +10,11 @@ function path(input: string): FilePath {
 }
 
 // legacy
-function mountDrive(fs: FileSystem, letter: DriveLetter, drive: FileSystemDrive): boolean {
+function mountDrive(
+    fs: FileSystem,
+    letter: DriveLetter,
+    drive: FileSystemDrive,
+): boolean {
     fs.registerDrive(drive);
     return fs.mount(letter, drive.label);
 }
@@ -107,7 +111,9 @@ describe("FileSystem#listDrives", () => {
         fs.registerDrive(new FileSystemDrive(false, "ALPHA"));
 
         expect(
-            fs.listAllDrives().map(({ letter, drive }) => [letter, drive.label]),
+            fs
+                .listAllDrives()
+                .map(({ letter, drive }) => [letter, drive.label]),
         ).toStrictEqual([
             ["C", "SYSTEM"],
             ["D", "MOUNTED"],
@@ -121,7 +127,9 @@ describe("FileSystem#listDrives", () => {
         mountDrive(fs, "D", new FileSystemDrive(false));
         fs.unmount("D");
 
-        expect(fs.listMountedDrives().map((m) => m.letter)).toStrictEqual(["C"]);
+        expect(fs.listMountedDrives().map((m) => m.letter)).toStrictEqual([
+            "C",
+        ]);
     });
 });
 
@@ -218,12 +226,8 @@ describe("FileSystem#createDirectory", () => {
         mountDrive(fs, "D", new FileSystemDrive(false));
         fs.createDirectory(path("D:/a/b/c"));
 
-        expect(fs.getFileInfo(path("D:/a"))!.type).toBe(
-            FileType.Directory,
-        );
-        expect(fs.getFileInfo(path("D:/a/b/c"))!.type).toBe(
-            FileType.Directory,
-        );
+        expect(fs.getFileInfo(path("D:/a"))!.type).toBe(FileType.Directory);
+        expect(fs.getFileInfo(path("D:/a/b/c"))!.type).toBe(FileType.Directory);
     });
 
     test("is idempotent when segments already exist as directories", () => {

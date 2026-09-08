@@ -3,7 +3,11 @@ class FileTransferManager {
 
     private static _isUploadOpen: boolean = false;
 
-    public static presentDownload(text: string, filename: string, mimeType: string = "text/plain") {
+    public static presentDownload(
+        text: string,
+        filename: string,
+        mimeType: string = "text/plain",
+    ) {
         if (this._actionInProgress) {
             throw new Error("FileTransferManager is busy.");
         }

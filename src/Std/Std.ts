@@ -47,7 +47,12 @@ export class Std {
     private fs: FileSystem;
     private cwdPath: FilePath;
 
-    constructor(keyboard: Keyboard, textBuffer: TextBuffer, screen: Screen, fs: FileSystem) {
+    constructor(
+        keyboard: Keyboard,
+        textBuffer: TextBuffer,
+        screen: Screen,
+        fs: FileSystem,
+    ) {
         this.screenMode = ScreenMode.mode80x25;
         this.textBuffer = textBuffer;
         this.screen = screen;
@@ -55,16 +60,16 @@ export class Std {
         this.fs = fs;
         // set default cwd
         const disks = fs.listMountedDrives();
-        if(!disks.length) throw new Error("at least one disk must be mounted");
+        if (!disks.length) throw new Error("at least one disk must be mounted");
         this.cwdPath = new FilePath(disks[0].letter, [], true);
         this.setCwdP(this.cwdPath);
     }
 
     /* File system thingies >v< */
 
-    getAbsolutePathS(rel: string): FilePath|null {
+    getAbsolutePathS(rel: string): FilePath | null {
         const relPath = FilePath.tryParse(rel);
-        if(!relPath) return null;
+        if (!relPath) return null;
 
         return this.cwdPath.combine(relPath);
     }
@@ -75,27 +80,31 @@ export class Std {
 
     setCwd(cwd: string): FilePath {
         const path = FilePath.tryParse(cwd);
-        if(!path) return this.cwdPath;
+        if (!path) return this.cwdPath;
         return this.setCwdP(path);
     }
 
     setCwdP(cwd: FilePath): FilePath {
         const newCwd = this.cwdPath.combine(cwd);
         const newCwdEnt = this.fs.getFileInfo(newCwd);
-        if(!newCwdEnt) return this.cwdPath;
-        if(newCwdEnt.type != FileType.Directory) return this.cwdPath;
+        if (!newCwdEnt) return this.cwdPath;
+        if (newCwdEnt.type != FileType.Directory) return this.cwdPath;
         this.cwdPath = newCwd;
         return this.cwdPath;
     }
 
-    getCwd(): FilePath { return this.cwdPath; }
-    getCwdStr(): string { return this.cwdPath.toString(); }
+    getCwd(): FilePath {
+        return this.cwdPath;
+    }
+    getCwdStr(): string {
+        return this.cwdPath.toString();
+    }
 
-    open(path: string, create: boolean = false): FileHandle|null {
+    open(path: string, create: boolean = false): FileHandle | null {
         const fpath = this.getAbsolutePathS(path);
 
         // TODO: error messages :>
-        if(!fpath) return null;
+        if (!fpath) return null;
 
         return this.fs.openFile(fpath, create);
     }
@@ -329,6 +338,14 @@ export class Std {
         this.textBuffer.updateCurrentAttributes({ boxed: BOXED_NONE });
     }
 
+    /** The character on screen at a cell, or " " if nothing was written. */
+    getConsoleCharacterAt(position: Vector): string {
+        const cell =
+            this.textBuffer.getPage(0).lines[position.y]?.cells[position.x];
+        if (!cell) return " ";
+        return cell.rune === "\x00" ? " " : cell.rune;
+    }
+
     writeConsoleError(e: any) {
         this.writeConsole("\n\n", { reset: true });
         const messageFieldWidth = this.getConsoleSize().w - 4;
@@ -343,31 +360,46 @@ export class Std {
         this.writeConsole("\n\n", { reset: true });
     }
 
-    writeConsoleAlignedRows(rows: string[][], minColumn: number = 8, title: boolean = true) {
+    writeConsoleAlignedRows(
+        rows: string[][],
+        minColumn: number = 8,
+        title: boolean = true,
+    ) {
         let maxes = [];
 
-        if(rows.length == 0) return;
+        if (rows.length == 0) return;
 
-        for(let i = 0; i < rows.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
             const cells = rows[i];
-            for(let j = 0; j < cells.length; j++) {
-                if(!maxes[j] || String(cells[j]).length > maxes[j]) maxes[j] = cells[j].length;
+            for (let j = 0; j < cells.length; j++) {
+                if (!maxes[j] || String(cells[j]).length > maxes[j])
+                    maxes[j] = cells[j].length;
             }
         }
-        maxes = maxes.map(i => Math.max(minColumn, Number(i)));
+        maxes = maxes.map((i) => Math.max(minColumn, Number(i)));
 
-        if(title) {
+        if (title) {
             const row = rows.shift()!;
-            for(let i = 0; i < row.length; i++) {
-                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+1).fill(' ').join(''),
-                  { bold: true });
+            for (let i = 0; i < row.length; i++) {
+                this.writeConsole(
+                    String(row[i]) +
+                        Array(maxes[i] - row[i].length + 1)
+                            .fill(" ")
+                            .join(""),
+                    { bold: true },
+                );
             }
             this.writeConsole("\n");
         }
-        for(const row of rows) {
-            for(let i = 0; i < row.length; i++) {
-                this.writeConsole(String(row[i]) + Array(maxes[i]-row[i].length+1).fill(' ').join(''),
-                  { reset: true });
+        for (const row of rows) {
+            for (let i = 0; i < row.length; i++) {
+                this.writeConsole(
+                    String(row[i]) +
+                        Array(maxes[i] - row[i].length + 1)
+                            .fill(" ")
+                            .join(""),
+                    { reset: true },
+                );
             }
             this.writeConsole("\n");
         }

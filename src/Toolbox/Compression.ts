@@ -3,9 +3,9 @@
 async function fullReadStream(stream: ReadableStream): Promise<ArrayBuffer> {
     const reader = stream.getReader();
     const chunks = [];
-    while(1) {
+    while (1) {
         const { value, done } = await reader.read();
-        if(done) break;
+        if (done) break;
         chunks.push(value);
     }
 
@@ -13,7 +13,7 @@ async function fullReadStream(stream: ReadableStream): Promise<ArrayBuffer> {
     const buf = new ArrayBuffer(len);
     const arr = new Uint8Array(buf);
     let ptr = 0;
-    for(const c of chunks) {
+    for (const c of chunks) {
         arr.set(c, ptr);
         ptr += c.byteLength;
     }
@@ -40,4 +40,3 @@ export async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
     writer.close();
     return await fullReadStream(decompStream.readable);
 }
-

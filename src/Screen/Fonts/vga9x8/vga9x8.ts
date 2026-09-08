@@ -58,8 +58,8 @@ const vgaPlusCharacterValueMap: charArray[] = [
 
 /* cSpell:enable */
 
-const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map(
-    (l) => splitStringIntoCharacters(l),
+const vgaPatternsCharacterValueMap: charArray[] = ["░", "▒", "▓"].map((l) =>
+    splitStringIntoCharacters(l),
 );
 
 export const vga9x8 = new Font(9, 8, "░▒▓");

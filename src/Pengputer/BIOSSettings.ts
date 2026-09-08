@@ -32,7 +32,10 @@ class BIOSSettingsStore {
     /** Seeds localStorage with default BIOS settings if none are present yet. */
     init(): BIOSSettingsData {
         const stored = this.readStoredSettings();
-        const settings: BIOSSettingsData = { ...DEFAULT_BIOS_SETTINGS, ...stored };
+        const settings: BIOSSettingsData = {
+            ...DEFAULT_BIOS_SETTINGS,
+            ...stored,
+        };
         this.persistSettings(settings);
         return settings;
     }
