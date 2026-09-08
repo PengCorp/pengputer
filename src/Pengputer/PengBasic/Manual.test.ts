@@ -19,6 +19,7 @@ import { KEYWORDS } from "./tokens";
 import { createBuiltins } from "./builtins";
 import { TestConsole } from "./console";
 import { Random } from "./random";
+import { MANUAL_PATH, manualUrl } from "./manual";
 
 const MANUAL = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), "../../../public/BASIC.html"),
@@ -190,5 +191,27 @@ describe("HELP", () => {
 
     it("refuses a topic that is not a word", async () => {
         await expect(run("HELP 5")).rejects.toThrow(/SYNTAX/);
+    });
+});
+
+/*
+ * The manual's URL is built from the base the app was compiled with,
+ * not resolved against the current document. A relative "BASIC.html"
+ * lands on `/computer/BASIC.html` from `/computer/` and on
+ * `/BASIC.html` from `/computer` -- the same page without the trailing
+ * slash. Production redirects the slashless form and hides it; the dev
+ * server does not.
+ */
+describe("where the manual is", () => {
+    it("is an absolute path, joined with exactly one slash", () => {
+        expect(MANUAL_PATH.startsWith("/")).toBe(true);
+        expect(MANUAL_PATH.endsWith("/BASIC.html")).toBe(true);
+        expect(MANUAL_PATH).not.toContain("//BASIC");
+    });
+
+    it("hangs a topic off it as a fragment", () => {
+        expect(manualUrl(null)).toBe(MANUAL_PATH);
+        expect(manualUrl("PRINT")).toBe(`${MANUAL_PATH}#print`);
+        expect(manualUrl("LEFT$")).toBe(`${MANUAL_PATH}#left$`);
     });
 });

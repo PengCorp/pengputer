@@ -31,6 +31,7 @@ import type { Executable } from "@FileSystem/fileTypes";
 import { type PC } from "../PC";
 import { Interpreter } from "./Interpreter";
 import { isBasicError } from "./errors";
+import { manualUrl } from "./manual";
 import { highlightLine } from "./highlight";
 import { paletteColor, SYNTAX_COLORS } from "./palette";
 import { cgaColor, type Console } from "./console";
@@ -193,9 +194,9 @@ class StdConsole implements Console {
     /**
      * Opens the manual in another window.
      *
-     * Resolved against the page rather than written absolute, so it
-     * follows wherever the machine is mounted. A topic becomes a
-     * fragment, which is why every entry in the page carries an id.
+     * The path comes from the base the app was built with, not from the
+     * current document -- see `manual.ts' for why that distinction
+     * matters.
      *
      * `window.open` answers null when a browser refuses -- it wants a
      * recent keypress to justify a new window, and a program that has
@@ -203,9 +204,7 @@ class StdConsole implements Console {
      * manual is instead.
      */
     showHelp(topic: string | null): boolean {
-        const anchor = topic === null ? "" : `#${topic.toLowerCase()}`;
-        const url = new URL(`BASIC.html${anchor}`, document.baseURI);
-        return window.open(url.href, "_blank") !== null;
+        return window.open(manualUrl(topic), "_blank") !== null;
     }
 
     download(filename: string, contents: string): Promise<void> {

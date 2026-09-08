@@ -15,5 +15,9 @@ declare module "*.ogg" {
 
 interface ImportMeta {
     /* (vite) environment variables */
-    readonly env: { readonly DEV?: boolean | undefined };
+    readonly env: {
+        readonly DEV?: boolean | undefined;
+        /** Where the app is served from, always slash-terminated. */
+        readonly BASE_URL: string;
+    };
 }
