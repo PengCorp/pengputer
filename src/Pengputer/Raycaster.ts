@@ -143,12 +143,26 @@ class Entity {
   }
 }
 
+class Item {
+  public name!: string;
+  
+  constructor(name: string) {
+    this.name = name;
+  }
+}
+
+const orangeKey: Item = {
+  name: "Orange_Key",
+};
+
 class Player implements Entity {
   public position:  Vector;
   public direction: Vector;
   public z: number = 0;
   public plane:     Vector;
   public sprite:    Sprite;
+
+  public items: Array<Item>;
 
   protected moveSpeed:   number = 25;
   protected rotateSpeed: number = 10;
@@ -158,6 +172,8 @@ class Player implements Entity {
     this.sprite    = penger8x8;
     this.direction = direction;
     this.plane     = plane;
+
+    this.items = new Array();
   }
 
   public Move(left: boolean, dT: number) {
@@ -198,6 +214,14 @@ class Player implements Entity {
         x: oldPlane.x * Math.cos(rotSpeed) - oldPlane.y * Math.sin(rotSpeed),
         y: oldPlane.x * Math.sin(rotSpeed) + oldPlane.y * Math.cos(rotSpeed),
       };
+  }
+
+  public HasItem(item: Item) {
+    return this.items.some((entity) => entity.name === item.name);
+  }
+
+  public AddItem(item: Item) {
+    this.items.push(item);
   }
 }
 
@@ -253,7 +277,7 @@ class Raycaster implements GameState {
         this.player.Look(false,dt);
       }
 
-      if (ev.code === "KeyE") this.openDoor = !this.openDoor;
+      if (ev.code === "KeyE") this.player.AddItem(orangeKey);
     }
   }
 
@@ -604,7 +628,7 @@ class Raycaster implements GameState {
 
     this.HandleInputs(dt);
 
-    if (this.openDoor) MAP_ENTRIES[6].z = Math.max(MAP_ENTRIES[6].z - dt, -MAP_ENTRIES[6].height - 0.1);
+    if (this.player.HasItem(orangeKey)) MAP_ENTRIES[6].z = Math.max(MAP_ENTRIES[6].z - dt, -MAP_ENTRIES[6].height - 0.1);
     else               MAP_ENTRIES[6].z = Math.min(MAP_ENTRIES[6].z + dt, 0);
 
     // Orbitting Penger
@@ -629,8 +653,6 @@ class Raycaster implements GameState {
   public Exit() {
     const { std } = this.pc;
     this.ClearScreen(std);
-
-
   }
 };
 
