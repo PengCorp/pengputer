@@ -32,7 +32,12 @@ export type BinaryOp =
 export type UnaryOp = "-" | "NOT";
 
 export type Expr =
-    | { kind: "number"; value: number }
+    /**
+     * `isDouble' comes from how the constant was written -- see the
+     * tokenizer. It is what stops `A# = 1.23456789' being rounded to a
+     * single before it ever reaches the variable.
+     */
+    | { kind: "number"; value: number; isDouble: boolean }
     | { kind: "string"; value: string }
     | { kind: "variable"; name: string; sigil: Sigil }
     /**
@@ -230,6 +235,15 @@ export type Statement =
     | { kind: "print"; items: PrintItem[]; newline: boolean }
     | { kind: "remark"; text: string }
     | { kind: "dim"; entries: DimEntry[] }
+    /**
+     * `ERASE A, B$'.
+     *
+     * Throws an array away so it can be `DIM'ed again at a different
+     * size -- the only way to resize one, since a second DIM of a live
+     * array is `?REDIM'D ARRAY'. Names only: there are no subscripts to
+     * give, because it is the whole array that goes.
+     */
+    | { kind: "erase"; names: { name: string; sigil: Sigil }[] }
     | { kind: "end" }
     | { kind: "run" }
     | { kind: "list"; from: number | null; to: number | null }

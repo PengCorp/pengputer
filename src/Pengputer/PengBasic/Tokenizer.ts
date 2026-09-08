@@ -49,6 +49,22 @@ function isDigit(c: string): boolean {
     return c >= "0" && c <= "9";
 }
 
+/**
+ * More digits than this and a constant is taken to be double
+ * precision, because it was written with detail a single cannot hold.
+ */
+const SINGLE_DIGIT_LIMIT = 7;
+
+/**
+ * Digits that carry information: the decimal point does not, and
+ * neither do zeros in front of the first real digit, so `.0001' counts
+ * as one and `1000000' as seven.
+ */
+function significantDigits(mantissa: string): number {
+    const digits = mantissa.replace(".", "").replace(/^0+/, "");
+    return digits.length;
+}
+
 function isLetter(c: string): boolean {
     return (c >= "A" && c <= "Z") || (c >= "a" && c <= "z");
 }
@@ -123,12 +139,16 @@ class Tokenizer {
     }
 
     /**
-     * 12, 1.5, .5, 5., 1E5, 1.5E-3.
+     * 12, 1.5, .5, 5., 1E5, 1.5E-3, and their double forms 1.5#, 1.5D3.
      *
      * The exponent needs backtracking: in "1EA" the E is not an
      * exponent but the start of a variable, and we only find that out
      * after looking past it. One saved position is enough -- there is
      * no other place in the language that needs to reconsider.
+     *
+     * `D' marks a double-precision exponent, so `1D10' is 1E10 held to
+     * sixteen digits rather than seven. It backtracks the same way, and
+     * for the same reason: "1DIM" is not an exponent.
      */
     private readNumber() {
         const start = this.pos;
@@ -140,20 +160,48 @@ class Tokenizer {
             while (isDigit(this.peek())) this.pos += 1;
         }
 
-        if (this.peek() === "E" || this.peek() === "e") {
+        const mantissa = this.src.slice(start, this.pos);
+        let isDouble = false;
+        let exponent = "";
+
+        const marker = this.peek().toUpperCase();
+        if (marker === "E" || marker === "D") {
             const beforeExponent = this.pos;
             this.pos += 1;
             if (this.peek() === "+" || this.peek() === "-") this.pos += 1;
 
             if (isDigit(this.peek())) {
+                const digitsAt = this.pos;
                 while (isDigit(this.peek())) this.pos += 1;
+                exponent =
+                    "e" +
+                    this.src.slice(beforeExponent + 1, digitsAt) +
+                    this.src.slice(digitsAt, this.pos);
+                if (marker === "D") isDouble = true;
             } else {
                 this.pos = beforeExponent;
             }
         }
 
-        const text = this.src.slice(start, this.pos);
-        this.tokens.push({ kind: "number", value: Number(text), pos: start });
+        /* An explicit suffix overrules everything; otherwise a constant
+         * written with more digits than a single can carry is taken to
+         * be a double, which is how you write one without saying so. */
+        if (this.peek() === "#") {
+            this.pos += 1;
+            isDouble = true;
+        } else if (this.peek() === "!") {
+            this.pos += 1;
+            isDouble = false;
+        } else if (significantDigits(mantissa) > SINGLE_DIGIT_LIMIT) {
+            isDouble = true;
+        }
+
+        this.tokens.push({
+            kind: "number",
+            value: Number(mantissa + exponent),
+            isDouble,
+            pos: start,
+        });
     }
 
     /**

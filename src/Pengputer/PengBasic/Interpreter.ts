@@ -370,6 +370,12 @@ export class Interpreter {
                 }
                 return;
 
+            case "erase":
+                for (const entry of statement.names) {
+                    this.variables.eraseArray(entry.name, entry.sigil);
+                }
+                return;
+
             case "end":
                 this.stopped = true;
                 return;
@@ -1184,11 +1190,17 @@ export class Interpreter {
     private print(statement: Extract<Statement, { kind: "print" }>) {
         for (const item of statement.items) {
             switch (item.kind) {
-                case "expression":
-                    this.console.write(
-                        formatValue(this.evaluator.evaluate(item.expr)),
+                case "expression": {
+                    /* Typed, because how many digits a number shows is
+                     * a property of the expression's width, not of the
+                     * value: a double prints sixteen where a single
+                     * prints six. */
+                    const { value, type } = this.evaluator.evaluateTyped(
+                        item.expr,
                     );
+                    this.console.write(formatValue(value, type));
                     break;
+                }
 
                 case "adjacent":
                     /* A semicolon deliberately does nothing. */

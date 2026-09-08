@@ -1,22 +1,36 @@
 import { describe, expect, it } from "vitest";
 import { parseExpression } from "./Parser";
-import { Evaluator, type Builtin, type Builtins } from "./Evaluator";
+import {
+    Evaluator,
+    type Builtin,
+    type Builtins,
+    type Typed,
+} from "./Evaluator";
 import { Variables } from "./Variables";
-import type { Value } from "./values";
+import type { BasicType, Value } from "./values";
 
 function makeBuiltin(
-    fn: (args: Value[]) => Value,
+    fn: (args: Typed[]) => Value,
     min = 1,
     max = min,
+    resultType: BasicType = "single",
 ): Builtin {
-    return { minArgs: min, maxArgs: max, call: fn };
+    return { minArgs: min, maxArgs: max, resultType, call: fn };
 }
 
 /* Stage 7 fills the real table; these stand in so resolution is testable. */
 const FAKE_BUILTINS: Builtins = new Map<string, Builtin>([
-    ["ABS", makeBuiltin((a) => Math.abs(a[0] as number))],
-    ["LEN", makeBuiltin((a) => (a[0] as string).length)],
-    ["MID$", makeBuiltin((a) => (a[0] as string).slice(a[1] as number), 2, 3)],
+    ["ABS", makeBuiltin((a) => Math.abs(a[0].value as number))],
+    ["LEN", makeBuiltin((a) => (a[0].value as string).length, 1, 1, "integer")],
+    [
+        "MID$",
+        makeBuiltin(
+            (a) => (a[0].value as string).slice(a[1].value as number),
+            2,
+            3,
+            "string",
+        ),
+    ],
 ]);
 
 function run(src: string, vars = new Variables(), builtins?: Builtins): Value {

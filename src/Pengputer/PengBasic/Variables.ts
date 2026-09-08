@@ -105,6 +105,18 @@ export class Variables {
 
     /* ---------- arrays ---------- */
 
+    /**
+     * Throws an array away, so a later DIM may make it a different
+     * size. Erasing one that was never dimensioned is an error -- there
+     * is nothing to erase, and the likeliest cause is a typo.
+     */
+    eraseArray(name: string, sigil: Sigil) {
+        const { key } = this.keyOf(name, sigil);
+        if (!this.arrays.delete(key)) {
+            throw new BasicError("ILLEGAL QUANTITY");
+        }
+    }
+
     hasArray(name: string, sigil: Sigil): boolean {
         return this.arrays.has(this.keyOf(name, sigil).key);
     }

@@ -33,7 +33,13 @@ runs it, and checks the output, so a broken example fails the suite.
 | `colors.bas`    | `CLS`, `LOCATE`, `COLOR` — all sixteen                |
 | `bounce.bas`    | A ball, `DELAY` to pace it, `INKEY$` to stop it       |
 | `chars.bas`     | The whole character set, and the blocks you draw with |
+| `precision.bas` | What a single-precision number can and cannot hold    |
 | `aceyducey.bas` | A real book program, typed in exactly as printed      |
+
+`precision.bas` is the one to run if the arithmetic ever looks wrong.
+Ten tenths print as `1` and compare unequal to 1, which is not a bug in
+either the interpreter or the listing — it is what a 32-bit float does,
+and 1978 listings were written against exactly that.
 
 `aceyducey.bas` is _Acey Ducey_, from **BASIC Computer Games** (1978),
 transcribed as it appears on the page — dead line 640 and the typo in

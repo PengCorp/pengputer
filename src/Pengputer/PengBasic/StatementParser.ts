@@ -69,6 +69,8 @@ export class StatementParser extends Parser {
                     return this.parsePrint();
                 case "DIM":
                     return this.parseDim();
+                case "ERASE":
+                    return this.parseErase();
                 case "END":
                     return { kind: "end" };
                 case "RUN":
@@ -348,6 +350,21 @@ export class StatementParser extends Parser {
         } while (this.takePunct(","));
 
         return { kind: "dim", entries };
+    }
+
+    /** `ERASE A, B$' -- bare names, no subscripts. */
+    private parseErase(): Statement {
+        const names: { name: string; sigil: Sigil }[] = [];
+
+        do {
+            const token = this.peek();
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
+            this.pos += 1;
+            names.push({ name: token.name, sigil: token.sigil });
+        } while (this.takePunct(","));
+
+        return { kind: "erase", names };
     }
 
     /** `LIST', `LIST 10', `LIST 10-20', `LIST -20', `LIST 10-'. */

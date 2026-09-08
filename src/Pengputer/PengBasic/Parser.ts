@@ -205,7 +205,11 @@ export class Parser {
         switch (token.kind) {
             case "number":
                 this.pos += 1;
-                return { kind: "number", value: token.value };
+                return {
+                    kind: "number",
+                    value: token.value,
+                    isDouble: token.isDouble,
+                };
 
             case "string":
                 this.pos += 1;

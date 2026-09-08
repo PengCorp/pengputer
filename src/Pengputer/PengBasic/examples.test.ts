@@ -89,6 +89,19 @@ const EXPECTED: Record<string, string | RegExp> = {
     "bounce.bas": /STOPPED\n$/,
     "chars.bas": /SHADES: {2}/,
 
+    /* The point of the listing is that the first two lines disagree:
+     * six digits cannot show the error, and the error is there. */
+    "precision.bas":
+        "TEN TENTHS PRINT AS 1 \n" +
+        "AND DO NOT EQUAL ONE\n" +
+        "\n" +
+        "ONE THIRD, SINGLE: .333333 \n" +
+        "ONE THIRD, DOUBLE: .3333333333333333 \n" +
+        "THE SINGLE, WIDENED: .3333333432674408 \n" +
+        "\n" +
+        "INT(-2.4) IS-3 BUT FIX(-2.4) IS-2 \n" +
+        "255 IS FF IN HEX AND 377 IN OCTAL\n",
+
     /* A listing from BASIC Computer Games, typed in exactly as it is
      * printed there -- the strongest evidence in the suite that the
      * dialect is the one the book was written for. Which cards come up

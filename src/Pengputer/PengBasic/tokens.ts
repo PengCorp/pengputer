@@ -43,6 +43,7 @@ export const KEYWORDS = [
     "READ",
     "RESTORE",
     "DIM",
+    "ERASE",
     "DEF",
     "FN",
     "END",
@@ -111,7 +112,13 @@ export type Operator = (typeof OPERATORS)[number];
 export type Punct = "(" | ")" | "," | ";" | ":";
 
 export type Token =
-    | { kind: "number"; value: number; pos: number }
+    /**
+     * `isDouble' is decided here rather than later because it is a
+     * property of how the constant was *written*: `1.5' is a single and
+     * `1.5#' is a double, and by the time the parser sees a plain
+     * number that difference is gone.
+     */
+    | { kind: "number"; value: number; isDouble: boolean; pos: number }
     | { kind: "string"; value: string; pos: number }
     | { kind: "name"; name: string; sigil: Sigil; pos: number }
     | { kind: "keyword"; keyword: Keyword; pos: number }

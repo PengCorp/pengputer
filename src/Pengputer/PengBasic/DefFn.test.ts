@@ -184,7 +184,7 @@ describe("the FN prefix rule", () => {
             kind: "fnCall",
             name: "AME",
             sigil: "",
-            args: [{ kind: "number", value: 1 }],
+            args: [{ kind: "number", value: 1, isDouble: false }],
         });
     });
 });

@@ -3,9 +3,26 @@ import { tokenize } from "./Tokenizer";
 import { isBasicError } from "./errors";
 import type { Token } from "./tokens";
 
-/** Tokens without their positions, which are noise in most assertions. */
+/**
+ * Tokens without their positions, which are noise in most assertions --
+ * and without a number's precision, which has a describe block of its
+ * own below rather than appearing on every literal in the file.
+ */
 function kinds(src: string): Omit<Token, "pos">[] {
-    return tokenize(src).map(({ pos: _pos, ...rest }) => rest);
+    return tokenize(src).map(({ pos: _pos, ...rest }) => {
+        if (rest.kind === "number") {
+            const { isDouble: _isDouble, ...number } = rest;
+            return number as Omit<Token, "pos">;
+        }
+        return rest;
+    });
+}
+
+/** Whether each numeric literal in the source came out double. */
+function precisions(src: string): boolean[] {
+    return tokenize(src)
+        .filter((token) => token.kind === "number")
+        .map((token) => (token as { isDouble: boolean }).isDouble);
 }
 
 describe("numbers", () => {
@@ -266,5 +283,62 @@ describe("whole lines", () => {
 
     it("returns just the sentinel for an empty line", () => {
         expect(kinds("   ")).toEqual([{ kind: "end" }]);
+    });
+});
+
+describe("the precision of a literal", () => {
+    /*
+     * How a constant is written decides how wide it is, because there
+     * is nothing else to go on -- `1.5' and `1.5#' are the same number
+     * and a different type.
+     */
+    it("is single for anything a single can hold", () => {
+        expect(precisions("1 1.5 .5 3.14159 1000000")).toEqual([
+            false,
+            false,
+            false,
+            false,
+            false,
+        ]);
+    });
+
+    it("is double once there are more digits than that", () => {
+        expect(precisions("3.14159265 10000000 1.23456789")).toEqual([
+            true,
+            true,
+            true,
+        ]);
+    });
+
+    it("does not count the point or the zeros in front", () => {
+        expect(precisions(".0000001 0.5")).toEqual([false, false]);
+    });
+
+    it("takes an explicit suffix over the digit count", () => {
+        expect(precisions("1# 3.14159265! 1.5#")).toEqual([true, false, true]);
+    });
+
+    it("reads D as a double exponent", () => {
+        expect(precisions("1D10 1E10")).toEqual([true, false]);
+        expect(kinds("1D10")).toEqual([
+            { kind: "number", value: 1e10 },
+            { kind: "end" },
+        ]);
+    });
+
+    it("backtracks when D is not an exponent", () => {
+        expect(kinds("1DIM")).toEqual([
+            { kind: "number", value: 1 },
+            { kind: "keyword", keyword: "DIM" },
+            { kind: "end" },
+        ]);
+    });
+
+    /* The suffix is consumed, not left to be read as a variable. */
+    it("swallows the suffix", () => {
+        expect(kinds("1#")).toEqual([
+            { kind: "number", value: 1 },
+            { kind: "end" },
+        ]);
     });
 });

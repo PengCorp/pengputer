@@ -28,19 +28,49 @@ import { BasicError } from "./errors";
 import type { BinaryOp, Expr, FnDefinition } from "./ast";
 import type { Variables } from "./Variables";
 import {
+    type BasicType,
     type Value,
     asNumber,
     asString,
     checkOverflow,
     checkStringLength,
     fromBoolean,
+    roundToType,
     toInt16,
+    widerNumericType,
 } from "./values";
 
 export interface Builtin {
     minArgs: number;
     maxArgs: number;
-    call(args: Value[]): Value;
+    /** What width the answer comes back at. See `Typed'. */
+    resultType: BasicType;
+    /**
+     * Arguments arrive with their widths attached, because a few
+     * functions need them -- STR$ has to know whether it is showing six
+     * digits or sixteen. Most do not care and unwrap with the `num' and
+     * `str' helpers in the table.
+     */
+    call(args: Typed[]): Value;
+}
+
+/**
+ * A value together with the width it was computed at.
+ *
+ * The interpreter needs both because single precision is not a
+ * property of the number -- every number here is a JavaScript double —
+ * it is a property of the *expression*. `A! * B!' and `A# * B#' can
+ * hold the same bits and still have to round differently, so the type
+ * travels alongside the value rather than being recovered from it.
+ */
+export interface Typed {
+    value: Value;
+    type: BasicType;
+}
+
+/** The type of a value, when nothing better is known about it. */
+function typeOfValue(value: Value): BasicType {
+    return typeof value === "string" ? "string" : "single";
 }
 
 /** Keyed by name plus sigil, e.g. "LEN" and "LEFT$". Filled in stage 7. */
@@ -64,21 +94,37 @@ export class Evaluator {
         this.functions = functions;
     }
 
+    /** The value alone, for the many callers that do not care how wide it is. */
     evaluate(expr: Expr): Value {
+        return this.evaluateTyped(expr).value;
+    }
+
+    evaluateTyped(expr: Expr): Typed {
         switch (expr.kind) {
             case "number":
-                return expr.value;
+                return {
+                    value: expr.value,
+                    type: expr.isDouble ? "double" : "single",
+                };
 
             case "string":
-                return expr.value;
+                return { value: expr.value, type: "string" };
 
             case "variable": {
                 /* RND on its own is a call, not a variable -- and so
                  * will TIMER and INKEY$ be. Anything the table lists as
                  * taking no arguments may be written bare. */
                 const builtin = this.builtins.get(expr.name + expr.sigil);
-                if (builtin && builtin.minArgs === 0) return builtin.call([]);
-                return this.variables.getScalar(expr.name, expr.sigil);
+                if (builtin && builtin.minArgs === 0) {
+                    return {
+                        value: builtin.call([]),
+                        type: builtin.resultType,
+                    };
+                }
+                return {
+                    value: this.variables.getScalar(expr.name, expr.sigil),
+                    type: this.variables.getType(expr.name, expr.sigil),
+                };
             }
 
             case "call":
@@ -95,8 +141,8 @@ export class Evaluator {
         }
     }
 
-    private evaluateCall(expr: Extract<Expr, { kind: "call" }>): Value {
-        const args = expr.args.map((arg) => this.evaluate(arg));
+    private evaluateCall(expr: Extract<Expr, { kind: "call" }>): Typed {
+        const args = expr.args.map((arg) => this.evaluateTyped(arg));
 
         const builtin = this.builtins.get(expr.name + expr.sigil);
         if (builtin) {
@@ -106,14 +152,31 @@ export class Evaluator {
             ) {
                 throw new BasicError("SYNTAX");
             }
-            return builtin.call(args);
+            const result = builtin.call(args);
+            /* The library was single precision on the original -- SQR
+             * and SIN and the rest all went through the same
+             * accumulator as everything else -- so a result declared
+             * single is rounded like one. */
+            return {
+                value: this.narrow(result, builtin.resultType),
+                type: builtin.resultType,
+            };
         }
 
-        return this.variables.getElement(
-            expr.name,
-            expr.sigil,
-            args.map((arg) => asNumber(arg)),
-        );
+        return {
+            value: this.variables.getElement(
+                expr.name,
+                expr.sigil,
+                args.map((arg) => asNumber(arg.value)),
+            ),
+            type: this.variables.getType(expr.name, expr.sigil),
+        };
+    }
+
+    /** Applies a type's width to a value, leaving strings alone. */
+    private narrow(value: Value, type: BasicType): Value {
+        if (typeof value === "string") return value;
+        return roundToType(value, type);
     }
 
     /**
@@ -125,7 +188,7 @@ export class Evaluator {
      * for something else -- and restoring rather than scoping is also
      * what makes a recursive definition not corrupt itself.
      */
-    private evaluateFnCall(expr: Extract<Expr, { kind: "fnCall" }>): Value {
+    private evaluateFnCall(expr: Extract<Expr, { kind: "fnCall" }>): Typed {
         const definition = this.functions.get(expr.name + expr.sigil);
         if (!definition) throw new BasicError("UNDEF'D FUNCTION");
 
@@ -150,7 +213,13 @@ export class Evaluator {
             );
         });
         try {
-            return this.evaluate(definition.body);
+            /* The function's own sigil decides the width it answers at,
+             * exactly as it would for a variable of that name. */
+            const type = this.variables.getType(expr.name, expr.sigil);
+            return {
+                value: this.narrow(this.evaluate(definition.body), type),
+                type,
+            };
         } finally {
             parameters.forEach((parameter, index) => {
                 this.variables.setScalar(
@@ -162,23 +231,90 @@ export class Evaluator {
         }
     }
 
-    private evaluateUnary(expr: Extract<Expr, { kind: "unary" }>): Value {
-        const operand = this.evaluate(expr.operand);
+    private evaluateUnary(expr: Extract<Expr, { kind: "unary" }>): Typed {
+        const operand = this.evaluateTyped(expr.operand);
 
-        if (expr.op === "-") return checkOverflow(-asNumber(operand));
+        if (expr.op === "-") {
+            /* Negation cannot lose precision, so the operand's own type
+             * carries straight through. */
+            return {
+                value: checkOverflow(-asNumber(operand.value), operand.type),
+                type: operand.type,
+            };
+        }
 
         /* NOT is bitwise: NOT n is -(n+1). */
-        return ~toInt16(operand);
+        return { value: ~toInt16(operand.value), type: "integer" };
     }
 
-    private evaluateBinary(expr: Extract<Expr, { kind: "binary" }>): Value {
-        const left = this.evaluate(expr.left);
-        const right = this.evaluate(expr.right);
-        return applyBinary(expr.op, left, right);
+    private evaluateBinary(expr: Extract<Expr, { kind: "binary" }>): Typed {
+        const left = this.evaluateTyped(expr.left);
+        const right = this.evaluateTyped(expr.right);
+        const type = resultType(expr.op, left.type, right.type);
+        return {
+            value: applyBinary(expr.op, left.value, right.value, type),
+            type,
+        };
     }
 }
 
-export function applyBinary(op: BinaryOp, left: Value, right: Value): Value {
+/**
+ * The width an operation answers at, from the widths going in.
+ *
+ * Three rules, and they are the whole of BASIC's numeric promotion:
+ *
+ *   - Comparisons and the bitwise operators always answer an integer,
+ *     whatever they were given. `A# = B#' is -1 or 0, not a double.
+ *   - `+' on strings answers a string; on numbers it promotes.
+ *   - Division and exponentiation never answer an integer, because
+ *     `1/3' and `2^-1' are not integers. Everything else takes the
+ *     wider of its operands.
+ */
+function resultType(
+    op: BinaryOp,
+    left: BasicType,
+    right: BasicType,
+): BasicType {
+    switch (op) {
+        case "=":
+        case "<>":
+        case "<":
+        case ">":
+        case "<=":
+        case ">=":
+        case "AND":
+        case "OR":
+            return "integer";
+
+        case "+":
+            if (left === "string" || right === "string") return "string";
+            return widerNumericType(left, right);
+
+        case "/":
+        case "^":
+            return widerNumericType(widerNumericType(left, right), "single");
+
+        default:
+            return widerNumericType(left, right);
+    }
+}
+
+/**
+ * `type' is the width the operation answers at, and it does two jobs:
+ * it sets the limit an overflow is measured against, and it is what the
+ * result is rounded to. Rounding here rather than only on assignment is
+ * the point of the whole exercise -- the original machine rounded every
+ * intermediate, so `A*B+C' in single precision rounds twice, and a sum
+ * that never touches a variable still drifts.
+ */
+export function applyBinary(
+    op: BinaryOp,
+    left: Value,
+    right: Value,
+    type: BasicType = "single",
+): Value {
+    const narrow = (n: number) => roundToType(checkOverflow(n, type), type);
+
     switch (op) {
         case "+":
             /* The one overloaded operator. Two strings join; two
@@ -187,25 +323,25 @@ export function applyBinary(op: BinaryOp, left: Value, right: Value): Value {
             if (typeof left === "string" || typeof right === "string") {
                 return checkStringLength(asString(left) + asString(right));
             }
-            return checkOverflow(left + right);
+            return narrow(left + right);
 
         case "-":
-            return checkOverflow(asNumber(left) - asNumber(right));
+            return narrow(asNumber(left) - asNumber(right));
 
         case "*":
-            return checkOverflow(asNumber(left) * asNumber(right));
+            return narrow(asNumber(left) * asNumber(right));
 
         case "/": {
             const divisor = asNumber(right);
             if (divisor === 0) throw new BasicError("DIVISION BY ZERO");
-            return checkOverflow(asNumber(left) / divisor);
+            return narrow(asNumber(left) / divisor);
         }
 
         case "^": {
             const result = Math.pow(asNumber(left), asNumber(right));
             /* A negative base to a fractional power has no real value. */
             if (Number.isNaN(result)) throw new BasicError("ILLEGAL QUANTITY");
-            return checkOverflow(result);
+            return narrow(result);
         }
 
         case "AND":

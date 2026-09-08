@@ -11,57 +11,93 @@
  *     negative, a space if not -- and a **trailing space**. `PRINT 1'
  *     emits " 1 ", which is why columns of numbers in listings line up
  *     without anyone doing anything.
- *   - About six significant digits, trailing zeros stripped.
+ *   - About six significant digits, trailing zeros stripped -- or
+ *     sixteen for a double, which is why every entry point here takes
+ *     the value's type.
  *   - A leading zero is dropped: one half prints as ".5", not "0.5".
- *   - Outside roughly 0.01 to 999999 it switches to "1.23457E+12".
+ *   - Outside roughly 0.01 to 999999 it switches to "1.23457E+12", and
+ *     a double uses "D" where a single uses "E".
  */
+
+import type { BasicType } from "./values";
 
 /** A comma in PRINT moves to the next multiple of this. */
 export const PRINT_ZONE_WIDTH = 14;
 
-const SIGNIFICANT_DIGITS = 6;
+const SINGLE_DIGITS = 6;
+const DOUBLE_DIGITS = 16;
 
-export function formatValue(value: number | string): string {
-    return typeof value === "string" ? value : formatNumber(value);
+/**
+ * How a number is shown depends on how wide it is.
+ *
+ * A single gets six digits and an `E' exponent; a double gets sixteen
+ * and a `D' one, which is how you could tell the two apart on a printed
+ * listing. The marker is not decoration -- `1.5E10' and `1.5D10' are
+ * different constants, and the output uses the same spelling as the
+ * input.
+ */
+interface Precision {
+    digits: number;
+    marker: string;
 }
 
-export function formatNumber(n: number): string {
+function precisionOf(type: BasicType): Precision {
+    return type === "double"
+        ? { digits: DOUBLE_DIGITS, marker: "D" }
+        : { digits: SINGLE_DIGITS, marker: "E" };
+}
+
+export function formatValue(
+    value: number | string,
+    type: BasicType = "single",
+): string {
+    return typeof value === "string" ? value : formatNumber(value, type);
+}
+
+export function formatNumber(n: number, type: BasicType = "single"): string {
     const sign = n < 0 ? "-" : " ";
-    return sign + formatMagnitude(Math.abs(n)) + " ";
+    return sign + formatMagnitude(Math.abs(n), precisionOf(type)) + " ";
 }
 
 /**
  * What STR$ gives: the same as PRINT, minus the trailing space. The
  * leading sign position stays, so STR$(1) is " 1".
  */
-export function formatNumberForStr(n: number): string {
-    return (n < 0 ? "-" : " ") + formatMagnitude(Math.abs(n));
+export function formatNumberForStr(
+    n: number,
+    type: BasicType = "single",
+): string {
+    return (
+        (n < 0 ? "-" : " ") + formatMagnitude(Math.abs(n), precisionOf(type))
+    );
 }
 
-function formatMagnitude(n: number): string {
+function formatMagnitude(n: number, precision: Precision): string {
     if (n === 0) return "0";
 
     const exponent = Math.floor(Math.log10(n));
-    if (exponent >= SIGNIFICANT_DIGITS || exponent < -2) {
-        return scientific(n);
+    if (exponent >= precision.digits || exponent < -2) {
+        return scientific(n, precision);
     }
 
-    const fixed = trimZeros(n.toPrecision(SIGNIFICANT_DIGITS));
+    const fixed = trimZeros(n.toPrecision(precision.digits));
 
     /* Rounding can push a value over the edge -- 999999.5 rounds to
      * 1000000, which no longer fits the fixed form. */
-    if (fixed.includes("e") || fixed.includes("E")) return scientific(n);
+    if (fixed.includes("e") || fixed.includes("E")) {
+        return scientific(n, precision);
+    }
 
     return dropLeadingZero(fixed);
 }
 
-function scientific(n: number): string {
+function scientific(n: number, precision: Precision): string {
     const [mantissa, exponent] = n
-        .toExponential(SIGNIFICANT_DIGITS - 1)
+        .toExponential(precision.digits - 1)
         .split("e");
     const power = Number(exponent);
     const sign = power < 0 ? "-" : "+";
-    return `${trimZeros(mantissa)}E${sign}${String(Math.abs(power)).padStart(2, "0")}`;
+    return `${trimZeros(mantissa)}${precision.marker}${sign}${String(Math.abs(power)).padStart(2, "0")}`;
 }
 
 function trimZeros(s: string): string {
