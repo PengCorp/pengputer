@@ -244,6 +244,24 @@ export type Statement =
      * give, because it is the whole array that goes.
      */
     | { kind: "erase"; names: { name: string; sigil: Sigil }[] }
+    /**
+     * `ON ERROR GOTO 100', and `ON ERROR GOTO 0' to stop trapping.
+     *
+     * Zero is not a line number here, it is the off switch -- which is
+     * why this is a statement of its own rather than a variation on
+     * `on'. Nothing else in BASIC overloads a line number that way.
+     */
+    | { kind: "onError"; line: number }
+    /**
+     * `RESUME', `RESUME NEXT', `RESUME 100'.
+     *
+     * Bare RESUME retries the statement that failed, which is the whole
+     * reason the interpreter has to remember *which statement* rather
+     * than only which line.
+     */
+    | { kind: "resume"; target: "same" | "next" | number }
+    /** `ERROR 11' -- raise an error as though it had happened. */
+    | { kind: "error"; code: Expr }
     | { kind: "end" }
     | { kind: "run" }
     | { kind: "list"; from: number | null; to: number | null }

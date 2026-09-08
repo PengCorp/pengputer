@@ -44,6 +44,8 @@ export const KEYWORDS = [
     "RESTORE",
     "DIM",
     "ERASE",
+    "ERROR",
+    "RESUME",
     "DEF",
     "FN",
     "END",

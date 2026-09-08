@@ -41,6 +41,8 @@ export interface BuiltinDependencies {
     random: Random;
     /** Injected so the clock functions can be tested. */
     now: () => Date;
+    /** What ERR and ERL report; owned by the interpreter. */
+    lastError: () => { code: number; line: number };
 }
 
 export function createBuiltins(deps: BuiltinDependencies): Builtins {
@@ -135,6 +137,14 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
     /** The column PRINT would write to next, counting from 1. */
     define("POS", 0, 1, () => deps.machine.getColumn() + 1, "integer");
     define("CSRLIN", 0, 0, () => deps.machine.getCursorRow() + 1, "integer");
+
+    /**
+     * ERR and ERL describe the last trapped error: its code and the
+     * line it happened on. Both are 0 until something goes wrong, so
+     * `IF ERR=11' is simply false in a program that has not failed.
+     */
+    define("ERR", 0, 0, () => deps.lastError().code, "integer");
+    define("ERL", 0, 0, () => deps.lastError().line, "integer");
 
     /* ---------------- the machine ---------------- */
 

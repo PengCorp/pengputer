@@ -12,7 +12,7 @@
  * hook stage 5 needs: GOTO sets the position and lets the loop carry
  * on, rather than the loop being rewritten around it.
  */
-import { BasicError, isBasicError } from "./errors";
+import { BasicError, errorKindForCode, isBasicError } from "./errors";
 import { Evaluator, type Builtins } from "./Evaluator";
 import { createBuiltins } from "./builtins";
 import { printUsing } from "./printUsing";
@@ -174,6 +174,24 @@ export class Interpreter {
     private forStack: ForFrame[] = [];
     private whileStack: WhileFrame[] = [];
 
+    /**
+     * Error trapping.
+     *
+     * `errorHandler' is the line ON ERROR named, or null for the normal
+     * behaviour of reporting and stopping.
+     *
+     * `errorReturn' is where to go back to, and it doubles as the flag
+     * for "a handler is running": while it is set, trapping is
+     * suspended, so a mistake inside a handler is reported instead of
+     * sending the program round the same loop forever.
+     *
+     * `lastError' outlives both, because ERR and ERL keep answering
+     * after RESUME has been and gone.
+     */
+    private errorHandler: number | null = null;
+    private errorReturn: Position | null = null;
+    private lastError: { error: BasicError; line: number } | null = null;
+
     /** Set by STOP, consumed by CONT. */
     private continuePosition: Position | null = null;
 
@@ -197,7 +215,13 @@ export class Interpreter {
         this.console = machine;
         this.evaluator = new Evaluator(
             this.variables,
-            builtins ?? createBuiltins({ machine, random: this.random, now }),
+            builtins ??
+                createBuiltins({
+                    machine,
+                    random: this.random,
+                    now,
+                    lastError: () => this.errorInfo(),
+                }),
             this.functions,
         );
     }
@@ -284,6 +308,9 @@ export class Interpreter {
         this.returnStack = [];
         this.forStack = [];
         this.whileStack = [];
+        this.errorHandler = null;
+        this.errorReturn = null;
+        this.lastError = null;
         this.continuePosition = null;
         this.position = { lineIndex: 0, statementIndex: 0 };
         this.dataPointer = { lineIndex: 0, statementIndex: 0, itemIndex: 0 };
@@ -320,9 +347,22 @@ export class Interpreter {
                 this.console.write(`[${line.number}]`);
             }
 
+            /* Where to come back to if this statement fails. Taken
+             * before the step, because RESUME retries the statement
+             * rather than the one after it. */
+            const failedAt: Position = {
+                lineIndex: this.position.lineIndex,
+                statementIndex: this.position.statementIndex,
+            };
+
             const statement = statements[this.position.statementIndex];
             this.position.statementIndex += 1;
-            await this.execute(statement);
+
+            try {
+                await this.execute(statement);
+            } catch (e) {
+                if (!this.trapError(e, line.number, failedAt)) throw e;
+            }
 
             /* Hand the browser a turn now and then, or a tight BASIC
              * loop would wedge the page -- and while we are stopped,
@@ -338,6 +378,38 @@ export class Interpreter {
     }
 
     /** Moves execution to a line number, or `?UNDEF'D STATEMENT'. */
+    /**
+     * Hands an error to `ON ERROR GOTO', if there is one to hand it to.
+     *
+     * Answers whether it was taken. False means the caller should let
+     * the error carry on out and be reported, which covers three cases:
+     * it is not a BASIC error at all, no handler is installed, or a
+     * handler is already running and this error is its own.
+     */
+    private trapError(
+        e: unknown,
+        lineNumber: number,
+        failedAt: Position,
+    ): boolean {
+        if (!isBasicError(e)) return false;
+        if (this.errorHandler === null || this.errorReturn !== null) {
+            return false;
+        }
+
+        /* Jump first: if the handler line does not exist that is the
+         * error worth reporting, and nothing has been disturbed yet. */
+        this.jumpTo(this.errorHandler);
+        this.lastError = { error: e, line: lineNumber };
+        this.errorReturn = failedAt;
+        return true;
+    }
+
+    /** What ERR and ERL answer. Both are 0 before anything has failed. */
+    private errorInfo(): { code: number; line: number } {
+        if (this.lastError === null) return { code: 0, line: 0 };
+        return { code: this.lastError.error.code, line: this.lastError.line };
+    }
+
     private jumpTo(lineNumber: number) {
         const index = this.program.findIndex(lineNumber);
         if (index === null) throw new BasicError("UNDEF'D STATEMENT");
@@ -638,6 +710,52 @@ export class Interpreter {
             case "list":
                 await this.executeList(statement);
                 return;
+
+            case "onError":
+                if (statement.line !== 0) {
+                    this.errorHandler = statement.line;
+                    return;
+                }
+                this.errorHandler = null;
+                /* Inside a handler, turning trapping off is how a
+                 * program says it cannot deal with this one after all,
+                 * and the error it was given is reported as though it
+                 * had never been caught. */
+                if (this.errorReturn !== null && this.lastError !== null) {
+                    this.errorReturn = null;
+                    throw this.lastError.error;
+                }
+                return;
+
+            case "resume": {
+                if (this.errorReturn === null) {
+                    throw new BasicError("RESUME WITHOUT ERROR");
+                }
+                const back = this.errorReturn;
+                this.errorReturn = null;
+
+                if (statement.target === "same") {
+                    this.position = { ...back };
+                } else if (statement.target === "next") {
+                    /* One past the end of a line is fine: the main loop
+                     * treats that as "move to the next line". */
+                    this.position = {
+                        lineIndex: back.lineIndex,
+                        statementIndex: back.statementIndex + 1,
+                    };
+                } else {
+                    this.jumpTo(statement.target);
+                }
+                return;
+            }
+
+            case "error": {
+                const code = Math.trunc(this.number(statement.code));
+                if (code < 0 || code > 255) {
+                    throw new BasicError("ILLEGAL QUANTITY");
+                }
+                throw new BasicError(errorKindForCode(code), null, code);
+            }
         }
     }
 

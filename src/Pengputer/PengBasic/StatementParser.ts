@@ -156,6 +156,10 @@ export class StatementParser extends Parser {
                     return this.parseNext();
                 case "ON":
                     return this.parseOn();
+                case "RESUME":
+                    return this.parseResume();
+                case "ERROR":
+                    return { kind: "error", code: this.parseExpression() };
                 case "STOP":
                     return { kind: "stop" };
                 case "CONT":
@@ -678,6 +682,16 @@ export class StatementParser extends Parser {
 
     /** `ON X GOTO 10,20,30' or `ON X GOSUB 10,20'. */
     private parseOn(): Statement {
+        /* `ON ERROR GOTO' shares only the word ON with `ON n GOTO'.
+         * Deciding here keeps the two apart before either has parsed
+         * anything it would have to give back. */
+        if (this.takeKeyword("ERROR")) {
+            if (!this.takeKeyword("GOTO")) {
+                throw new BasicError("SYNTAX", this.peek().pos);
+            }
+            return { kind: "onError", line: this.parseLineNumber() };
+        }
+
         const selector = this.parseExpression();
 
         let target: "goto" | "gosub";
@@ -689,6 +703,19 @@ export class StatementParser extends Parser {
         while (this.takePunct(",")) lines.push(this.parseLineNumber());
 
         return { kind: "on", selector, target, lines };
+    }
+
+    /** `RESUME', `RESUME NEXT', `RESUME 0' (same as bare), `RESUME 100'. */
+    private parseResume(): Statement {
+        if (this.takeKeyword("NEXT")) return { kind: "resume", target: "next" };
+
+        const token = this.peek();
+        if (token.kind !== "number") return { kind: "resume", target: "same" };
+
+        /* `RESUME 0' is the documented spelling of bare RESUME, and
+         * listings do write it. */
+        const line = this.parseLineNumber();
+        return { kind: "resume", target: line === 0 ? "same" : line };
     }
 
     private parseSwap(): Statement {

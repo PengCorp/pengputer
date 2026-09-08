@@ -91,6 +91,14 @@ const EXPECTED: Record<string, string | RegExp> = {
 
     /* The point of the listing is that the first two lines disagree:
      * six digits cannot show the error, and the error is there. */
+    /* The middle line is the point: the division failed, the handler
+     * said so, and the program carried on to the next pair. */
+    "onerror.bas":
+        " 10 / 2 = 5 \n" +
+        " 7 / 0 =UNDEFINED (LINE 60 )\n" +
+        " 9 / 3 = 3 \n" +
+        "DONE\n",
+
     "precision.bas":
         "TEN TENTHS PRINT AS 1 \n" +
         "AND DO NOT EQUAL ONE\n" +

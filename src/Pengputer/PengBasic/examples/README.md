@@ -34,7 +34,12 @@ runs it, and checks the output, so a broken example fails the suite.
 | `bounce.bas`    | A ball, `DELAY` to pace it, `INKEY$` to stop it       |
 | `chars.bas`     | The whole character set, and the blocks you draw with |
 | `precision.bas` | What a single-precision number can and cannot hold    |
+| `onerror.bas`   | `ON ERROR GOTO`, `RESUME NEXT`, `ERR` and `ERL`       |
 | `aceyducey.bas` | A real book program, typed in exactly as printed      |
+
+`onerror.bas` divides a list of pairs, one of which divides by zero.
+The handler names the line and the program carries on — which is the
+whole point of `RESUME NEXT`.
 
 `precision.bas` is the one to run if the arithmetic ever looks wrong.
 Ten tenths print as `1` and compare unequal to 1, which is not a bug in
