@@ -271,6 +271,11 @@ export class TextBuffer {
             return;
         }
 
+        if (character === "\r") {
+            this.carriageReturn();
+            return;
+        }
+
         if (!getIsPrintable(character)) {
             return;
         }

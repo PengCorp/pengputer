@@ -42,6 +42,8 @@ import { HelloWorld } from "./testexe/HelloWorld";
 import { Colors } from "./testexe/Colors";
 import { FileTransferTest } from "./testexe/FileTransferTest";
 import { TestPwd } from "./testexe/pwd";
+// languages
+import { PengBasic } from "./PengBasic";
 // editors
 import { Pedlin } from "./Pedlin";
 import { EdApp } from "./ed";
@@ -172,6 +174,11 @@ class PengOS {
             type: FileType.Executable,
             name: "psh.exe",
             createInstance: () => new PengerShell(this.pc),
+        });
+        softwareDir.addItem({
+            type: FileType.Executable,
+            name: "pbasic.exe",
+            createInstance: () => new PengBasic(this.pc),
         });
         softwareDir.addItem({
             type: FileType.Executable,

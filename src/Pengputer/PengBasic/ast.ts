@@ -1,0 +1,351 @@
+/**
+ * The shapes an expression can take.
+ *
+ * Two things are deliberately absent.
+ *
+ * No positions. Tokens carry a `pos' because a *syntax* error can point
+ * at a character, but BASIC reports runtime errors per line -- `?TYPE
+ * MISMATCH ERROR IN 100', never a column -- so an expression tree that
+ * only ever runs has nothing to do with one.
+ *
+ * No distinction between an array subscript and a function call. See
+ * the note on `call' below; it is the interesting problem in this
+ * stage.
+ */
+import type { Sigil } from "./tokens";
+
+export type BinaryOp =
+    | "+"
+    | "-"
+    | "*"
+    | "/"
+    | "^"
+    | "="
+    | "<>"
+    | "<"
+    | ">"
+    | "<="
+    | ">="
+    | "AND"
+    | "OR";
+
+export type UnaryOp = "-" | "NOT";
+
+/** The six comparisons, which `CASE IS >5' needs to name on its own. */
+export type ComparisonOp = "=" | "<>" | "<" | ">" | "<=" | ">=";
+
+/**
+ * One thing a `CASE' will match against.
+ *
+ * `CASE 1, 3 TO 5, IS > 100' is three clauses in one CASE, and any of
+ * them matching takes the branch.
+ */
+export type CaseClause =
+    | { kind: "value"; value: Expr }
+    | { kind: "range"; from: Expr; to: Expr }
+    | { kind: "compare"; op: ComparisonOp; value: Expr };
+
+export type Expr =
+    /**
+     * `isDouble' comes from how the constant was written -- see the
+     * tokenizer. It is what stops `A# = 1.23456789' being rounded to a
+     * single before it ever reaches the variable.
+     */
+    | { kind: "number"; value: number; isDouble: boolean }
+    | { kind: "string"; value: string }
+    | { kind: "variable"; name: string; sigil: Sigil }
+    /**
+     * `NAME(args)'.
+     *
+     * In BASIC a call and a subscript are written identically -- `A(1)'
+     * is the second element of array A, and `SQR(1)' is a function --
+     * and nothing in the *syntax* tells them apart. Only what the name
+     * refers to does, which is not known until the program runs and its
+     * arrays exist. So the parser does not guess: it emits one node for
+     * both, and the evaluator resolves it by looking in the built-in
+     * table first and the arrays second.
+     *
+     * This is how the original worked too, and it is why in Microsoft
+     * BASIC you could not have an array called LEN.
+     */
+    | { kind: "call"; name: string; sigil: Sigil; args: Expr[] }
+    /**
+     * `FNA(3)'. Separate from `call' because a user function is never
+     * ambiguous with an array -- the FN prefix says what it is.
+     */
+    | { kind: "fnCall"; name: string; sigil: Sigil; args: Expr[] }
+    /**
+     * `UBOUND(A)', `UBOUND(A,2)', `LBOUND(A)'.
+     *
+     * Not a `call', because the argument is the *name* of an array
+     * rather than a value -- `UBOUND(A)' must not evaluate A. Same
+     * reason ERASE takes names: there is no expression that means "the
+     * array A" for these to be handed.
+     */
+    | {
+          kind: "arrayBound";
+          which: "lower" | "upper";
+          name: string;
+          sigil: Sigil;
+          dimension: Expr | null;
+      }
+    | { kind: "unary"; op: UnaryOp; operand: Expr }
+    | { kind: "binary"; op: BinaryOp; left: Expr; right: Expr };
+
+/* ------------------------------------------------------------------ */
+
+/** Somewhere a value can be stored: a scalar, or one array element. */
+export type LValue =
+    | { kind: "variable"; name: string; sigil: Sigil }
+    | { kind: "element"; name: string; sigil: Sigil; subscripts: Expr[] };
+
+/**
+ * The pieces of a PRINT.
+ *
+ * The separators are items in their own right rather than punctuation
+ * between items, because in BASIC they *do* something: a comma moves to
+ * the next 14-column zone and a semicolon deliberately does not move at
+ * all. `PRINT ,,,X' is three zone jumps and is perfectly meaningful.
+ */
+export type PrintItem =
+    | { kind: "expression"; expr: Expr }
+    | { kind: "tab"; expr: Expr }
+    | { kind: "spc"; expr: Expr }
+    | { kind: "zone" }
+    | { kind: "adjacent" };
+
+/**
+ * `DEF FN A(X) = X*X'.
+ *
+ * 8K allowed exactly one parameter; later versions allowed several, and
+ * accepting several costs nothing and rejects nothing that used to work.
+ */
+export interface FnDefinition {
+    name: string;
+    sigil: Sigil;
+    parameters: { name: string; sigil: Sigil }[];
+    body: Expr;
+}
+
+export interface LetterRange {
+    from: string;
+    to: string;
+}
+
+export interface DataItem {
+    value: string;
+    quoted: boolean;
+}
+
+export interface DimEntry {
+    name: string;
+    sigil: Sigil;
+    bounds: Expr[];
+}
+
+/** A FOR loop's counter. Always a scalar -- never an array element. */
+export interface LoopVariable {
+    name: string;
+    sigil: Sigil;
+}
+
+export type Statement =
+    | { kind: "let"; target: LValue; value: Expr }
+    | { kind: "goto"; line: number }
+    | { kind: "gosub"; line: number }
+    | { kind: "return" }
+    /**
+     * Everything after THEN to the end of the line is the then-branch,
+     * and everything after ELSE is the else-branch. `IF X THEN A: B'
+     * runs *both* A and B only when X is true -- the colon does not end
+     * the IF, which catches people out constantly.
+     */
+    | {
+          kind: "if";
+          condition: Expr;
+          then: Statement[];
+          else: Statement[] | null;
+      }
+    | {
+          kind: "for";
+          variable: LoopVariable;
+          from: Expr;
+          to: Expr;
+          step: Expr | null;
+      }
+    /** `NEXT', `NEXT I' or `NEXT I,J'. Empty list means the innermost. */
+    | { kind: "next"; variables: LoopVariable[] }
+    | { kind: "on"; selector: Expr; target: "goto" | "gosub"; lines: number[] }
+    | { kind: "stop" }
+    | { kind: "cont" }
+    | { kind: "while"; condition: Expr }
+    | { kind: "wend" }
+    | { kind: "swap"; left: LValue; right: LValue }
+    /**
+     * `INPUT "NAME"; A$, B'.
+     *
+     * `showQuestionMark' is false when the prompt was separated with a
+     * comma instead of a semicolon -- the one place in BASIC where those
+     * two mean something genuinely different.
+     */
+    | {
+          kind: "input";
+          prompt: string;
+          showQuestionMark: boolean;
+          targets: LValue[];
+      }
+    /** `LINE INPUT "PROMPT"; A$'. One string, commas and all. */
+    | { kind: "lineInput"; prompt: string; target: LValue }
+    /** Items are raw text; READ decides what they mean. */
+    | { kind: "data"; items: DataItem[] }
+    | { kind: "read"; targets: LValue[] }
+    | { kind: "restore"; line: number | null }
+    | { kind: "defFn"; definition: FnDefinition }
+    | { kind: "randomize"; seed: Expr | null }
+    | { kind: "delete"; from: number | null; to: number | null }
+    /** `RENUM [new][,[old][,increment]]'. Omitted parts take defaults. */
+    | {
+          kind: "renum";
+          newStart: number | null;
+          oldStart: number | null;
+          increment: number | null;
+      }
+    | { kind: "auto"; start: number | null; increment: number | null }
+    /** `EDIT 100', or bare `EDIT' for whichever line last failed. */
+    | { kind: "edit"; line: number | null }
+    | { kind: "cls" }
+    /**
+     * `DELAY 50' -- wait that many milliseconds.
+     *
+     * Not a Microsoft statement. Programs of the era paced themselves
+     * with `FOR I=1 TO 500: NEXT', which finishes instantly here, and
+     * there is no honest way to make a JavaScript interpreter as slow
+     * as a 2MHz 6502 by accident.
+     */
+    | { kind: "delay"; milliseconds: Expr }
+    /**
+     * Getting a program in and out of the machine, through the host
+     * rather than through a filesystem of our own. `LOAD` and `SAVE`
+     * stay out of scope (§1); these are the browser's file picker and
+     * download, which is a different thing wearing similar clothes.
+     */
+    | { kind: "download"; filename: Expr | null }
+    | { kind: "upload" }
+    /**
+     * `LOCATE [row][,[col][,cursor]]'. Row and column count from 1; the
+     * third argument shows (1) or hides (0) the hardware cursor. Any
+     * part may be left out, so `LOCATE ,,0' only hides the cursor.
+     */
+    | {
+          kind: "locate";
+          row: Expr | null;
+          column: Expr | null;
+          cursor: Expr | null;
+      }
+    | { kind: "color"; foreground: Expr | null; background: Expr | null }
+    /** `DEFINT A-Z' -- the default type for names starting with those letters. */
+    | { kind: "defType"; suffix: "%" | "!" | "#" | "$"; ranges: LetterRange[] }
+    /** `PRINT USING "###.##"; A, B'. Commas here are just separators. */
+    | { kind: "printUsing"; format: Expr; values: Expr[]; newline: boolean }
+    /**
+     * `MID$(A$,n[,m]) = B$' -- an assignment *into* a string, which
+     * never changes its length. The one statement that looks like a
+     * function call on the left of an "=".
+     */
+    | {
+          kind: "midAssign";
+          target: LValue;
+          start: Expr;
+          length: Expr | null;
+          value: Expr;
+      }
+    | { kind: "trace"; on: boolean }
+    /** `newline' is false when the statement ended in "," or ";". */
+    | { kind: "print"; items: PrintItem[]; newline: boolean }
+    | { kind: "remark"; text: string }
+    | { kind: "dim"; entries: DimEntry[] }
+    /**
+     * `ERASE A, B$'.
+     *
+     * Throws an array away so it can be `DIM'ed again at a different
+     * size -- the only way to resize one, since a second DIM of a live
+     * array is `?REDIM'D ARRAY'. Names only: there are no subscripts to
+     * give, because it is the whole array that goes.
+     */
+    | { kind: "erase"; names: { name: string; sigil: Sigil }[] }
+    /**
+     * `ON ERROR GOTO 100', and `ON ERROR GOTO 0' to stop trapping.
+     *
+     * Zero is not a line number here, it is the off switch -- which is
+     * why this is a statement of its own rather than a variation on
+     * `on'. Nothing else in BASIC overloads a line number that way.
+     */
+    /**
+     * `REDIM A(20)'. Same shape as DIM, but it throws away whatever
+     * was there first -- which is the only way to change an array's
+     * size, since a second DIM is `?REDIM'D ARRAY'.
+     */
+    /* ---- structured control flow ---- */
+    /**
+     * `IF c THEN' with nothing after THEN.
+     *
+     * The whole difference between this and the single-line `if' is
+     * whether anything follows THEN on the same line, which is exactly
+     * how QuickBASIC told them apart. The two cannot be unified: a
+     * single-line IF owns its branches, a block IF does not -- its body
+     * is simply the statements that come next, and the closing `END IF'
+     * is a separate statement the interpreter finds by scanning.
+     */
+    | { kind: "blockIf"; condition: Expr }
+    | { kind: "elseIf"; condition: Expr }
+    | { kind: "blockElse" }
+    | { kind: "endIf" }
+    | { kind: "selectCase"; selector: Expr }
+    | { kind: "case"; clauses: CaseClause[] }
+    | { kind: "caseElse" }
+    | { kind: "endSelect" }
+    /**
+     * `DO', `DO WHILE c', `DO UNTIL c'.
+     *
+     * `test' is null for a bare DO, which loops until something inside
+     * it says otherwise. `until' inverts the sense, so the two words
+     * share one node rather than being two nearly identical ones.
+     */
+    | { kind: "do"; test: Expr | null; until: boolean }
+    | { kind: "loop"; test: Expr | null; until: boolean }
+    /** `EXIT FOR' / `EXIT DO' -- leave the innermost one of its kind. */
+    | { kind: "exit"; what: "for" | "do" }
+    | { kind: "redim"; entries: DimEntry[] }
+    /** `CONST PI=3.14159, NAME$="X"'. */
+    | { kind: "const"; entries: { name: string; sigil: Sigil; value: Expr }[] }
+    /**
+     * `OPTION BASE 1'.
+     *
+     * Moves the first subscript of every array from 0 to 1. It has to
+     * come before any array exists, because it changes what the arrays
+     * already made would have meant.
+     */
+    | { kind: "optionBase"; base: number }
+    | { kind: "onError"; line: number }
+    /**
+     * `RESUME', `RESUME NEXT', `RESUME 100'.
+     *
+     * Bare RESUME retries the statement that failed, which is the whole
+     * reason the interpreter has to remember *which statement* rather
+     * than only which line.
+     */
+    | { kind: "resume"; target: "same" | "next" | number }
+    /** `ERROR 11' -- raise an error as though it had happened. */
+    | { kind: "error"; code: Expr }
+    | { kind: "end" }
+    | { kind: "run" }
+    | { kind: "list"; from: number | null; to: number | null }
+    | { kind: "new" }
+    /**
+     * `CLEAR', `CLEAR 500', `CLEAR ,32768'.
+     *
+     * The numbers set string space and stack space on a real machine.
+     * We have neither to reserve, so they are evaluated and discarded --
+     * but they must *parse*, because listings open with them.
+     */
+    | { kind: "clear"; stringSpace: Expr | null; stackSpace: Expr | null };

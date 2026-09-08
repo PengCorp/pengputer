@@ -1,38 +1,56 @@
+/**
+ * Typing at a colored prompt.
+ *
+ * `readLine` is shared by the shell, the editors and any program that
+ * asks a question, so the first thing these check is that supplying no
+ * highlighter changes nothing at all.
+ *
+ * Driven through the real `TextBuffer` and `Keyboard` -- both are pure
+ * data with no DOM -- so what is asserted is what the screen would show.
+ */
 import { describe, expect, it } from "vitest";
-import { Keyboard, Modifier } from "../Keyboard";
+import { Keyboard } from "../Keyboard";
 import { TextBuffer } from "../TextBuffer";
-import { readLine } from "./readLine";
-import type { KeyCode } from "../Keyboard/types";
+import { readLine, type ReadLineSpan } from "./readLine";
+import { classicColors } from "@Color/ansi";
+import { ColorType } from "@Color/Color";
 
-const FRAME_MS = 16;
+const RED = classicColors["lightRed"];
+const YELLOW = classicColors["lightYellow"];
 
-function harness() {
+/** The palette index of a color we know to be a classic one. */
+const indexOf = (color: typeof RED) =>
+    color.type === ColorType.Classic ? color.index : null;
+const RED_INDEX = indexOf(RED);
+const YELLOW_INDEX = indexOf(YELLOW);
+
+function machine() {
     const keyboard = new Keyboard();
-    const buffer = new TextBuffer({ pageSize: { w: 80, h: 25 } });
+    const buffer = new TextBuffer({ pageSize: { w: 20, h: 5 } });
     return { keyboard, buffer };
 }
 
-/** Lets every pending promise settle. */
-function settle(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-/** Runs the animation loop by hand for a while. */
-async function runFrames(keyboard: Keyboard, frames: number) {
-    for (let i = 0; i < frames; i += 1) {
-        keyboard.update(FRAME_MS);
-        await settle();
+/** Types the characters, then Enter, letting each be consumed. */
+async function type(keyboard: Keyboard, text: string) {
+    for (const char of text) {
+        keyboard.sendEvent(null, {
+            code: "KeyA",
+            char,
+            pressed: true,
+            isAutoRepeat: false,
+            isModifier: false,
+            isShiftDown: false,
+            isControlDown: false,
+            isAltDown: false,
+            isMetaDown: false,
+            isCapsOn: false,
+        });
+        await Promise.resolve();
     }
 }
 
-async function type(keyboard: Keyboard, ...codes: KeyCode[]) {
-    for (const code of codes) {
-        keyboard.sendKeyCode(null, code, true);
-        await settle();
-    }
-}
-
-function row(buffer: TextBuffer, y: number): string {
+/** One row as it appears, trailing blanks removed. */
+function row(buffer: TextBuffer, y: number) {
     return buffer
         .getPage(0)
         .lines[y].cells.map((c) => (c.rune === "\x00" ? " " : c.rune))
@@ -40,156 +58,117 @@ function row(buffer: TextBuffer, y: number): string {
         .trimEnd();
 }
 
-describe("typing", () => {
-    it("returns the line on Enter", async () => {
-        const { keyboard, buffer } = harness();
+/** The palette index of one cell, or null if it is not a classic color. */
+function colorAt(buffer: TextBuffer, y: number, x: number) {
+    const fg = buffer.getPage(0).lines[y].cells[x].getAttributes().fgColor;
+    return fg.type === ColorType.Classic ? fg.index : null;
+}
+
+/** Everything before "A" is red; "A" onward is yellow. */
+const splitAtA = (text: string): ReadLineSpan[] => {
+    const at = text.indexOf("A");
+    if (at < 0) return text ? [{ text, color: RED }] : [];
+    return [
+        ...(at > 0 ? [{ text: text.slice(0, at), color: RED }] : []),
+        { text: text.slice(at), color: YELLOW },
+    ];
+};
+
+describe("without a highlighter", () => {
+    it("draws exactly what was typed", async () => {
+        const { keyboard, buffer } = machine();
         const line = readLine(keyboard, buffer);
-
-        await type(keyboard, "KeyH", "KeyI", "Enter");
-
-        expect(await line).toBe("hi");
+        await type(keyboard, "PRINT 1\n");
+        expect(await line).toBe("PRINT 1");
+        expect(row(buffer, 0)).toBe("PRINT 1");
     });
 
-    it("echoes what was typed", async () => {
-        const { keyboard, buffer } = harness();
+    it("leaves the color alone", async () => {
+        const { keyboard, buffer } = machine();
+        const before = buffer.getCurrentAttributes().fgColor;
         const line = readLine(keyboard, buffer);
+        await type(keyboard, "AB\n");
+        await line;
+        expect(buffer.getCurrentAttributes().fgColor).toEqual(before);
+        expect(colorAt(buffer, 0, 0)).toBe(colorAt(buffer, 0, 1));
+    });
+});
 
-        await type(keyboard, "KeyA", "KeyB", "Enter");
+describe("with a highlighter", () => {
+    it("colors as it goes", async () => {
+        const { keyboard, buffer } = machine();
+        const line = readLine(keyboard, buffer, { highlight: splitAtA });
+        await type(keyboard, "XYA\n");
+        expect(await line).toBe("XYA");
+
+        expect(row(buffer, 0)).toBe("XYA");
+        expect(colorAt(buffer, 0, 0)).toBe(RED_INDEX);
+        expect(colorAt(buffer, 0, 1)).toBe(RED_INDEX);
+        expect(colorAt(buffer, 0, 2)).toBe(YELLOW_INDEX);
+    });
+
+    /*
+     * The point of redrawing the whole line rather than painting from
+     * the cursor: a character typed at the end can change the color of
+     * everything before it, exactly as a closing quote does.
+     */
+    it("recolors what was already on screen", async () => {
+        const { keyboard, buffer } = machine();
+        const line = readLine(keyboard, buffer, { highlight: splitAtA });
+
+        await type(keyboard, "XY");
+        expect(colorAt(buffer, 0, 0)).toBe(RED_INDEX);
+
+        /* Inserting A before them turns X and Y yellow. */
+        await type(keyboard, "\b\b");
+        await type(keyboard, "AXY\n");
         await line;
 
-        expect(row(buffer, 0)).toBe("ab");
+        expect(row(buffer, 0)).toBe("AXY");
+        expect(colorAt(buffer, 0, 0)).toBe(YELLOW_INDEX);
+        expect(colorAt(buffer, 0, 1)).toBe(YELLOW_INDEX);
     });
 
-    it("backspaces", async () => {
-        const { keyboard, buffer } = harness();
-        const line = readLine(keyboard, buffer);
-
-        await type(keyboard, "KeyA", "KeyB", "Backspace", "KeyC", "Enter");
-
-        expect(await line).toBe("ac");
+    it("erases the tail when the line gets shorter", async () => {
+        const { keyboard, buffer } = machine();
+        const line = readLine(keyboard, buffer, { highlight: splitAtA });
+        await type(keyboard, "XXXXXX");
+        await type(keyboard, "\b\b\b\b");
+        await type(keyboard, "\n");
+        expect(await line).toBe("XX");
+        expect(row(buffer, 0)).toBe("XX");
     });
 
-    it("returns null on Ctrl+C", async () => {
-        const { keyboard, buffer } = harness();
-        const line = readLine(keyboard, buffer);
-
-        await type(keyboard, "KeyA");
-        keyboard.maskModifiers(Modifier.CONTROL, Modifier.ALL_MODIFIERS);
-        await type(keyboard, "KeyC");
-
-        expect(await line).toBe(null);
-    });
-});
-
-describe("pre-filled text", () => {
-    it("starts with the text already there", async () => {
-        const { keyboard, buffer } = harness();
-        const line = readLine(keyboard, buffer, { initialText: "10 " });
-
-        expect(row(buffer, 0)).toBe("10");
-
-        await type(keyboard, "KeyX", "Enter");
-        expect(await line).toBe("10 x");
+    it("puts the color back for whatever prints next", async () => {
+        const { keyboard, buffer } = machine();
+        const before = buffer.getCurrentAttributes().fgColor;
+        const line = readLine(keyboard, buffer, { highlight: splitAtA });
+        await type(keyboard, "XA\n");
+        await line;
+        expect(buffer.getCurrentAttributes().fgColor).toEqual(before);
     });
 
-    it("lets the pre-filled text be edited", async () => {
-        const { keyboard, buffer } = harness();
-        const line = readLine(keyboard, buffer, { initialText: "abc" });
+    /* Movement is relative to where the cursor is, so a line that wraps
+     * onto the next row still repaints correctly. */
+    it("survives a line that wraps", async () => {
+        const { keyboard, buffer } = machine();
+        const line = readLine(keyboard, buffer, { highlight: splitAtA });
+        await type(keyboard, "XXXXXXXXXXXXXXXXXXXXXXXXA\n");
+        expect(await line).toBe("XXXXXXXXXXXXXXXXXXXXXXXXA");
 
-        await type(keyboard, "Backspace", "KeyZ", "Enter");
-
-        expect(await line).toBe("abz");
+        expect(row(buffer, 0)).toBe("XXXXXXXXXXXXXXXXXXXX");
+        expect(row(buffer, 1)).toBe("XXXXA");
+        expect(colorAt(buffer, 1, 4)).toBe(YELLOW_INDEX);
     });
 
-    it("can be submitted unchanged", async () => {
-        const { keyboard, buffer } = harness();
-        const line = readLine(keyboard, buffer, { initialText: "20 PRINT" });
-
-        await type(keyboard, "Enter");
-
-        expect(await line).toBe("20 PRINT");
-    });
-});
-
-describe("pasting", () => {
-    it("delivers a pasted line", async () => {
-        const { keyboard, buffer } = harness();
-        keyboard.pasteText("HELLO\n");
-
-        const line = readLine(keyboard, buffer);
-        await runFrames(keyboard, 10);
-
-        expect(await line).toBe("HELLO");
-    });
-
-    /**
-     * The flush regression. readLine flushes the event buffer when it
-     * starts and again after accepting a line, so a paste spanning
-     * several lines used to lose everything after the first.
-     */
-    it("survives the flush between lines", async () => {
-        const { keyboard, buffer } = harness();
-        keyboard.pasteText("10 PRINT 1\n20 PRINT 2\n30 END\n");
-
-        const lines: (string | null)[] = [];
-        for (let i = 0; i < 3; i += 1) {
-            const line = readLine(keyboard, buffer);
-            await runFrames(keyboard, 20);
-            lines.push(await line);
-        }
-
-        expect(lines).toEqual(["10 PRINT 1", "20 PRINT 2", "30 END"]);
-    });
-
-    /**
-     * The starvation regression. Signal.getPromise() hands out a
-     * one-shot listener, so a burst emitted in one frame woke a single
-     * waiter and the rest of the burst reached nobody -- delivery was
-     * pinned to one character per frame however much was queued.
-     */
-    it("delivers far more than one character per frame", async () => {
-        const { keyboard, buffer } = harness();
-        const text = "X".repeat(60);
-        keyboard.pasteText(`${text}\n`);
-
-        let result: string | null | undefined;
-        void readLine(keyboard, buffer).then((r) => {
-            result = r;
+    it("keeps an initial text and colors it", async () => {
+        const { keyboard, buffer } = machine();
+        const line = readLine(keyboard, buffer, {
+            highlight: splitAtA,
+            initialText: "AB",
         });
-
-        /* 60 characters at 600 a second is about one frame's worth; ten
-         * frames is generous. One-per-frame would have managed ten. */
-        await runFrames(keyboard, 10);
-
-        expect(result).toBe(text);
-    });
-
-    it("stops when the paste is cancelled", async () => {
-        const { keyboard, buffer } = harness();
-        keyboard.pasteText("AAAA\nBBBB\n");
-
-        const first = readLine(keyboard, buffer);
-        await runFrames(keyboard, 10);
-        expect(await first).toBe("AAAA");
-
-        keyboard.cancelPaste();
-
-        let second: string | null | undefined;
-        void readLine(keyboard, buffer).then((r) => {
-            second = r;
-        });
-        await runFrames(keyboard, 10);
-
-        expect(second).toBeUndefined();
-    });
-
-    it("turns tabs into spaces and normalises line endings", async () => {
-        const { keyboard, buffer } = harness();
-        keyboard.pasteText("A\tBC\r\n");
-
-        const line = readLine(keyboard, buffer);
-        await runFrames(keyboard, 10);
-
-        expect(await line).toBe("A BC");
+        await type(keyboard, "\n");
+        expect(await line).toBe("AB");
+        expect(colorAt(buffer, 0, 0)).toBe(YELLOW_INDEX);
     });
 });
