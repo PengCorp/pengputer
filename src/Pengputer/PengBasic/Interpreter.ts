@@ -22,6 +22,8 @@ import { rewriteLineReferences } from "./lineReferences";
 import { StatementParser } from "./StatementParser";
 import { Variables } from "./Variables";
 import { formatValue, PRINT_ZONE_WIDTH } from "./format";
+import { highlightLine } from "./highlight";
+import { paletteColor, SYNTAX_COLORS } from "./palette";
 import { tokenize } from "./Tokenizer";
 import type {
     CaseClause,
@@ -174,6 +176,9 @@ export class Interpreter {
 
     private random: Random = new Random();
 
+    /** Kept so a coloured LIST can tell a built-in from a variable. */
+    private builtins: Builtins;
+
     /**
      * What the next prompt should start out containing.
      *
@@ -256,15 +261,17 @@ export class Interpreter {
         now: () => Date = () => new Date(),
     ) {
         this.console = machine;
+        this.builtins =
+            builtins ??
+            createBuiltins({
+                machine,
+                random: this.random,
+                now,
+                lastError: () => this.errorInfo(),
+            });
         this.evaluator = new Evaluator(
             this.variables,
-            builtins ??
-                createBuiltins({
-                    machine,
-                    random: this.random,
-                    now,
-                    lastError: () => this.errorInfo(),
-                }),
+            this.builtins,
             this.functions,
         );
     }
@@ -328,7 +335,24 @@ export class Interpreter {
             ) {
                 throw new BasicError("SYNTAX", first.pos);
             }
-            this.program.setLine(first.value, source.slice(tokens[1].pos));
+            /*
+             * Everything after the number *token*, not after the space
+             * that follows it -- so a line indented under a FOR or an
+             * IF keeps its indent. Storing from `tokens[1].pos' instead
+             * ate exactly the leading run, which left internal spacing
+             * preserved and indentation flattened: the inconsistent
+             * half of a promise to show a program back as it was typed.
+             *
+             * The number's own text is measured rather than assumed,
+             * because `010' is three characters and the value 10.
+             */
+            const numberText = source
+                .slice(first.pos, tokens[1].pos)
+                .replace(/\s+$/, "");
+            this.program.setLine(
+                first.value,
+                source.slice(first.pos + numberText.length),
+            );
             /* Editing the program is what makes CONT impossible. */
             this.continuePosition = null;
             /* Count on from the line actually entered, not from what was
@@ -821,7 +845,7 @@ export class Interpreter {
                     this.program.findIndex(wanted) ?? -1,
                 );
                 if (line === null) throw new BasicError("UNDEF'D STATEMENT");
-                this.pendingPrefill = `${line.number} ${line.source}`;
+                this.pendingPrefill = `${line.number}${line.source}`;
                 return;
             }
 
@@ -1537,15 +1561,42 @@ export class Interpreter {
 
                 if (key === "\x03") return;
             }
-            this.console.write(`${lines[i].number} ${lines[i].source}\n`);
+            this.writeListing(lines[i].number, lines[i].source);
         }
+    }
+
+    /**
+     * One line of a listing, in colour.
+     *
+     * The program's own foreground is put back afterwards, because a
+     * program that set `COLOR 4` and then `LIST`ed should not find its
+     * colour changed underneath it.
+     */
+    private writeListing(number: number, source: string) {
+        const saved = this.console.getForeground();
+        try {
+            this.console.setForeground(paletteColor(SYNTAX_COLORS.strong));
+            this.console.write(String(number));
+
+            for (const span of highlightLine(source, (name) =>
+                this.builtins.has(name),
+            )) {
+                this.console.setForeground(
+                    paletteColor(SYNTAX_COLORS[span.role]),
+                );
+                this.console.write(span.text);
+            }
+        } finally {
+            this.console.setForeground(saved);
+        }
+        this.console.write("\n");
     }
 
     /** The program as LIST would show it, which is what DOWNLOAD saves. */
     private getProgramText(): string {
         return this.program
             .list(null, null)
-            .map((line) => `${line.number} ${line.source}\n`)
+            .map((line) => `${line.number}${line.source}\n`)
             .join("");
     }
 

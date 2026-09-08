@@ -185,7 +185,27 @@ describe("the stored program", () => {
     });
 
     it("lists what you typed, spacing and all", async () => {
-        expect(await run("10   PRINT    1", "LIST")).toBe("10 PRINT    1\n");
+        expect(await run("10   PRINT    1", "LIST")).toBe("10   PRINT    1\n");
+    });
+
+    /*
+     * Indentation counts, now that there are blocks worth indenting. A
+     * line is stored from the end of its number *token*, not from the
+     * first thing after the space -- storing from the latter kept the
+     * spacing inside a line and quietly flattened the indent, which is
+     * half a promise.
+     */
+    it("keeps a line indented under its block", async () => {
+        expect(
+            await run("10 FOR I=1 TO 3", "20   PRINT I", "30 NEXT I", "LIST"),
+        ).toBe("10 FOR I=1 TO 3\n20   PRINT I\n30 NEXT I\n");
+    });
+
+    /* Nothing is inserted either: a number run onto its statement stays
+     * run on, and trailing spaces survive. */
+    it("adds no spacing of its own", async () => {
+        expect(await run("10PRINT 1", "LIST")).toBe("10PRINT 1\n");
+        expect(await run("10 PRINT 1   ", "LIST")).toBe("10 PRINT 1   \n");
     });
 
     it("lists a range", async () => {

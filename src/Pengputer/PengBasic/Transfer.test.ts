@@ -34,7 +34,7 @@ describe("DOWNLOAD", () => {
     it("keeps the typist's spacing", async () => {
         const { console, interpreter } = machine();
         await feed(interpreter, "10   PRINT    1", "DOWNLOAD");
-        expect(console.getDownloads()[0].contents).toBe("10 PRINT    1\n");
+        expect(console.getDownloads()[0].contents).toBe("10   PRINT    1\n");
     });
 
     it("takes a name", async () => {

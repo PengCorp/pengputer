@@ -101,7 +101,7 @@ describe("RENUM", () => {
 
     it("leaves the typist's spacing alone", async () => {
         expect(await listing("1   GOTO    5", "5 END", "RENUM")).toBe(
-            "10 GOTO    20\n20 END\n",
+            "10   GOTO    20\n20 END\n",
         );
     });
 
@@ -229,7 +229,7 @@ describe("EDIT", () => {
     it("hands the line back for editing", async () => {
         const { interpreter } = machine();
         await feed(interpreter, "10   PRINT    1", "EDIT 10");
-        expect(interpreter.takePendingPrefill()).toBe("10 PRINT    1");
+        expect(interpreter.takePendingPrefill()).toBe("10   PRINT    1");
     });
 
     it("is a one-shot", async () => {

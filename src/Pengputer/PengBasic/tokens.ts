@@ -24,75 +24,97 @@
 /** The trailing character that gives a variable its type. */
 export type Sigil = "" | "$" | "%" | "!" | "#";
 
-export const KEYWORDS = [
-    "LET",
-    "PRINT",
-    "INPUT",
-    "IF",
-    "THEN",
-    "ELSE",
-    "ELSEIF",
-    "SELECT",
-    "CASE",
-    "IS",
-    "DO",
-    "LOOP",
-    "UNTIL",
-    "EXIT",
-    "FOR",
-    "TO",
-    "STEP",
-    "NEXT",
-    "GOTO",
-    "GOSUB",
-    "RETURN",
-    "ON",
-    "DATA",
-    "READ",
-    "RESTORE",
-    "DIM",
-    "ERASE",
-    "REDIM",
-    "CONST",
-    "OPTION",
-    "BASE",
-    "ERROR",
-    "RESUME",
-    "DEF",
-    "FN",
-    "END",
-    "STOP",
-    "CONT",
-    "RUN",
-    "LIST",
-    "NEW",
-    "CLEAR",
-    "RANDOMIZE",
-    "WHILE",
-    "WEND",
-    "USING",
-    "SWAP",
-    "TRON",
-    "TROFF",
-    "LINE",
-    "RENUM",
-    "AUTO",
-    "DELETE",
-    "EDIT",
-    "CLS",
-    "LOCATE",
-    "COLOR",
-    "DEFINT",
-    "DEFSNG",
-    "DEFDBL",
-    "DEFSTR",
-    "DELAY",
-    "DOWNLOAD",
-    "UPLOAD",
-] as const;
-export type Keyword = (typeof KEYWORDS)[number];
+/**
+ * What a keyword *is*, as opposed to how it is spelled.
+ *
+ * Kept here, beside the keyword itself, rather than in a set belonging
+ * to whoever happens to care. Anything that wants to treat control flow
+ * differently from declarations -- the syntax colouring is the first,
+ * and will not be the last -- asks this table instead of keeping its own
+ * copy, which is the arrangement that cannot drift.
+ */
+export type KeywordKind =
+    /** Moves the program counter, or bounds a block: IF, FOR, GOTO, END. */
+    | "control"
+    /** Declares something: DIM, DEF, CONST, DEFINT -- and DATA. */
+    | "declaration"
+    /** Does something: PRINT, CLS, SWAP, and the prompt's own commands. */
+    | "command";
 
-const KEYWORD_SET: ReadonlySet<string> = new Set(KEYWORDS);
+export const KEYWORDS = {
+    LET: "declaration",
+    PRINT: "command",
+    INPUT: "command",
+    IF: "control",
+    THEN: "control",
+    ELSE: "control",
+    ELSEIF: "control",
+    SELECT: "control",
+    CASE: "control",
+    IS: "control",
+    DO: "control",
+    LOOP: "control",
+    UNTIL: "control",
+    EXIT: "control",
+    FOR: "control",
+    TO: "control",
+    STEP: "control",
+    NEXT: "control",
+    GOTO: "control",
+    GOSUB: "control",
+    RETURN: "control",
+    ON: "control",
+    DATA: "declaration",
+    READ: "command",
+    RESTORE: "command",
+    DIM: "declaration",
+    ERASE: "declaration",
+    REDIM: "declaration",
+    CONST: "declaration",
+    OPTION: "declaration",
+    BASE: "declaration",
+    ERROR: "control",
+    RESUME: "control",
+    DEF: "declaration",
+    FN: "declaration",
+    END: "control",
+    STOP: "control",
+    CONT: "command",
+    RUN: "command",
+    LIST: "command",
+    NEW: "command",
+    CLEAR: "command",
+    RANDOMIZE: "command",
+    WHILE: "control",
+    WEND: "control",
+    USING: "command",
+    SWAP: "command",
+    TRON: "command",
+    TROFF: "command",
+    LINE: "command",
+    RENUM: "command",
+    AUTO: "command",
+    DELETE: "command",
+    EDIT: "command",
+    CLS: "command",
+    LOCATE: "command",
+    COLOR: "command",
+    DEFINT: "declaration",
+    DEFSNG: "declaration",
+    DEFDBL: "declaration",
+    DEFSTR: "declaration",
+    DELAY: "command",
+    DOWNLOAD: "command",
+    UPLOAD: "command",
+} as const satisfies Record<string, KeywordKind>;
+
+export type Keyword = keyof typeof KEYWORDS;
+
+export function keywordKind(keyword: Keyword): KeywordKind {
+    return KEYWORDS[keyword];
+}
+
+const KEYWORD_SET: ReadonlySet<string> = new Set(Object.keys(KEYWORDS));
 export function isKeyword(word: string): word is Keyword {
     return KEYWORD_SET.has(word);
 }

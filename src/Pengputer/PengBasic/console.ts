@@ -72,6 +72,19 @@ export interface Console {
     /** LOCATE's third argument: the hardware cursor. */
     setCursorVisible(visible: boolean): void;
 
+    /**
+     * The foreground, as the machine's own colour rather than a CGA
+     * number.
+     *
+     * `setColor` above is BASIC's `COLOR` statement and only reaches the
+     * first sixteen, because that is all `COLOR` can name. These two are
+     * for output the interpreter produces itself -- a coloured `LIST` --
+     * where the whole 32-colour palette is available and the program's
+     * own colour has to be put back afterwards.
+     */
+    getForeground(): Color;
+    setForeground(color: Color): void;
+
     /** The character at a cell, for SCREEN(). Both zero-based. */
     readCharacter(row: number, column: number): string;
 
@@ -195,6 +208,14 @@ export class TestConsole implements Console {
 
     setCursorVisible(visible: boolean) {
         this.cursorVisible = visible;
+    }
+
+    getForeground(): Color {
+        return this.buffer.getCurrentAttributes().fgColor;
+    }
+
+    setForeground(color: Color) {
+        this.buffer.updateCurrentAttributes({ fgColor: color });
     }
 
     readCharacter(row: number, column: number): string {

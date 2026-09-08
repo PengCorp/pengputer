@@ -38,6 +38,7 @@ const KEYBOARD_BUFFER = 16;
 import { Keyboard } from "@src/Keyboard";
 import { waitFor } from "@Toolbox/waitFor";
 import { FileTransferManager } from "@Toolbox/FileTransferManager";
+import type { Color } from "@Color/Color";
 
 /**
  * The machine, wired to PengOS.
@@ -173,6 +174,14 @@ class StdConsole implements Console {
 
     setCursorVisible(visible: boolean) {
         this.pc.std.setIsConsoleCursorVisible(visible);
+    }
+
+    getForeground(): Color {
+        return this.pc.std.getConsoleAttributes().fgColor;
+    }
+
+    setForeground(color: Color) {
+        this.pc.std.updateConsoleAttributes({ fgColor: color });
     }
 
     readCharacter(row: number, column: number): string {
