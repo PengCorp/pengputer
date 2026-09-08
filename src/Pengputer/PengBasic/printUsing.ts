@@ -28,11 +28,13 @@
  *   \   \     a field as wide as the backslashes and the gap between
  *   &         the string entire, however long
  *
+ *   ^^^^      show the value as a mantissa and an exponent
+ *
  * `_` prints the next character literally, so a format can contain a
  * `#` of its own.
  *
- * Not implemented: `^^^^` exponential fields. Rare in listings, fiddly
- * to get right, and nothing has wanted one yet.
+ * Everything here except one rounding edge is checked line for line
+ * against a real GW-BASIC.
  */
 import { BasicError } from "./errors";
 import { formatNumberForStr } from "./format";
@@ -49,6 +51,8 @@ interface NumericField {
     trailingMinus: boolean;
     dollar: boolean;
     asterisk: boolean;
+    /** `^^^^' -- show the value as a mantissa and an exponent. */
+    exponential: boolean;
     width: number;
 }
 
@@ -72,14 +76,28 @@ export function printUsing(format: string, values: Value[]): string {
     let out = "";
     let index = 0;
 
-    /* One pass per go round the format; stop when the values run out. */
+    /*
+     * Literal text is held back until a field actually takes a value.
+     *
+     * Output stops dead at the field that finds nothing left, and the
+     * literal leading up to it is never printed: `PRINT USING "## ##";1'
+     * ends after the 1, without the space that follows the first field.
+     * Held text carries across a go round the format, which is what
+     * makes `PRINT USING "##;";1,2,3' put a semicolon between each pair
+     * and one on the end.
+     */
+    let pending = "";
+
     do {
         for (const piece of pieces) {
             if (piece.kind === "literal") {
-                out += piece.text;
+                pending += piece.text;
                 continue;
             }
             if (index >= values.length) return out;
+
+            out += pending;
+            pending = "";
 
             const value = values[index];
             index += 1;
@@ -90,7 +108,8 @@ export function printUsing(format: string, values: Value[]): string {
         }
     } while (index < values.length);
 
-    return out;
+    /* Everything after the last field, now that every value is placed. */
+    return out + pending;
 }
 
 function parseFormat(format: string): Piece[] {
@@ -167,11 +186,27 @@ function parseNumericField(
 ): { field: NumericField; next: number } | null {
     let at = start;
 
-    const dollar = format.startsWith("$$", at);
-    if (dollar) at += 2;
-
-    const asterisk = format.startsWith("**", at);
-    if (asterisk) at += 2;
+    /*
+     * `**$' is one prefix meaning both -- asterisk fill *and* a floating
+     * currency sign -- and it has to be tried before either half, or the
+     * `**' matches on its own and leaves a stray `$' behind as literal
+     * text. That was the bug: `**$##.##' parsed as a two-wide field, a
+     * literal dollar, and a second field, so `PRINT USING "**$##.##";12.3'
+     * printed `12$' and then stopped for want of a second value.
+     */
+    let dollar = false;
+    let asterisk = false;
+    if (format.startsWith("**$", at)) {
+        dollar = true;
+        asterisk = true;
+        at += 3;
+    } else if (format.startsWith("$$", at)) {
+        dollar = true;
+        at += 2;
+    } else if (format.startsWith("**", at)) {
+        asterisk = true;
+        at += 2;
+    }
 
     const leadingSign = format[at] === "+";
     if (leadingSign) at += 1;
@@ -205,6 +240,14 @@ function parseNumericField(
 
     if (digitsBefore === 0 && !hasDecimal) return null;
 
+    /*
+     * Exactly four carets, and only four: a fifth is literal text. They
+     * stand for the `E+nn' that follows the mantissa, and they are four
+     * characters wide because that is how wide `E+nn' is.
+     */
+    const exponential = format.startsWith("^^^^", at);
+    if (exponential) at += 4;
+
     const trailingSign = format[at] === "+";
     if (trailingSign) at += 1;
     const trailingMinus = !trailingSign && format[at] === "-";
@@ -227,19 +270,81 @@ function parseNumericField(
             trailingMinus,
             dollar,
             asterisk,
+            exponential,
             width,
         },
         next: at,
     };
 }
 
+/**
+ * The mantissa and exponent an `^^^^' field shows.
+ *
+ * How many digits the mantissa gets before its point is the whole of
+ * this, and it is one *fewer* than there are digit positions -- because
+ * one of them is the sign's. Writing an explicit `+' gives the sign a
+ * position of its own and hands the digit back, which is why
+ * `##.##^^^^' shows 1234 as `1.23E+03' and `+##.##^^^^' shows the same
+ * number as `+12.34E+02'.
+ *
+ * With one position and no decimals there is nowhere to put a mantissa
+ * at all, and `#^^^^' of 1234 is a bare `E+04'.
+ */
+function exponentialDigits(field: NumericField, magnitude: number): string {
+    const signHasItsOwn =
+        field.leadingSign || field.trailingSign || field.trailingMinus;
+    const before = Math.max(0, field.digitsBefore - (signHasItsOwn ? 0 : 1));
+
+    if (magnitude === 0) {
+        const zero =
+            before === 0 && !field.hasDecimal
+                ? ""
+                : (0).toFixed(field.digitsAfter);
+        return `${zero}E+00`;
+    }
+
+    let power = Math.floor(Math.log10(magnitude)) - before + 1;
+    let mantissa = magnitude / 10 ** power;
+
+    /* Rounding the mantissa can push it up a decimal place -- 9.99 shown
+     * to one place is 10.0 -- which is one digit too many. */
+    let shown = mantissa.toFixed(field.digitsAfter);
+    if (shown.replace(/\..*$/, "").replace(/^0+/, "").length > before) {
+        power += 1;
+        mantissa = magnitude / 10 ** power;
+        shown = mantissa.toFixed(field.digitsAfter);
+    }
+
+    if (before === 0 && !field.hasDecimal) shown = "";
+
+    const sign = power < 0 ? "-" : "+";
+    const size = String(Math.abs(power)).padStart(2, "0");
+    return `${shown}E${sign}${size}`;
+}
+
 function renderNumeric(field: NumericField, value: number): string {
     const negative = value < 0;
     const magnitude = Math.abs(value);
 
-    let digits = field.hasDecimal
-        ? magnitude.toFixed(field.digitsAfter)
-        : String(Math.round(magnitude));
+    let digits = field.exponential
+        ? exponentialDigits(field, magnitude)
+        : field.hasDecimal
+          ? magnitude.toFixed(field.digitsAfter)
+          : String(Math.round(magnitude));
+
+    /*
+     * `.##' asks for no integer digits at all, and a value below one has
+     * none to show: 0.5 is `.50', not an overflow. A value that *does*
+     * have an integer part still overflows, which is the point of asking
+     * for none.
+     */
+    if (
+        !field.exponential &&
+        field.digitsBefore === 0 &&
+        digits.startsWith("0.")
+    ) {
+        digits = digits.slice(1);
+    }
 
     if (field.grouped) digits = groupThousands(digits);
 

@@ -276,6 +276,11 @@ export class Interpreter {
         );
     }
 
+    /** Is this name one the machine supplies? For colouring a listing. */
+    hasBuiltin(name: string): boolean {
+        return this.builtins.has(name);
+    }
+
     /** Null unless a stored line is running. */
     getRunningLine(): number | null {
         return this.runningLine;

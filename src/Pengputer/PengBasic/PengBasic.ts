@@ -31,6 +31,8 @@ import type { Executable } from "@FileSystem/fileTypes";
 import { type PC } from "../PC";
 import { Interpreter } from "./Interpreter";
 import { isBasicError } from "./errors";
+import { highlightLine } from "./highlight";
+import { paletteColor, SYNTAX_COLORS } from "./palette";
 import { cgaColor, type Console } from "./console";
 
 /** The PC's keyboard buffer held fifteen characters. Close enough. */
@@ -246,6 +248,7 @@ export class PengBasic implements Executable {
 
             const line = await std.readConsoleLine({
                 previousEntries: this.history,
+                highlight: this.highlightForPrompt,
                 ...(prefill === null ? {} : { initialText: prefill }),
             });
 
@@ -285,6 +288,23 @@ export class PengBasic implements Executable {
      * it merely filed away -- so typing or pasting a listing scrolls in
      * clean instead of interleaving a hundred of them.
      */
+    /**
+     * Colours the line being typed, the same way LIST colours a stored
+     * one.
+     *
+     * A line at the prompt has no number in front of it, so this is the
+     * bare source -- and it is being typed, so most of the time it is
+     * not yet valid. That is what the highlighter's fallback is for: a
+     * half-written string simply reads as a string until it is closed.
+     */
+    private highlightForPrompt = (text: string) =>
+        highlightLine(text, (name) => this.interpreter.hasBuiltin(name)).map(
+            (span) => ({
+                text: span.text,
+                color: paletteColor(SYNTAX_COLORS[span.role]),
+            }),
+        );
+
     private async executeLine(line: string) {
         const { std } = this.pc;
 
