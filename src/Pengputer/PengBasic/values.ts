@@ -124,6 +124,18 @@ export function asString(value: Value): string {
 
 /** Anything bigger than a single could hold is `?OVERFLOW ERROR'. */
 export function checkOverflow(n: number, type: BasicType = "single"): number {
+    /* Integer arithmetic is sixteen bits wide and overflows *there*,
+     * not when the answer is finally stored -- `A%+B%' is `?OVERFLOW'
+     * even when what it gets assigned to could have held the result.
+     * The range is asymmetric, so it cannot go through the magnitude
+     * test the other two use. */
+    if (type === "integer") {
+        if (!Number.isFinite(n) || n < MIN_INTEGER || n > MAX_INTEGER) {
+            throw new BasicError("OVERFLOW");
+        }
+        return n;
+    }
+
     const limit = type === "double" ? Number.MAX_VALUE : MAX_SINGLE;
     if (!Number.isFinite(n) || Math.abs(n) > limit) {
         throw new BasicError("OVERFLOW");

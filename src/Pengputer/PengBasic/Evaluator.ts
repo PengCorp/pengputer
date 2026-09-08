@@ -133,6 +133,22 @@ export class Evaluator {
             case "fnCall":
                 return this.evaluateFnCall(expr);
 
+            case "arrayBound": {
+                const dimension =
+                    expr.dimension === null
+                        ? 1
+                        : Math.trunc(asNumber(this.evaluate(expr.dimension)));
+                return {
+                    value: this.variables.bound(
+                        expr.name,
+                        expr.sigil,
+                        expr.which,
+                        dimension,
+                    ),
+                    type: "integer",
+                };
+            }
+
             case "unary":
                 return this.evaluateUnary(expr);
 

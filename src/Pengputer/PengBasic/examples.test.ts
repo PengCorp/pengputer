@@ -91,6 +91,15 @@ const EXPECTED: Record<string, string | RegExp> = {
 
     /* The point of the listing is that the first two lines disagree:
      * six digits cannot show the error, and the error is there. */
+    /* Block IF, SELECT CASE with all three clause forms, DO/LOOP and
+     * EXIT DO -- none of which a 1978 listing could use. */
+    "structured.bas":
+        "SCORE 95 IS EXCELLENT\n" +
+        "SCORE 72 IS GOOD\n" +
+        "SCORE 58 IS POOR\n" +
+        "SCORE 100 IS EXCELLENT (FULL MARKS)\n" +
+        "END OF LIST\n",
+
     /* The middle line is the point: the division failed, the handler
      * said so, and the program carried on to the next pair. */
     "onerror.bas":
@@ -103,7 +112,7 @@ const EXPECTED: Record<string, string | RegExp> = {
         "TEN TENTHS PRINT AS 1 \n" +
         "AND DO NOT EQUAL ONE\n" +
         "\n" +
-        "ONE THIRD, SINGLE: .333333 \n" +
+        "ONE THIRD, SINGLE: .3333333 \n" +
         "ONE THIRD, DOUBLE: .3333333333333333 \n" +
         "THE SINGLE, WIDENED: .3333333432674408 \n" +
         "\n" +

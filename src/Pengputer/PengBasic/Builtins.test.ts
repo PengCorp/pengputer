@@ -69,6 +69,25 @@ describe("RND", () => {
         expect(await value("RND<1")).toBe("-1 \n");
     });
 
+    /*
+     * RUN restarts the sequence, so an unseeded program deals the same
+     * cards every time -- checked against GW-BASIC, where three runs of
+     * the same program gave identical output. It is why every listing
+     * that wants variety opens with RANDOMIZE.
+     */
+    it("gives the same run every time when nothing seeded it", async () => {
+        const machine = new TestConsole();
+        const interpreter = new Interpreter(machine);
+        await interpreter.executeLine("10 PRINT RND(1);RND(1)");
+
+        await interpreter.executeLine("RUN");
+        const first = machine.getText();
+        await interpreter.executeLine("RUN");
+        const second = machine.getText().slice(first.length);
+
+        expect(second).toBe(first);
+    });
+
     it("is repeatable after RANDOMIZE with a seed", async () => {
         const first = await run("10 RANDOMIZE 42", "20 PRINT RND(1)", "RUN");
         const again = await run("10 RANDOMIZE 42", "20 PRINT RND(1)", "RUN");
@@ -92,6 +111,53 @@ describe("RND", () => {
             "RUN",
         );
         expect(text).toBe("OK\n");
+    });
+});
+
+describe("RANDOMIZE with no seed", () => {
+    /*
+     * It stops and asks. A listing gets its variety from the person at
+     * the keyboard, not from the clock -- which is what makes an
+     * unseeded run reproducible in the first place.
+     */
+    it("asks for a seed and uses it", async () => {
+        const machine = new TestConsole();
+        machine.provideInput("5");
+        const interpreter = new Interpreter(machine);
+        await interpreter.executeLine("10 RANDOMIZE");
+        await interpreter.executeLine('20 PRINT "OK"');
+        await interpreter.executeLine("RUN");
+
+        expect(machine.getText()).toBe(
+            "RANDOM NUMBER SEED (-32768 TO 32767)? 5\nOK\n",
+        );
+    });
+
+    it("asks again when the answer is not a number", async () => {
+        const machine = new TestConsole();
+        machine.provideInput("X", "5");
+        const interpreter = new Interpreter(machine);
+        await interpreter.executeLine("10 RANDOMIZE");
+        await interpreter.executeLine('20 PRINT "OK"');
+        await interpreter.executeLine("RUN");
+
+        expect(machine.getText()).toContain("?REDO FROM START");
+        expect(machine.getText().endsWith("OK\n")).toBe(true);
+    });
+
+    /* The seed decides the run, so answering the same gives the same. */
+    it("makes the run depend on the answer", async () => {
+        const seeded = async (answer: string) => {
+            const machine = new TestConsole();
+            machine.provideInput(answer);
+            const interpreter = new Interpreter(machine);
+            await interpreter.executeLine("10 RANDOMIZE");
+            await interpreter.executeLine("20 PRINT RND(1)");
+            await interpreter.executeLine("RUN");
+            return machine.getText();
+        };
+        expect(await seeded("5")).toBe(await seeded("5"));
+        expect(await seeded("5")).not.toBe(await seeded("6"));
     });
 });
 
@@ -135,6 +201,26 @@ describe("string functions", () => {
             " 4  0 \n",
         );
         expect(await value('INSTR(5,"ABCABC","B")')).toBe(" 5 \n");
+    });
+
+    it("UCASE$ and LCASE$ fold only A-Z", async () => {
+        expect(await value('UCASE$("aBc1");"|";LCASE$("AbC1")')).toBe(
+            "ABC1|abc1\n",
+        );
+    });
+
+    /* Anything outside A-Z is left alone, so folding never changes a
+     * string's length -- CHR$(225) is the sharp s, which would become
+     * two characters if this went through JavaScript's own folding. */
+    it("leave the rest of CP437 alone", async () => {
+        expect(await value("LEN(UCASE$(CHR$(225)))")).toBe(" 1 \n");
+        expect(await value("ASC(UCASE$(CHR$(225)))")).toBe(" 225 \n");
+    });
+
+    it("LTRIM$ and RTRIM$ take spaces off one end each", async () => {
+        expect(await value('"["+LTRIM$("  HI  ")+"]"')).toBe("[HI  ]\n");
+        expect(await value('"["+RTRIM$("  HI  ")+"]"')).toBe("[  HI]\n");
+        expect(await value('"["+LTRIM$(RTRIM$("  HI  "))+"]"')).toBe("[HI]\n");
     });
 
     it("STRING$ and SPACE$", async () => {

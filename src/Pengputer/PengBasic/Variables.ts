@@ -52,11 +52,30 @@ export class Variables {
     /** Set by DEFINT and friends: initial letter to default type. */
     private defaultTypes: Map<string, BasicType> = new Map();
 
+    /**
+     * CONST names. Kept apart from `scalars' rather than flagged inside
+     * it, so that "is this a constant" is a question about which map a
+     * name is in and cannot be got wrong by a write that forgets to
+     * check a flag.
+     */
+    private constants: Map<string, Value> = new Map();
+
+    /**
+     * The first subscript of every array: 0, or 1 after OPTION BASE 1.
+     *
+     * Storage stays zero-based and element zero simply becomes
+     * unreachable, which wastes one slot per dimension and keeps every
+     * offset calculation exactly as it was.
+     */
+    private optionBase: 0 | 1 = 0;
+
     /** CLEAR, NEW and RUN all start from nothing. */
     clear() {
         this.scalars.clear();
         this.arrays.clear();
         this.defaultTypes.clear();
+        this.constants.clear();
+        this.optionBase = 0;
     }
 
     /** `DEFINT A-Z'. Letters are inclusive at both ends. */
@@ -95,12 +114,73 @@ export class Variables {
 
     getScalar(name: string, sigil: Sigil): Value {
         const { key, type } = this.keyOf(name, sigil);
+        const constant = this.constants.get(key);
+        if (constant !== undefined) return constant;
         return this.scalars.get(key) ?? defaultValue(type);
     }
 
     setScalar(name: string, sigil: Sigil, value: Value) {
         const { key, type } = this.keyOf(name, sigil);
+        /* A constant is not a variable that refuses writes, it is a
+         * different thing that happens to answer to a name -- so an
+         * assignment to one is a mistake about what the name is. */
+        if (this.constants.has(key)) {
+            throw new BasicError("DUPLICATE DEFINITION");
+        }
         this.scalars.set(key, coerceToType(value, type));
+    }
+
+    /**
+     * `CONST N=10'. Defining one twice is an error, and so is defining
+     * one over a variable that already exists.
+     */
+    defineConstant(name: string, sigil: Sigil, value: Value) {
+        const { key, type } = this.keyOf(name, sigil);
+        if (this.constants.has(key) || this.scalars.has(key)) {
+            throw new BasicError("DUPLICATE DEFINITION");
+        }
+        this.constants.set(key, coerceToType(value, type));
+    }
+
+    /* ---------- OPTION BASE ---------- */
+
+    setOptionBase(base: 0 | 1) {
+        /* Changing it once arrays exist would silently change what
+         * their subscripts mean, so it has to come first. QuickBASIC
+         * says "Array already dimensioned" here; this is the 8K-era
+         * spelling of the same complaint, and the same error number. */
+        if (this.arrays.size > 0) {
+            throw new BasicError("REDIM'D ARRAY");
+        }
+        this.optionBase = base;
+    }
+
+    /**
+     * `LBOUND(A)' and `UBOUND(A,n)'.
+     *
+     * Asking about an array that does not exist is an error, which is
+     * *not* what happens when you merely use one -- `A(1)' brings an
+     * array into being at its default size, and always has. The two
+     * differ because using an array says what shape you want and asking
+     * about one presumes a shape already decided. Checked against
+     * QuickBASIC 4.5, which says "Array not defined"; the first guess
+     * here was that it would answer 10, by analogy with reading.
+     */
+    bound(
+        name: string,
+        sigil: Sigil,
+        which: "lower" | "upper",
+        dimension: number,
+    ): number {
+        const { key } = this.keyOf(name, sigil);
+        const array = this.arrays.get(key);
+        if (!array) throw new BasicError("ARRAY NOT DEFINED");
+
+        if (dimension < 1 || dimension > array.sizes.length) {
+            throw new BasicError("SUBSCRIPT OUT OF RANGE");
+        }
+        if (which === "lower") return this.optionBase;
+        return array.sizes[dimension - 1] - 1;
     }
 
     /* ---------- arrays ---------- */
@@ -203,7 +283,7 @@ export class Variables {
         let offset = 0;
         for (let i = 0; i < subscripts.length; i += 1) {
             const index = Math.trunc(subscripts[i]);
-            if (index < 0 || index >= array.sizes[i]) {
+            if (index < this.optionBase || index >= array.sizes[i]) {
                 throw new BasicError("SUBSCRIPT OUT OF RANGE");
             }
             offset = offset * array.sizes[i] + index;

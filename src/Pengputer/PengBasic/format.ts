@@ -24,7 +24,7 @@ import type { BasicType } from "./values";
 /** A comma in PRINT moves to the next multiple of this. */
 export const PRINT_ZONE_WIDTH = 14;
 
-const SINGLE_DIGITS = 6;
+const SINGLE_DIGITS = 7;
 const DOUBLE_DIGITS = 16;
 
 /**

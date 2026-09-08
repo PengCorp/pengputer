@@ -30,6 +30,9 @@ export type BasicErrorKind =
     | "WEND WITHOUT WHILE"
     | "UNDEF'D FUNCTION"
     | "RESUME WITHOUT ERROR"
+    | "DUPLICATE DEFINITION"
+    | "LOOP WITHOUT DO"
+    | "ARRAY NOT DEFINED"
     /* What `ERROR n' gives for a code with no message of its own. */
     | "UNPRINTABLE";
 
@@ -45,6 +48,12 @@ export type BasicErrorKind =
  */
 const ERROR_CODES: ReadonlyMap<BasicErrorKind, number> = new Map([
     ["NEXT WITHOUT FOR", 1],
+    /* Not in Microsoft's classic numbering -- it is a QuickBASIC-era
+     * construct, and there it is caught at compile time, where an error
+     * has no number at all. Sharing SYNTAX's code keeps `ERR' sensible;
+     * the reverse lookup below still resolves 2 to SYNTAX because this
+     * entry comes first. */
+    ["LOOP WITHOUT DO", 2],
     ["SYNTAX", 2],
     ["RETURN WITHOUT GOSUB", 3],
     ["OUT OF DATA", 4],
@@ -52,7 +61,17 @@ const ERROR_CODES: ReadonlyMap<BasicErrorKind, number> = new Map([
     ["OVERFLOW", 6],
     ["OUT OF MEMORY", 7],
     ["UNDEF'D STATEMENT", 8],
+    /* QuickBASIC's wording, for a QuickBASIC-only function. Its own
+     * number is unknown -- it is caught at compile time there, where an
+     * error has none -- so it shares the code for the nearest classic
+     * error, a bad array reference. SUBSCRIPT OUT OF RANGE still owns
+     * the reverse lookup because it comes second. */
+    ["ARRAY NOT DEFINED", 9],
     ["SUBSCRIPT OUT OF RANGE", 9],
+    /* Both are error 10 in Microsoft's numbering -- a name being given
+     * a size or a value it already has. `ERROR 10' resolves to the
+     * array one, which is the older and far commoner of the two. */
+    ["DUPLICATE DEFINITION", 10],
     ["REDIM'D ARRAY", 10],
     ["DIVISION BY ZERO", 11],
     ["TYPE MISMATCH", 13],

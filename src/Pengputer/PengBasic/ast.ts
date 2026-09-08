@@ -31,6 +31,20 @@ export type BinaryOp =
 
 export type UnaryOp = "-" | "NOT";
 
+/** The six comparisons, which `CASE IS >5' needs to name on its own. */
+export type ComparisonOp = "=" | "<>" | "<" | ">" | "<=" | ">=";
+
+/**
+ * One thing a `CASE' will match against.
+ *
+ * `CASE 1, 3 TO 5, IS > 100' is three clauses in one CASE, and any of
+ * them matching takes the branch.
+ */
+export type CaseClause =
+    | { kind: "value"; value: Expr }
+    | { kind: "range"; from: Expr; to: Expr }
+    | { kind: "compare"; op: ComparisonOp; value: Expr };
+
 export type Expr =
     /**
      * `isDouble' comes from how the constant was written -- see the
@@ -60,6 +74,21 @@ export type Expr =
      * ambiguous with an array -- the FN prefix says what it is.
      */
     | { kind: "fnCall"; name: string; sigil: Sigil; args: Expr[] }
+    /**
+     * `UBOUND(A)', `UBOUND(A,2)', `LBOUND(A)'.
+     *
+     * Not a `call', because the argument is the *name* of an array
+     * rather than a value -- `UBOUND(A)' must not evaluate A. Same
+     * reason ERASE takes names: there is no expression that means "the
+     * array A" for these to be handed.
+     */
+    | {
+          kind: "arrayBound";
+          which: "lower" | "upper";
+          name: string;
+          sigil: Sigil;
+          dimension: Expr | null;
+      }
     | { kind: "unary"; op: UnaryOp; operand: Expr }
     | { kind: "binary"; op: BinaryOp; left: Expr; right: Expr };
 
@@ -251,6 +280,52 @@ export type Statement =
      * why this is a statement of its own rather than a variation on
      * `on'. Nothing else in BASIC overloads a line number that way.
      */
+    /**
+     * `REDIM A(20)'. Same shape as DIM, but it throws away whatever
+     * was there first -- which is the only way to change an array's
+     * size, since a second DIM is `?REDIM'D ARRAY'.
+     */
+    /* ---- structured control flow ---- */
+    /**
+     * `IF c THEN' with nothing after THEN.
+     *
+     * The whole difference between this and the single-line `if' is
+     * whether anything follows THEN on the same line, which is exactly
+     * how QuickBASIC told them apart. The two cannot be unified: a
+     * single-line IF owns its branches, a block IF does not -- its body
+     * is simply the statements that come next, and the closing `END IF'
+     * is a separate statement the interpreter finds by scanning.
+     */
+    | { kind: "blockIf"; condition: Expr }
+    | { kind: "elseIf"; condition: Expr }
+    | { kind: "blockElse" }
+    | { kind: "endIf" }
+    | { kind: "selectCase"; selector: Expr }
+    | { kind: "case"; clauses: CaseClause[] }
+    | { kind: "caseElse" }
+    | { kind: "endSelect" }
+    /**
+     * `DO', `DO WHILE c', `DO UNTIL c'.
+     *
+     * `test' is null for a bare DO, which loops until something inside
+     * it says otherwise. `until' inverts the sense, so the two words
+     * share one node rather than being two nearly identical ones.
+     */
+    | { kind: "do"; test: Expr | null; until: boolean }
+    | { kind: "loop"; test: Expr | null; until: boolean }
+    /** `EXIT FOR' / `EXIT DO' -- leave the innermost one of its kind. */
+    | { kind: "exit"; what: "for" | "do" }
+    | { kind: "redim"; entries: DimEntry[] }
+    /** `CONST PI=3.14159, NAME$="X"'. */
+    | { kind: "const"; entries: { name: string; sigil: Sigil; value: Expr }[] }
+    /**
+     * `OPTION BASE 1'.
+     *
+     * Moves the first subscript of every array from 0 to 1. It has to
+     * come before any array exists, because it changes what the arrays
+     * already made would have meant.
+     */
+    | { kind: "optionBase"; base: number }
     | { kind: "onError"; line: number }
     /**
      * `RESUME', `RESUME NEXT', `RESUME 100'.

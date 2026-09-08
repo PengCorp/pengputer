@@ -19,6 +19,10 @@ function sexp(e: Expr): string {
             return `(${e.name}${e.sigil} ${e.args.map(sexp).join(" ")})`;
         case "fnCall":
             return `(FN:${e.name}${e.sigil} ${e.args.map(sexp).join(" ")})`;
+        case "arrayBound":
+            return `(${e.which === "lower" ? "LBOUND" : "UBOUND"} ${e.name}${e.sigil}${
+                e.dimension === null ? "" : " " + sexp(e.dimension)
+            })`;
         case "unary":
             return `(${e.op} ${sexp(e.operand)})`;
         case "binary":

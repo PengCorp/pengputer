@@ -219,6 +219,15 @@ export class Parser {
                 this.pos += 1;
                 const next = this.peek();
                 if (next.kind === "punct" && next.punct === "(") {
+                    /* Before anything else, because these two take an
+                     * array's name and everything below takes values. */
+                    if (token.sigil === "" && token.name === "LBOUND") {
+                        return this.parseArrayBound("lower");
+                    }
+                    if (token.sigil === "" && token.name === "UBOUND") {
+                        return this.parseArrayBound("upper");
+                    }
+
                     const fnName = userFunctionName(token.name);
                     if (fnName !== null) {
                         return {
@@ -256,6 +265,26 @@ export class Parser {
     }
 
     /** `(a, b, c)'. At least one argument; `A()' is a syntax error. */
+    /** `LBOUND(A)' / `UBOUND(A,2)' -- an array name, not an expression. */
+    private parseArrayBound(which: "lower" | "upper"): Expr {
+        this.expectPunct("(");
+
+        const name = this.peek();
+        if (name.kind !== "name") throw new BasicError("SYNTAX", name.pos);
+        this.pos += 1;
+
+        const dimension = this.takePunct(",") ? this.parseExpression() : null;
+        this.expectPunct(")");
+
+        return {
+            kind: "arrayBound",
+            which,
+            name: name.name,
+            sigil: name.sigil,
+            dimension,
+        };
+    }
+
     protected parseArguments(): Expr[] {
         this.expectPunct("(");
         const args: Expr[] = [this.parseExpression()];

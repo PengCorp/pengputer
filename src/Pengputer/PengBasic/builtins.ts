@@ -299,6 +299,22 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
      * showing you the bit pattern, which is the only reason you would
      * ask for hex in the first place.
      */
+    /**
+     * Case folding is ASCII only, deliberately.
+     *
+     * `toUpperCase' on a JavaScript string would fold the accented half
+     * of CP437 as well, and worse, some of those change *length* when
+     * folded -- German sharp s becomes "SS" -- which would make
+     * `LEN(UCASE$(A$))' differ from `LEN(A$)'. The original folded A-Z
+     * and left every other byte alone.
+     */
+    define("UCASE$", 1, 1, (a) => foldCase(str(a[0]), "upper"));
+    define("LCASE$", 1, 1, (a) => foldCase(str(a[0]), "lower"));
+
+    /* Spaces only -- there are no tabs in a string on this machine. */
+    define("LTRIM$", 1, 1, (a) => str(a[0]).replace(/^ +/, ""));
+    define("RTRIM$", 1, 1, (a) => str(a[0]).replace(/ +$/, ""));
+
     define("HEX$", 1, 1, (a) => baseString(a[0].value, 16));
     define("OCT$", 1, 1, (a) => baseString(a[0].value, 8));
 
@@ -317,6 +333,13 @@ function num(arg: Typed): number {
 
 function str(arg: Typed): string {
     return asString(arg.value);
+}
+
+/** A-Z and a-z only; every other character is left as it is. */
+function foldCase(text: string, to: "upper" | "lower"): string {
+    return to === "upper"
+        ? text.replace(/[a-z]/g, (c) => c.toUpperCase())
+        : text.replace(/[A-Z]/g, (c) => c.toLowerCase());
 }
 
 /** A sixteen-bit value in the given base, upper case and unsigned. */

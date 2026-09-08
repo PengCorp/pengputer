@@ -10,6 +10,7 @@ import { BasicError } from "./errors";
 import { Parser, userFunctionName } from "./Parser";
 import { tokenize } from "./Tokenizer";
 import type {
+    CaseClause,
     DataItem,
     Expr,
     LetterRange,
@@ -71,7 +72,47 @@ export class StatementParser extends Parser {
                     return this.parseDim();
                 case "ERASE":
                     return this.parseErase();
+                case "REDIM":
+                    return { kind: "redim", entries: this.parseDimEntries() };
+                case "CONST":
+                    return this.parseConst();
+                case "OPTION":
+                    return this.parseOptionBase();
+                case "ELSEIF":
+                    return this.parseElseIf();
+                case "ELSE":
+                    return { kind: "blockElse" };
+                case "SELECT":
+                    if (!this.takeKeyword("CASE")) {
+                        throw new BasicError("SYNTAX", this.peek().pos);
+                    }
+                    return {
+                        kind: "selectCase",
+                        selector: this.parseExpression(),
+                    };
+                case "CASE":
+                    if (this.takeKeyword("ELSE")) return { kind: "caseElse" };
+                    return { kind: "case", clauses: this.parseCaseClauses() };
+                case "DO":
+                    return { kind: "do", ...this.parseLoopTest() };
+                case "LOOP":
+                    return { kind: "loop", ...this.parseLoopTest() };
+                case "EXIT":
+                    if (this.takeKeyword("FOR")) {
+                        return { kind: "exit", what: "for" };
+                    }
+                    if (this.takeKeyword("DO")) {
+                        return { kind: "exit", what: "do" };
+                    }
+                    throw new BasicError("SYNTAX", this.peek().pos);
                 case "END":
+                    /* `END' alone stops the program; `END IF' and
+                     * `END SELECT' close a block. Same word, and only
+                     * what follows it tells them apart. */
+                    if (this.takeKeyword("IF")) return { kind: "endIf" };
+                    if (this.takeKeyword("SELECT")) {
+                        return { kind: "endSelect" };
+                    }
                     return { kind: "end" };
                 case "RUN":
                     return { kind: "run" };
@@ -339,6 +380,11 @@ export class StatementParser extends Parser {
 
     /** `DIM A(10), B$(5,5)'. */
     private parseDim(): Statement {
+        return { kind: "dim", entries: this.parseDimEntries() };
+    }
+
+    /** `A(10), B$(2,3)' -- shared by DIM and REDIM. */
+    private parseDimEntries(): DimEntry[] {
         const entries: DimEntry[] = [];
 
         do {
@@ -353,7 +399,45 @@ export class StatementParser extends Parser {
             });
         } while (this.takePunct(","));
 
-        return { kind: "dim", entries };
+        return entries;
+    }
+
+    /** `CONST PI=3.14159, GREETING$="HI"'. */
+    private parseConst(): Statement {
+        const entries: { name: string; sigil: Sigil; value: Expr }[] = [];
+
+        do {
+            const token = this.peek();
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
+            this.pos += 1;
+            if (this.takeOperator("=") === null) {
+                throw new BasicError("SYNTAX", this.peek().pos);
+            }
+            entries.push({
+                name: token.name,
+                sigil: token.sigil,
+                value: this.parseExpression(),
+            });
+        } while (this.takePunct(","));
+
+        return { kind: "const", entries };
+    }
+
+    /** `OPTION BASE 0' / `OPTION BASE 1'. */
+    private parseOptionBase(): Statement {
+        if (!this.takeKeyword("BASE")) {
+            throw new BasicError("SYNTAX", this.peek().pos);
+        }
+        const token = this.peek();
+        if (
+            token.kind !== "number" ||
+            (token.value !== 0 && token.value !== 1)
+        ) {
+            throw new BasicError("SYNTAX", token.pos);
+        }
+        this.pos += 1;
+        return { kind: "optionBase", base: token.value };
     }
 
     /** `ERASE A, B$' -- bare names, no subscripts. */
@@ -615,6 +699,9 @@ export class StatementParser extends Parser {
 
         let thenBranch: Statement[];
         if (this.takeKeyword("THEN")) {
+            /* Nothing after THEN means the body is the statements that
+             * follow, on later lines, up to END IF. */
+            if (this.atStatementEnd()) return { kind: "blockIf", condition };
             thenBranch = this.parseBranch();
         } else if (this.takeKeyword("GOTO")) {
             thenBranch = [{ kind: "goto", line: this.parseLineNumber() }];
@@ -641,6 +728,59 @@ export class StatementParser extends Parser {
             statements.push(this.parseStatement());
         }
         return statements;
+    }
+
+    /** `ELSEIF c THEN' -- the THEN is required and nothing may follow. */
+    private parseElseIf(): Statement {
+        const condition = this.parseExpression();
+        if (!this.takeKeyword("THEN")) {
+            throw new BasicError("SYNTAX", this.peek().pos);
+        }
+        return { kind: "elseIf", condition };
+    }
+
+    /** The `WHILE c' or `UNTIL c' that may follow DO or LOOP. */
+    private parseLoopTest(): { test: Expr | null; until: boolean } {
+        if (this.takeKeyword("WHILE")) {
+            return { test: this.parseExpression(), until: false };
+        }
+        if (this.takeKeyword("UNTIL")) {
+            return { test: this.parseExpression(), until: true };
+        }
+        return { test: null, until: false };
+    }
+
+    /** `CASE 1, 3 TO 5, IS > 100'. */
+    private parseCaseClauses(): CaseClause[] {
+        const clauses: CaseClause[] = [];
+
+        do {
+            if (this.takeKeyword("IS")) {
+                const op = this.takeOperator("=", "<>", "<", ">", "<=", ">=");
+                if (op === null) {
+                    throw new BasicError("SYNTAX", this.peek().pos);
+                }
+                clauses.push({
+                    kind: "compare",
+                    op,
+                    value: this.parseExpression(),
+                });
+                continue;
+            }
+
+            const first = this.parseExpression();
+            if (this.takeKeyword("TO")) {
+                clauses.push({
+                    kind: "range",
+                    from: first,
+                    to: this.parseExpression(),
+                });
+            } else {
+                clauses.push({ kind: "value", value: first });
+            }
+        } while (this.takePunct(","));
+
+        return clauses;
     }
 
     private parseFor(): Statement {

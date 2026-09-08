@@ -11,18 +11,39 @@
  * `RND(0)` is the one people forget. It exists so a program can look at
  * the number it just got without spending another one.
  *
- * The generator itself is an xorshift, not Microsoft's. Matching theirs
- * exactly would let us diff against printed sample runs, which is the
- * only real argument for it, and it is not worth the bother until
- * something needs it.
+ * The generator itself is an xorshift, not Microsoft's. The argument
+ * for matching theirs would be diffing against printed sample runs --
+ * except the book predates GW-BASIC by five years, so copying GW's
+ * would not line those up either. Left alone.
+ *
+ * What *is* Microsoft's, and checked against a real GW-BASIC, is the
+ * behaviour around it: the three argument forms, and the fact that RUN
+ * restarts the sequence so an unseeded program deals the same cards
+ * every time.
  */
+/** Where the sequence starts on a fresh machine, and after RUN. */
+const DEFAULT_SEED = 1;
+
 export class Random {
     /* Set properly by seed() in the constructor; TypeScript cannot see that. */
     private state: number = 0;
     private lastValue: number = 0;
 
-    constructor(seed: number = 1) {
+    constructor(seed: number = DEFAULT_SEED) {
         this.seed(seed);
+        this.lastValue = this.next();
+    }
+
+    /**
+     * Back to where a fresh machine starts. RUN calls this, which is
+     * why an unseeded program deals the same cards every time.
+     *
+     * Reseeding in place rather than making a new Random matters: the
+     * function library captured this object when it was built, so a
+     * replacement would leave RND drawing from the old one.
+     */
+    reset() {
+        this.seed(DEFAULT_SEED);
         this.lastValue = this.next();
     }
 

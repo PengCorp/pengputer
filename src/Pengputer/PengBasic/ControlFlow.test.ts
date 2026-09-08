@@ -149,11 +149,40 @@ describe("FOR and NEXT", () => {
         ).toBe(" 3  2  1 ");
     });
 
-    it("runs the body once even when the limit is already passed", async () => {
-        /* The limit is tested at NEXT, not at FOR. */
+    /*
+     * The limit is tested at the FOR, before the body -- checked
+     * against GW-BASIC, which prints nothing here and leaves I at 1.
+     * This file previously asserted the opposite, on the guess that
+     * MS BASIC tested at the NEXT; a listing whose count can come out
+     * zero would have done one iteration too many.
+     */
+    it("runs nothing when the limit is already passed", async () => {
         expect(
             await run("10 FOR I=1 TO 0", "20 PRINT I;", "30 NEXT", "RUN"),
-        ).toBe(" 1 ");
+        ).toBe("");
+    });
+
+    it("leaves the counter at the start when the body never runs", async () => {
+        expect(
+            await run("10 FOR I=1 TO 0", "20 NEXT", "30 PRINT I", "RUN"),
+        ).toBe(" 1 \n");
+    });
+
+    it("tests a downward loop the same way", async () => {
+        expect(
+            await run(
+                "10 FOR I=1 TO 3 STEP -1",
+                "20 PRINT I;",
+                "30 NEXT",
+                '40 PRINT "X"',
+                "RUN",
+            ),
+        ).toBe("X\n");
+    });
+
+    /* A one-line loop typed at the prompt is still a loop. */
+    it("loops on a single direct-mode line", async () => {
+        expect(await run("FOR I=1 TO 3: PRINT I;: NEXT I")).toBe(" 1  2  3 ");
     });
 
     it("leaves the counter one step past the limit", async () => {

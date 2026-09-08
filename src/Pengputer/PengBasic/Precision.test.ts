@@ -66,8 +66,8 @@ describe("single precision arithmetic", () => {
         );
     });
 
-    it("prints six digits for a single", async () => {
-        expect(await value("1/3")).toBe(" .333333 \n");
+    it("prints seven digits for a single", async () => {
+        expect(await value("1/3")).toBe(" .3333333 \n");
     });
 });
 
@@ -113,7 +113,7 @@ describe("double precision", () => {
         expect(
             await run("10 A#=CDBL(1)/3", '20 PRINT "["+STR$(A#)+"]"', "RUN"),
         ).toBe("[ .3333333333333333]\n");
-        expect(await value('"["+STR$(1/3)+"]"')).toBe("[ .333333]\n");
+        expect(await value('"["+STR$(1/3)+"]"')).toBe("[ .3333333]\n");
     });
 });
 
@@ -149,6 +149,47 @@ describe("comparisons and logic answer integers", () => {
     });
 });
 
+describe("integer arithmetic is sixteen bits wide", () => {
+    /*
+     * Checked against QuickBASIC 4.5: `J% + K%' overflowing is
+     * `?OVERFLOW' at the addition, not at whatever it is assigned to.
+     * We used to check only the store, so this printed 60000.
+     */
+    it("overflows at the operation, not at the assignment", async () => {
+        await expect(
+            run("10 J%=30000:K%=30000", "20 L=J%+K%", "RUN"),
+        ).rejects.toThrow(/OVERFLOW/);
+    });
+
+    /* Untyped literals are singles -- 8K BASIC had no integer type at
+     * all -- so the same sum written without sigils is fine. */
+    it("does not apply to untyped arithmetic", async () => {
+        expect(await value("30000+30000")).toBe(" 60000 \n");
+    });
+
+    it("allows the whole asymmetric range", async () => {
+        expect(await run("10 A%=-32768", "20 PRINT A%", "RUN")).toBe(
+            "-32768 \n",
+        );
+        expect(await run("10 A%=32767", "20 PRINT A%", "RUN")).toBe(
+            " 32767 \n",
+        );
+    });
+
+    it("still reports OVERFLOW as error 6", async () => {
+        expect(
+            await run(
+                "10 ON ERROR GOTO 100",
+                "20 J%=30000:K%=30000:L=J%+K%",
+                "30 END",
+                "100 PRINT ERR",
+                "110 RESUME NEXT",
+                "RUN",
+            ),
+        ).toBe(" 6 \n");
+    });
+});
+
 describe("the conversion functions", () => {
     it("CINT rounds to nearest and stays in sixteen bits", async () => {
         expect(await value("CINT(2.5);CINT(-2.5);CINT(2.4)")).toBe(
@@ -159,7 +200,7 @@ describe("the conversion functions", () => {
 
     it("CSNG throws away what a single cannot hold", async () => {
         expect(await run("10 A#=1.23456789", "20 PRINT CSNG(A#)", "RUN")).toBe(
-            " 1.23457 \n",
+            " 1.234568 \n",
         );
     });
 

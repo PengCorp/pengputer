@@ -13,29 +13,34 @@ spacing and all.
 Each of these is also a test: `examples.test.ts` pastes every listing,
 runs it, and checks the output, so a broken example fails the suite.
 
-| Listing         | Shows                                                 |
-| --------------- | ----------------------------------------------------- |
-| `squares.bas`   | The smallest thing that is a program                  |
-| `table.bas`     | Nested `FOR`, and `;` holding a line together         |
-| `triangle.bas`  | An inner loop whose limit is the outer counter        |
-| `fib.bas`       | Carrying values between iterations                    |
-| `gosub.bas`     | `GOSUB` and `RETURN`                                  |
-| `ifelse.bas`    | `IF`/`THEN`/`ELSE` on one line                        |
-| `powers.bas`    | `WHILE`/`WEND`                                        |
-| `sort.bas`      | Arrays, `DIM`, `SWAP`, a bubble sort                  |
-| `menu.bas`      | `ON…GOTO` as a jump table                             |
-| `greet.bas`     | `INPUT`, with a prompt of its own                     |
-| `months.bas`    | `DATA`, `READ` and `RESTORE`                          |
-| `deffn.bas`     | `DEF FN`, a function of your own                      |
-| `strings.bas`   | `LEN`, `LEFT$`, `MID$`, `INSTR`, `STRING$`            |
-| `guess.bas`     | `RND`, `INT` and `RANDOMIZE` — the classic            |
-| `invoice.bas`   | `PRINT USING`                                         |
-| `colors.bas`    | `CLS`, `LOCATE`, `COLOR` — all sixteen                |
-| `bounce.bas`    | A ball, `DELAY` to pace it, `INKEY$` to stop it       |
-| `chars.bas`     | The whole character set, and the blocks you draw with |
-| `precision.bas` | What a single-precision number can and cannot hold    |
-| `onerror.bas`   | `ON ERROR GOTO`, `RESUME NEXT`, `ERR` and `ERL`       |
-| `aceyducey.bas` | A real book program, typed in exactly as printed      |
+| Listing          | Shows                                                 |
+| ---------------- | ----------------------------------------------------- |
+| `squares.bas`    | The smallest thing that is a program                  |
+| `table.bas`      | Nested `FOR`, and `;` holding a line together         |
+| `triangle.bas`   | An inner loop whose limit is the outer counter        |
+| `fib.bas`        | Carrying values between iterations                    |
+| `gosub.bas`      | `GOSUB` and `RETURN`                                  |
+| `ifelse.bas`     | `IF`/`THEN`/`ELSE` on one line                        |
+| `powers.bas`     | `WHILE`/`WEND`                                        |
+| `sort.bas`       | Arrays, `DIM`, `SWAP`, a bubble sort                  |
+| `menu.bas`       | `ON…GOTO` as a jump table                             |
+| `greet.bas`      | `INPUT`, with a prompt of its own                     |
+| `months.bas`     | `DATA`, `READ` and `RESTORE`                          |
+| `deffn.bas`      | `DEF FN`, a function of your own                      |
+| `strings.bas`    | `LEN`, `LEFT$`, `MID$`, `INSTR`, `STRING$`            |
+| `guess.bas`      | `RND`, `INT` and `RANDOMIZE` — the classic            |
+| `invoice.bas`    | `PRINT USING`                                         |
+| `colors.bas`     | `CLS`, `LOCATE`, `COLOR` — all sixteen                |
+| `bounce.bas`     | A ball, `DELAY` to pace it, `INKEY$` to stop it       |
+| `chars.bas`      | The whole character set, and the blocks you draw with |
+| `precision.bas`  | What a single-precision number can and cannot hold    |
+| `onerror.bas`    | `ON ERROR GOTO`, `RESUME NEXT`, `ERR` and `ERL`       |
+| `structured.bas` | Block `IF`, `SELECT CASE`, `DO`/`LOOP`, `EXIT DO`     |
+| `aceyducey.bas`  | A real book program, typed in exactly as printed      |
+
+`structured.bas` is the only listing here that is indented, because it
+is the only one with anything to indent — and `LIST` gives the spacing
+back exactly as it was typed.
 
 `onerror.bas` divides a list of pairs, one of which divides by zero.
 The handler names the line and the program carries on — which is the

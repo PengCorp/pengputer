@@ -28,14 +28,14 @@ describe("number formatting", () => {
         expect(formatNumber(100)).toBe(" 100 ");
     });
 
-    it("keeps about six significant digits", async () => {
-        expect(formatNumber(1 / 3)).toBe(" .333333 ");
+    it("keeps seven significant digits", async () => {
+        expect(formatNumber(1 / 3)).toBe(" .3333333 ");
         expect(formatNumber(123456)).toBe(" 123456 ");
     });
 
     it("switches to exponent form at the edges", async () => {
         expect(formatNumber(1e12)).toBe(" 1E+12 ");
-        expect(formatNumber(1234567890123)).toBe(" 1.23457E+12 ");
+        expect(formatNumber(1234567890123)).toBe(" 1.234568E+12 ");
         expect(formatNumber(0.001)).toBe(" 1E-03 ");
     });
 });
