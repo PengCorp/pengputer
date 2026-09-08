@@ -98,7 +98,9 @@ export class Program {
     /** Parses on demand and caches. */
     statementsOf(line: ProgramLine): Statement[] {
         if (line.statements === null) {
-            line.statements = new StatementParser(tokenize(line.source)).parseLine();
+            line.statements = new StatementParser(
+                tokenize(line.source),
+            ).parseLine();
         }
         return line.statements;
     }

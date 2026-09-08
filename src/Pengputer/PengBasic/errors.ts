@@ -45,7 +45,9 @@ export class BasicError extends Error {
 
     /** The text BASIC prints, with the line number when there is one. */
     format(line: number | null = null): string {
-        return line === null ? `?${this.kind} ERROR` : `?${this.kind} ERROR IN ${line}`;
+        return line === null
+            ? `?${this.kind} ERROR`
+            : `?${this.kind} ERROR IN ${line}`;
     }
 }
 

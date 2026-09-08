@@ -57,7 +57,7 @@ describe("the character ROM", () => {
         }
     });
 
-    it("answers ASC(\" \") with 32, not 0", () => {
+    it('answers ASC(" ") with 32, not 0', () => {
         /* A blank is drawn at 0, 32 and 255; only one of them is right. */
         expect(codeForCharacter(" ")).toBe(32);
     });

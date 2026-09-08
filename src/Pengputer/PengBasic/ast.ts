@@ -15,9 +15,19 @@
 import type { Sigil } from "./tokens";
 
 export type BinaryOp =
-    | "+" | "-" | "*" | "/" | "^"
-    | "=" | "<>" | "<" | ">" | "<=" | ">="
-    | "AND" | "OR";
+    | "+"
+    | "-"
+    | "*"
+    | "/"
+    | "^"
+    | "="
+    | "<>"
+    | "<"
+    | ">"
+    | "<="
+    | ">="
+    | "AND"
+    | "OR";
 
 export type UnaryOp = "-" | "NOT";
 
@@ -116,8 +126,19 @@ export type Statement =
      * runs *both* A and B only when X is true -- the colon does not end
      * the IF, which catches people out constantly.
      */
-    | { kind: "if"; condition: Expr; then: Statement[]; else: Statement[] | null }
-    | { kind: "for"; variable: LoopVariable; from: Expr; to: Expr; step: Expr | null }
+    | {
+          kind: "if";
+          condition: Expr;
+          then: Statement[];
+          else: Statement[] | null;
+      }
+    | {
+          kind: "for";
+          variable: LoopVariable;
+          from: Expr;
+          to: Expr;
+          step: Expr | null;
+      }
     /** `NEXT', `NEXT I' or `NEXT I,J'. Empty list means the innermost. */
     | { kind: "next"; variables: LoopVariable[] }
     | { kind: "on"; selector: Expr; target: "goto" | "gosub"; lines: number[] }

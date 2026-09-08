@@ -48,11 +48,15 @@ describe("RND", () => {
     });
 
     it("advances on a positive argument", async () => {
-        expect(await run("10 A=RND(1)", "20 PRINT A=RND(1)", "RUN")).toBe(" 0 \n");
+        expect(await run("10 A=RND(1)", "20 PRINT A=RND(1)", "RUN")).toBe(
+            " 0 \n",
+        );
     });
 
     it("repeats the last value on zero", async () => {
-        expect(await run("10 A=RND(1)", "20 PRINT A=RND(0)", "RUN")).toBe("-1 \n");
+        expect(await run("10 A=RND(1)", "20 PRINT A=RND(0)", "RUN")).toBe(
+            "-1 \n",
+        );
     });
 
     it("reseeds on a negative argument, reproducibly", async () => {
@@ -82,7 +86,7 @@ describe("RND", () => {
             "10 RANDOMIZE 3",
             "20 FOR I=1 TO 20",
             "30 D=INT(RND(1)*6)+1",
-            "40 IF D<1 OR D>6 THEN PRINT \"BAD\";",
+            '40 IF D<1 OR D>6 THEN PRINT "BAD";',
             "50 NEXT I",
             '60 PRINT "OK"',
             "RUN",
@@ -104,7 +108,9 @@ describe("string functions", () => {
     });
 
     it("counts string positions from one", async () => {
-        await expect(value('MID$("ABC",0,1)')).rejects.toThrow(/ILLEGAL QUANTITY/);
+        await expect(value('MID$("ABC",0,1)')).rejects.toThrow(
+            /ILLEGAL QUANTITY/,
+        );
     });
 
     it("CHR$ and ASC", async () => {
@@ -141,30 +147,49 @@ describe("string functions", () => {
 describe("MID$ as a statement", () => {
     it("overwrites in place without changing the length", async () => {
         expect(
-            await run('10 A$="PENGER"', '20 MID$(A$,2,3)="XYZ"', "30 PRINT A$", "RUN"),
+            await run(
+                '10 A$="PENGER"',
+                '20 MID$(A$,2,3)="XYZ"',
+                "30 PRINT A$",
+                "RUN",
+            ),
         ).toBe("PXYZER\n");
     });
 
     it("takes only what fits", async () => {
         expect(
-            await run('10 A$="ABC"', '20 MID$(A$,2)="ZZZZZ"', "30 PRINT A$", "RUN"),
+            await run(
+                '10 A$="ABC"',
+                '20 MID$(A$,2)="ZZZZZ"',
+                "30 PRINT A$",
+                "RUN",
+            ),
         ).toBe("AZZ\n");
     });
 
     it("honours a shorter replacement", async () => {
         expect(
-            await run('10 A$="ABCDE"', '20 MID$(A$,2,3)="X"', "30 PRINT A$", "RUN"),
+            await run(
+                '10 A$="ABCDE"',
+                '20 MID$(A$,2,3)="X"',
+                "30 PRINT A$",
+                "RUN",
+            ),
         ).toBe("AXCDE\n");
     });
 });
 
 describe("built-ins outrank arrays", () => {
     it("uses the function even when an array shares its name", async () => {
-        expect(await run("10 LEN(1)=99", '20 PRINT LEN("ABC")', "RUN")).toBe(" 3 \n");
+        expect(await run("10 LEN(1)=99", '20 PRINT LEN("ABC")', "RUN")).toBe(
+            " 3 \n",
+        );
     });
 
     it("still resolves unknown names as arrays", async () => {
-        expect(await run("10 ZZ(1)=99", "20 PRINT ZZ(1)", "RUN")).toBe(" 99 \n");
+        expect(await run("10 ZZ(1)=99", "20 PRINT ZZ(1)", "RUN")).toBe(
+            " 99 \n",
+        );
     });
 });
 
@@ -172,7 +197,11 @@ describe("Random", () => {
     it("repeats a seeded run exactly", () => {
         const a = new Random(1234);
         const b = new Random(1234);
-        expect([a.next(), a.next(), a.next()]).toEqual([b.next(), b.next(), b.next()]);
+        expect([a.next(), a.next(), a.next()]).toEqual([
+            b.next(),
+            b.next(),
+            b.next(),
+        ]);
     });
 
     it("stays in range over many draws", () => {

@@ -181,10 +181,14 @@ export class TestConsole implements Console {
         blink: boolean | null,
     ) {
         if (foreground !== null) {
-            this.buffer.updateCurrentAttributes({ fgColor: cgaColor(foreground) });
+            this.buffer.updateCurrentAttributes({
+                fgColor: cgaColor(foreground),
+            });
         }
         if (background !== null) {
-            this.buffer.updateCurrentAttributes({ bgColor: cgaColor(background) });
+            this.buffer.updateCurrentAttributes({
+                bgColor: cgaColor(background),
+            });
         }
         if (blink !== null) this.buffer.updateCurrentAttributes({ blink });
     }

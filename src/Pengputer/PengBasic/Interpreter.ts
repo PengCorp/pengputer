@@ -189,7 +189,11 @@ export class Interpreter {
         itemIndex: 0,
     };
 
-    constructor(machine: Console, builtins?: Builtins, now: () => Date = () => new Date()) {
+    constructor(
+        machine: Console,
+        builtins?: Builtins,
+        now: () => Date = () => new Date(),
+    ) {
         this.console = machine;
         this.evaluator = new Evaluator(
             this.variables,
@@ -250,7 +254,11 @@ export class Interpreter {
         const first = tokens[0];
 
         if (first.kind === "number") {
-            if (!Number.isInteger(first.value) || first.value < 0 || first.value > MAX_LINE_NUMBER) {
+            if (
+                !Number.isInteger(first.value) ||
+                first.value < 0 ||
+                first.value > MAX_LINE_NUMBER
+            ) {
                 throw new BasicError("SYNTAX", first.pos);
             }
             this.program.setLine(first.value, source.slice(tokens[1].pos));
@@ -342,7 +350,10 @@ export class Interpreter {
                 return;
 
             case "let":
-                this.assign(statement.target, this.evaluator.evaluate(statement.value));
+                this.assign(
+                    statement.target,
+                    this.evaluator.evaluate(statement.value),
+                );
                 return;
 
             case "print":
@@ -450,7 +461,10 @@ export class Interpreter {
                 return;
 
             case "delete":
-                for (const line of this.program.list(statement.from, statement.to)) {
+                for (const line of this.program.list(
+                    statement.from,
+                    statement.to,
+                )) {
                     this.program.deleteLine(line.number);
                 }
                 this.continuePosition = null;
@@ -473,7 +487,9 @@ export class Interpreter {
                 const wanted = statement.line ?? this.lastErrorLine;
                 if (wanted === null) throw new BasicError("UNDEF'D STATEMENT");
 
-                const line = this.program.at(this.program.findIndex(wanted) ?? -1);
+                const line = this.program.at(
+                    this.program.findIndex(wanted) ?? -1,
+                );
                 if (line === null) throw new BasicError("UNDEF'D STATEMENT");
                 this.pendingPrefill = `${line.number} ${line.source}`;
                 return;
@@ -568,7 +584,9 @@ export class Interpreter {
                 return;
 
             case "printUsing": {
-                const format = asString(this.evaluator.evaluate(statement.format));
+                const format = asString(
+                    this.evaluator.evaluate(statement.format),
+                );
                 const values = statement.values.map((value) =>
                     this.evaluator.evaluate(value),
                 );
@@ -583,7 +601,10 @@ export class Interpreter {
 
             case "defFn": {
                 const { definition } = statement;
-                this.functions.set(definition.name + definition.sigil, definition);
+                this.functions.set(
+                    definition.name + definition.sigil,
+                    definition,
+                );
                 return;
             }
 
@@ -600,8 +621,10 @@ export class Interpreter {
             case "clear":
                 /* Evaluated for their errors, then discarded: there is
                  * no fixed string space here to reserve. */
-                if (statement.stringSpace !== null) this.number(statement.stringSpace);
-                if (statement.stackSpace !== null) this.number(statement.stackSpace);
+                if (statement.stringSpace !== null)
+                    this.number(statement.stringSpace);
+                if (statement.stackSpace !== null)
+                    this.number(statement.stackSpace);
                 this.variables.clear();
                 this.functions.clear();
                 return;
@@ -613,7 +636,8 @@ export class Interpreter {
     }
 
     private async executeIf(statement: Extract<Statement, { kind: "if" }>) {
-        const taken = asNumber(this.evaluator.evaluate(statement.condition)) !== 0;
+        const taken =
+            asNumber(this.evaluator.evaluate(statement.condition)) !== 0;
         const branch = taken ? statement.then : statement.else;
         if (branch === null) return;
 
@@ -643,8 +667,8 @@ export class Interpreter {
         /* Re-entering a loop with the same counter replaces it rather
          * than nesting -- otherwise a GOTO back to a FOR leaks a frame
          * every time round, and book programs do that constantly. */
-        const existing = this.forStack.findIndex(
-            (frame) => sameVariable(frame.variable, variable),
+        const existing = this.forStack.findIndex((frame) =>
+            sameVariable(frame.variable, variable),
         );
         if (existing >= 0) this.forStack.length = existing;
 
@@ -686,7 +710,10 @@ export class Interpreter {
     private advanceLoop(variable: LoopVariable | null): boolean {
         let index = this.forStack.length - 1;
         if (variable !== null) {
-            while (index >= 0 && !sameVariable(this.forStack[index].variable, variable)) {
+            while (
+                index >= 0 &&
+                !sameVariable(this.forStack[index].variable, variable)
+            ) {
                 index -= 1;
             }
         }
@@ -697,9 +724,16 @@ export class Interpreter {
 
         const next =
             asNumber(
-                this.variables.getScalar(frame.variable.name, frame.variable.sigil),
+                this.variables.getScalar(
+                    frame.variable.name,
+                    frame.variable.sigil,
+                ),
             ) + frame.step;
-        this.variables.setScalar(frame.variable.name, frame.variable.sigil, next);
+        this.variables.setScalar(
+            frame.variable.name,
+            frame.variable.sigil,
+            next,
+        );
 
         const running =
             frame.step >= 0 ? next <= frame.limit : next >= frame.limit;
@@ -798,8 +832,11 @@ export class Interpreter {
      *
      * Breaking out (Ctrl+C) stops the program rather than assigning.
      */
-    private async executeInput(statement: Extract<Statement, { kind: "input" }>) {
-        const prompt = statement.prompt + (statement.showQuestionMark ? "? " : "");
+    private async executeInput(
+        statement: Extract<Statement, { kind: "input" }>,
+    ) {
+        const prompt =
+            statement.prompt + (statement.showQuestionMark ? "? " : "");
 
         for (;;) {
             const line = await this.console.readLine(prompt);
@@ -833,14 +870,19 @@ export class Interpreter {
     }
 
     /** Null if any field is the wrong kind for its variable. */
-    private convertInputFields(targets: LValue[], fields: string[]): Value[] | null {
+    private convertInputFields(
+        targets: LValue[],
+        fields: string[],
+    ): Value[] | null {
         const values: Value[] = [];
 
         for (let i = 0; i < targets.length; i += 1) {
             const target = targets[i];
             const field = fields[i];
 
-            if (this.variables.getType(target.name, target.sigil) === "string") {
+            if (
+                this.variables.getType(target.name, target.sigil) === "string"
+            ) {
                 values.push(field);
                 continue;
             }
@@ -865,7 +907,9 @@ export class Interpreter {
         for (const target of statement.targets) {
             const item = this.nextDataItem();
 
-            if (this.variables.getType(target.name, target.sigil) === "string") {
+            if (
+                this.variables.getType(target.name, target.sigil) === "string"
+            ) {
                 this.assign(target, item.value);
                 continue;
             }
@@ -901,7 +945,10 @@ export class Interpreter {
             }
 
             const statement = statements[at.statementIndex];
-            if (statement.kind !== "data" || at.itemIndex >= statement.items.length) {
+            if (
+                statement.kind !== "data" ||
+                at.itemIndex >= statement.items.length
+            ) {
                 at.statementIndex += 1;
                 at.itemIndex = 0;
                 continue;
@@ -915,7 +962,9 @@ export class Interpreter {
 
     private executeRestore(statement: Extract<Statement, { kind: "restore" }>) {
         const lineIndex =
-            statement.line === null ? 0 : this.program.findIndex(statement.line);
+            statement.line === null
+                ? 0
+                : this.program.findIndex(statement.line);
         if (lineIndex === null) throw new BasicError("UNDEF'D STATEMENT");
         this.dataPointer = { lineIndex, statementIndex: 0, itemIndex: 0 };
     }
@@ -1009,7 +1058,9 @@ export class Interpreter {
         this.continuePosition = { ...this.position };
         this.stopped = true;
         this.console.write(
-            this.runningLine === null ? "Break\n" : `Break in ${this.runningLine}\n`,
+            this.runningLine === null
+                ? "Break\n"
+                : `Break in ${this.runningLine}\n`,
         );
     }
 
@@ -1064,7 +1115,8 @@ export class Interpreter {
         });
 
         this.program.clear();
-        for (const line of rewritten) this.program.setLine(line.number, line.source);
+        for (const line of rewritten)
+            this.program.setLine(line.number, line.source);
         this.continuePosition = null;
     }
 
@@ -1073,7 +1125,9 @@ export class Interpreter {
      * the length it had, and only as many characters as will fit are
      * taken from the replacement.
      */
-    private executeMidAssign(statement: Extract<Statement, { kind: "midAssign" }>) {
+    private executeMidAssign(
+        statement: Extract<Statement, { kind: "midAssign" }>,
+    ) {
         const text = asString(this.read(statement.target));
         const start = Math.trunc(this.number(statement.start));
         if (start < 1) throw new BasicError("ILLEGAL QUANTITY");
@@ -1131,7 +1185,9 @@ export class Interpreter {
         for (const item of statement.items) {
             switch (item.kind) {
                 case "expression":
-                    this.console.write(formatValue(this.evaluator.evaluate(item.expr)));
+                    this.console.write(
+                        formatValue(this.evaluator.evaluate(item.expr)),
+                    );
                     break;
 
                 case "adjacent":
@@ -1147,7 +1203,9 @@ export class Interpreter {
                     break;
 
                 case "spc":
-                    this.console.write(" ".repeat(Math.max(0, this.number(item.expr))));
+                    this.console.write(
+                        " ".repeat(Math.max(0, this.number(item.expr))),
+                    );
                     break;
             }
         }
@@ -1161,7 +1219,8 @@ export class Interpreter {
      */
     private advanceToZone() {
         const column = this.console.getColumn();
-        const target = (Math.floor(column / PRINT_ZONE_WIDTH) + 1) * PRINT_ZONE_WIDTH;
+        const target =
+            (Math.floor(column / PRINT_ZONE_WIDTH) + 1) * PRINT_ZONE_WIDTH;
 
         if (target >= this.console.getWidth()) {
             this.console.write("\n");

@@ -26,7 +26,13 @@ async function feed(interpreter: Interpreter, ...lines: string[]) {
 describe("CLS", () => {
     it("empties the screen and goes home", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, '10 PRINT "GONE"', "20 CLS", '30 PRINT "HERE"', "RUN");
+        await feed(
+            interpreter,
+            '10 PRINT "GONE"',
+            "20 CLS",
+            '30 PRINT "HERE"',
+            "RUN",
+        );
         expect(console.getScreen()).toEqual(["HERE"]);
         expect(console.getCursor()).toEqual({ x: 0, y: 1 });
     });
@@ -41,7 +47,12 @@ describe("LOCATE", () => {
 
     it("moves only the row when the column is left out", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, '10 PRINT "ABC";', "20 LOCATE 4:PRINT \"Y\"", "RUN");
+        await feed(
+            interpreter,
+            '10 PRINT "ABC";',
+            '20 LOCATE 4:PRINT "Y"',
+            "RUN",
+        );
         expect(console.getRow(3)).toBe("   Y");
     });
 
@@ -207,9 +218,9 @@ describe("SCREEN()", () => {
 
     it("refuses a cell off the screen", async () => {
         const { interpreter } = machine();
-        await expect(interpreter.executeLine("PRINT SCREEN(0,1)")).rejects.toThrow(
-            /ILLEGAL QUANTITY/,
-        );
+        await expect(
+            interpreter.executeLine("PRINT SCREEN(0,1)"),
+        ).rejects.toThrow(/ILLEGAL QUANTITY/);
     });
 });
 
@@ -223,7 +234,7 @@ describe("INKEY$", () => {
     it("hands over one key at a time", async () => {
         const { console, interpreter } = machine();
         console.provideKeys("A", "B");
-        await feed(interpreter, "10 PRINT INKEY$;INKEY$;INKEY$;\".\"", "RUN");
+        await feed(interpreter, '10 PRINT INKEY$;INKEY$;INKEY$;"."', "RUN");
         expect(console.getText()).toBe("AB.\n");
     });
 
@@ -251,7 +262,13 @@ describe("DELAY", () => {
 
     it("waits each time round a loop", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 FOR I=1 TO 4", "20 DELAY 10", "30 NEXT", "RUN");
+        await feed(
+            interpreter,
+            "10 FOR I=1 TO 4",
+            "20 DELAY 10",
+            "30 NEXT",
+            "RUN",
+        );
         expect(console.getWaitedMilliseconds()).toBe(40);
     });
 
@@ -270,7 +287,12 @@ describe("DELAY", () => {
     it("can still be interrupted part way through", async () => {
         const { console, interpreter } = machine();
         console.setBreak(true);
-        await feed(interpreter, "10 DELAY 10000", '20 PRINT "NOT REACHED"', "RUN");
+        await feed(
+            interpreter,
+            "10 DELAY 10000",
+            '20 PRINT "NOT REACHED"',
+            "RUN",
+        );
         expect(console.getText()).toBe("Break in 10\n");
         /* Stopped after the first slice, not the whole ten seconds. */
         expect(console.getWaitedMilliseconds()).toBeLessThan(100);
@@ -290,7 +312,7 @@ describe("the clock", () => {
 
     it("TIME$ and DATE$", async () => {
         const { console, interpreter } = clocked();
-        await feed(interpreter, "10 PRINT TIME$;\" \";DATE$", "RUN");
+        await feed(interpreter, '10 PRINT TIME$;" ";DATE$', "RUN");
         expect(console.getText()).toBe("14:30:45 11-11-1985\n");
     });
 
@@ -310,38 +332,74 @@ describe("the clock", () => {
 describe("DEFINT and friends", () => {
     it("makes unsuffixed names in the range integers", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 DEFINT A-Z", "20 X=2.7", "30 PRINT X", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFINT A-Z",
+            "20 X=2.7",
+            "30 PRINT X",
+            "RUN",
+        );
         expect(console.getText()).toBe(" 3 \n");
     });
 
     it("leaves letters outside the range alone", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 DEFINT A-C", "20 A=2.7:Z=2.7", "30 PRINT A;Z", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFINT A-C",
+            "20 A=2.7:Z=2.7",
+            "30 PRINT A;Z",
+            "RUN",
+        );
         expect(console.getText()).toBe(" 3  2.7 \n");
     });
 
     it("is overridden by an explicit sigil", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 DEFINT A-Z", "20 X!=2.7", "30 PRINT X!", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFINT A-Z",
+            "20 X!=2.7",
+            "30 PRINT X!",
+            "RUN",
+        );
         expect(console.getText()).toBe(" 2.7 \n");
     });
 
     it("DEFSTR makes them strings", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 DEFSTR S", '20 S="HI"', "30 PRINT S", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFSTR S",
+            '20 S="HI"',
+            "30 PRINT S",
+            "RUN",
+        );
         expect(console.getText()).toBe("HI\n");
     });
 
     it("takes a list of ranges", async () => {
         const { console, interpreter } = machine();
-        await feed(interpreter, "10 DEFINT A,C-D", "20 A=1.6:B=1.6:C=1.6", "30 PRINT A;B;C", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFINT A,C-D",
+            "20 A=1.6:B=1.6:C=1.6",
+            "30 PRINT A;B;C",
+            "RUN",
+        );
         expect(console.getText()).toBe(" 2  1.6  2 \n");
     });
 
     it("applies to INPUT and READ targets too", async () => {
         const { console, interpreter } = machine();
         console.provideInput("2.7");
-        await feed(interpreter, "10 DEFINT A-Z", "20 INPUT X", "30 PRINT X", "RUN");
+        await feed(
+            interpreter,
+            "10 DEFINT A-Z",
+            "20 INPUT X",
+            "30 PRINT X",
+            "RUN",
+        );
         expect(console.getText()).toBe("? 2.7\n 3 \n");
     });
 

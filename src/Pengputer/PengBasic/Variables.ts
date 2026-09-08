@@ -45,7 +45,6 @@ interface Key {
     type: BasicType;
 }
 
-
 export class Variables {
     private scalars: Map<string, Value> = new Map();
     private arrays: Map<string, ArrayVariable> = new Map();
@@ -134,7 +133,10 @@ export class Variables {
     setElement(name: string, sigil: Sigil, subscripts: number[], value: Value) {
         const { type } = this.keyOf(name, sigil);
         const array = this.resolveArray(name, sigil, subscripts.length);
-        array.data[this.offsetOf(array, subscripts)] = coerceToType(value, type);
+        array.data[this.offsetOf(array, subscripts)] = coerceToType(
+            value,
+            type,
+        );
     }
 
     /**
@@ -178,7 +180,10 @@ export class Variables {
         const total = sizes.reduce((a, b) => a * b, 1);
         if (total > 1 << 20) throw new BasicError("OUT OF MEMORY");
 
-        return { sizes, data: new Array<Value>(total).fill(defaultValue(type)) };
+        return {
+            sizes,
+            data: new Array<Value>(total).fill(defaultValue(type)),
+        };
     }
 
     /** Row-major, so the last subscript varies fastest. */

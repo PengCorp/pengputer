@@ -38,7 +38,6 @@ export class StatementParser extends Parser {
             if (token.kind === "end") break;
             if (token.kind === "punct" && token.punct === ":") continue;
             throw new BasicError("SYNTAX", token.pos);
-
         }
 
         return statements;
@@ -92,7 +91,8 @@ export class StatementParser extends Parser {
                     return { kind: "delete", ...range };
                 }
                 case "RENUM": {
-                    const [newStart, oldStart, increment] = this.parseOptionalNumbers(3);
+                    const [newStart, oldStart, increment] =
+                        this.parseOptionalNumbers(3);
                     return { kind: "renum", newStart, oldStart, increment };
                 }
                 case "AUTO": {
@@ -102,25 +102,34 @@ export class StatementParser extends Parser {
                 case "EDIT":
                     return {
                         kind: "edit",
-                        line: this.atStatementEnd() ? null : this.parseLineNumber(),
+                        line: this.atStatementEnd()
+                            ? null
+                            : this.parseLineNumber(),
                     };
                 case "CLS":
                     return { kind: "cls" };
                 case "DELAY":
-                    return { kind: "delay", milliseconds: this.parseExpression() };
+                    return {
+                        kind: "delay",
+                        milliseconds: this.parseExpression(),
+                    };
                 case "DOWNLOAD":
                     return {
                         kind: "download",
-                        filename: this.atStatementEnd() ? null : this.parseExpression(),
+                        filename: this.atStatementEnd()
+                            ? null
+                            : this.parseExpression(),
                     };
                 case "UPLOAD":
                     return { kind: "upload" };
                 case "LOCATE": {
-                    const [row, column, cursor] = this.parseOptionalExpressions(3);
+                    const [row, column, cursor] =
+                        this.parseOptionalExpressions(3);
                     return { kind: "locate", row, column, cursor };
                 }
                 case "COLOR": {
-                    const [foreground, background] = this.parseOptionalExpressions(2);
+                    const [foreground, background] =
+                        this.parseOptionalExpressions(2);
                     return { kind: "color", foreground, background };
                 }
                 case "DEFINT":
@@ -164,7 +173,9 @@ export class StatementParser extends Parser {
                 case "RANDOMIZE":
                     return {
                         kind: "randomize",
-                        seed: this.atStatementEnd() ? null : this.parseExpression(),
+                        seed: this.atStatementEnd()
+                            ? null
+                            : this.parseExpression(),
                     };
                 case "INPUT":
                     return this.parseInput();
@@ -244,10 +255,12 @@ export class StatementParser extends Parser {
             }
 
             const positional = this.tryParsePrintFunction();
-            items.push(positional ?? {
-                kind: "expression",
-                expr: this.parseExpression(),
-            });
+            items.push(
+                positional ?? {
+                    kind: "expression",
+                    expr: this.parseExpression(),
+                },
+            );
             newline = true;
         }
 
@@ -278,7 +291,8 @@ export class StatementParser extends Parser {
         this.expectPunct("(");
 
         const target = this.parseLValue();
-        if (!this.takePunct(",")) throw new BasicError("SYNTAX", this.peek().pos);
+        if (!this.takePunct(","))
+            throw new BasicError("SYNTAX", this.peek().pos);
         const start = this.parseExpression();
         const length = this.takePunct(",") ? this.parseExpression() : null;
 
@@ -287,7 +301,13 @@ export class StatementParser extends Parser {
             throw new BasicError("SYNTAX", this.peek().pos);
         }
 
-        return { kind: "midAssign", target, start, length, value: this.parseExpression() };
+        return {
+            kind: "midAssign",
+            target,
+            start,
+            length,
+            value: this.parseExpression(),
+        };
     }
 
     /**
@@ -317,7 +337,8 @@ export class StatementParser extends Parser {
 
         do {
             const token = this.peek();
-            if (token.kind !== "name") throw new BasicError("SYNTAX", token.pos);
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
             this.pos += 1;
             entries.push({
                 name: token.name,
@@ -456,13 +477,15 @@ export class StatementParser extends Parser {
 
         if (this.takeKeyword("FN")) {
             const token = this.peek();
-            if (token.kind !== "name") throw new BasicError("SYNTAX", token.pos);
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
             this.pos += 1;
             name = token.name;
             sigil = token.sigil;
         } else {
             const token = this.peek();
-            if (token.kind !== "name") throw new BasicError("SYNTAX", token.pos);
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
             const split = userFunctionName(token.name);
             if (split === null) throw new BasicError("SYNTAX", token.pos);
             this.pos += 1;
@@ -474,7 +497,8 @@ export class StatementParser extends Parser {
         const parameters: { name: string; sigil: Sigil }[] = [];
         do {
             const token = this.peek();
-            if (token.kind !== "name") throw new BasicError("SYNTAX", token.pos);
+            if (token.kind !== "name")
+                throw new BasicError("SYNTAX", token.pos);
             this.pos += 1;
             parameters.push({ name: token.name, sigil: token.sigil });
         } while (this.takePunct(","));
@@ -486,7 +510,12 @@ export class StatementParser extends Parser {
 
         return {
             kind: "defFn",
-            definition: { name, sigil, parameters, body: this.parseExpression() },
+            definition: {
+                name,
+                sigil,
+                parameters,
+                body: this.parseExpression(),
+            },
         };
     }
 
@@ -513,7 +542,8 @@ export class StatementParser extends Parser {
 
         do {
             const from = this.parseLetter();
-            const to = this.takeOperator("-") !== null ? this.parseLetter() : from;
+            const to =
+                this.takeOperator("-") !== null ? this.parseLetter() : from;
             ranges.push({ from, to });
         } while (this.takePunct(","));
 
@@ -522,7 +552,11 @@ export class StatementParser extends Parser {
 
     private parseLetter(): string {
         const token = this.peek();
-        if (token.kind !== "name" || token.name.length !== 1 || token.sigil !== "") {
+        if (
+            token.kind !== "name" ||
+            token.name.length !== 1 ||
+            token.sigil !== ""
+        ) {
             throw new BasicError("SYNTAX", token.pos);
         }
         this.pos += 1;

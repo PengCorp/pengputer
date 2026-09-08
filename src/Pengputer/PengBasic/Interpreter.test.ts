@@ -54,7 +54,7 @@ describe("immediate mode", () => {
     });
 
     it("runs several statements on one line", async () => {
-        expect(await run('A=1:B=2:PRINT A+B')).toBe(" 3 \n");
+        expect(await run("A=1:B=2:PRINT A+B")).toBe(" 3 \n");
     });
 
     it("ignores remarks", async () => {
@@ -67,7 +67,9 @@ describe("immediate mode", () => {
 
     it("honours DIM", async () => {
         expect(await run("DIM A(2)", "A(2)=5", "PRINT A(2)")).toBe(" 5 \n");
-        await expect(run("DIM A(2)", "PRINT A(3)")).rejects.toThrow(/SUBSCRIPT/);
+        await expect(run("DIM A(2)", "PRINT A(3)")).rejects.toThrow(
+            /SUBSCRIPT/,
+        );
     });
 });
 
@@ -112,7 +114,10 @@ describe("PRINT punctuation", () => {
  * and cursor movement are whatever the machine actually does.
  */
 describe("PRINT on the screen grid", () => {
-    async function screen(width: number, ...lines: string[]): Promise<TestConsole> {
+    async function screen(
+        width: number,
+        ...lines: string[]
+    ): Promise<TestConsole> {
         const machine = new TestConsole(width);
         const interpreter = new Interpreter(machine);
         for (const line of lines) await interpreter.executeLine(line);
@@ -159,12 +164,7 @@ describe("PRINT on the screen grid", () => {
     });
 
     it("shows a whole program's output as a screen", async () => {
-        const output = await screen(
-            80,
-            "10 PRINT 1",
-            "20 PRINT 2",
-            "RUN",
-        );
+        const output = await screen(80, "10 PRINT 1", "20 PRINT 2", "RUN");
         expect(output.getScreen()).toEqual([" 1", " 2"]);
     });
 });
@@ -179,7 +179,9 @@ describe("the stored program", () => {
     });
 
     it("deletes a line when only its number is typed", async () => {
-        expect(await run("10 PRINT 1", "20 PRINT 2", "10", "RUN")).toBe(" 2 \n");
+        expect(await run("10 PRINT 1", "20 PRINT 2", "10", "RUN")).toBe(
+            " 2 \n",
+        );
     });
 
     it("lists what you typed, spacing and all", async () => {
@@ -189,13 +191,21 @@ describe("the stored program", () => {
     it("lists a range", async () => {
         const program = ["10 PRINT 1", "20 PRINT 2", "30 PRINT 3"];
         expect(await run(...program, "LIST 20")).toBe("20 PRINT 2\n");
-        expect(await run(...program, "LIST 20-30")).toBe("20 PRINT 2\n30 PRINT 3\n");
-        expect(await run(...program, "LIST -20")).toBe("10 PRINT 1\n20 PRINT 2\n");
-        expect(await run(...program, "LIST 20-")).toBe("20 PRINT 2\n30 PRINT 3\n");
+        expect(await run(...program, "LIST 20-30")).toBe(
+            "20 PRINT 2\n30 PRINT 3\n",
+        );
+        expect(await run(...program, "LIST -20")).toBe(
+            "10 PRINT 1\n20 PRINT 2\n",
+        );
+        expect(await run(...program, "LIST 20-")).toBe(
+            "20 PRINT 2\n30 PRINT 3\n",
+        );
     });
 
     it("stops at END", async () => {
-        expect(await run("10 PRINT 1", "20 END", "30 PRINT 3", "RUN")).toBe(" 1 \n");
+        expect(await run("10 PRINT 1", "20 END", "30 PRINT 3", "RUN")).toBe(
+            " 1 \n",
+        );
     });
 
     it("clears everything with NEW", async () => {
@@ -221,9 +231,11 @@ describe("errors", () => {
             await interpreter.executeLine("RUN");
             expect.unreachable();
         } catch (e) {
-            expect((e as { format(n: number | null): string }).format(
-                interpreter.getRunningLine(),
-            )).toBe("?DIVISION BY ZERO ERROR IN 20");
+            expect(
+                (e as { format(n: number | null): string }).format(
+                    interpreter.getRunningLine(),
+                ),
+            ).toBe("?DIVISION BY ZERO ERROR IN 20");
         }
     });
 
@@ -234,9 +246,11 @@ describe("errors", () => {
             await interpreter.executeLine("PRINT 1/0");
             expect.unreachable();
         } catch (e) {
-            expect((e as { format(n: number | null): string }).format(
-                interpreter.getRunningLine(),
-            )).toBe("?DIVISION BY ZERO ERROR");
+            expect(
+                (e as { format(n: number | null): string }).format(
+                    interpreter.getRunningLine(),
+                ),
+            ).toBe("?DIVISION BY ZERO ERROR");
         }
     });
 

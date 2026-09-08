@@ -95,15 +95,15 @@ describe("more values than fields", () => {
 
 describe("from a program", () => {
     it("prints a formatted line", async () => {
-        expect(
-            await run('10 PRINT USING "###.##"; 3.14159', "RUN"),
-        ).toBe("  3.14\n");
+        expect(await run('10 PRINT USING "###.##"; 3.14159', "RUN")).toBe(
+            "  3.14\n",
+        );
     });
 
     it("takes several values", async () => {
-        expect(
-            await run('10 PRINT USING "## ## ##"; 1,2,3', "RUN"),
-        ).toBe(" 1  2  3\n");
+        expect(await run('10 PRINT USING "## ## ##"; 1,2,3', "RUN")).toBe(
+            " 1  2  3\n",
+        );
     });
 
     it("suppresses the newline after a trailing separator", async () => {
@@ -119,11 +119,8 @@ describe("from a program", () => {
     });
 
     it("prints a table from one format", async () => {
-        expect(
-            await run(
-                '10 PRINT USING "## "; 1,2,3,4',
-                "RUN",
-            ),
-        ).toBe(" 1  2  3  4 \n");
+        expect(await run('10 PRINT USING "## "; 1,2,3,4', "RUN")).toBe(
+            " 1  2  3  4 \n",
+        );
     });
 });

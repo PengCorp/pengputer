@@ -19,20 +19,26 @@ describe("INPUT", () => {
     });
 
     it("reads strings", async () => {
-        expect(await run(['10 INPUT A$', '20 PRINT A$', "RUN"], ["PENGER"])).toBe(
-            "? PENGER\nPENGER\n",
-        );
+        expect(
+            await run(["10 INPUT A$", "20 PRINT A$", "RUN"], ["PENGER"]),
+        ).toBe("? PENGER\nPENGER\n");
     });
 
     it("keeps BASIC's question mark after a prompt joined with ;", async () => {
-        expect(await run(['10 INPUT "NAME"; A$', "RUN"], ["X"])).toBe("NAME? X\n");
+        expect(await run(['10 INPUT "NAME"; A$', "RUN"], ["X"])).toBe(
+            "NAME? X\n",
+        );
     });
 
     it("drops the question mark when the prompt is joined with ,", async () => {
         /* Nothing is added at all -- not even a space. A prompt wanting
          * one has to say so: INPUT "NAME ", A$ */
-        expect(await run(['10 INPUT "NAME", A$', "RUN"], ["X"])).toBe("NAMEX\n");
-        expect(await run(['10 INPUT "NAME ", A$', "RUN"], ["X"])).toBe("NAME X\n");
+        expect(await run(['10 INPUT "NAME", A$', "RUN"], ["X"])).toBe(
+            "NAMEX\n",
+        );
+        expect(await run(['10 INPUT "NAME ", A$', "RUN"], ["X"])).toBe(
+            "NAME X\n",
+        );
     });
 
     it("splits one line on commas", async () => {
@@ -42,14 +48,17 @@ describe("INPUT", () => {
     });
 
     it("trims spaces around unquoted fields", async () => {
-        expect(await run(["10 INPUT A,B", "20 PRINT A;B", "RUN"], [" 1 , 2 "])).toBe(
-            "?  1 , 2 \n 1  2 \n",
-        );
+        expect(
+            await run(["10 INPUT A,B", "20 PRINT A;B", "RUN"], [" 1 , 2 "]),
+        ).toBe("?  1 , 2 \n 1  2 \n");
     });
 
     it("keeps a comma inside a quoted field", async () => {
         expect(
-            await run(['10 INPUT A$,B$', '20 PRINT A$;"/";B$', "RUN"], ['"X,Y",Z']),
+            await run(
+                ["10 INPUT A$,B$", '20 PRINT A$;"/";B$', "RUN"],
+                ['"X,Y",Z'],
+            ),
         ).toBe('? "X,Y",Z\nX,Y/Z\n');
     });
 
@@ -94,17 +103,25 @@ describe("INPUT", () => {
 describe("LINE INPUT", () => {
     it("takes the whole line, commas and all", async () => {
         expect(
-            await run(['10 LINE INPUT A$', '20 PRINT A$', "RUN"], ["SMITH, JOHN"]),
+            await run(
+                ["10 LINE INPUT A$", "20 PRINT A$", "RUN"],
+                ["SMITH, JOHN"],
+            ),
         ).toBe("SMITH, JOHN\nSMITH, JOHN\n");
     });
 
     it("adds no question mark of its own", async () => {
-        expect(await run(['10 LINE INPUT "WHO"; A$', "RUN"], ["X"])).toBe("WHOX\n");
+        expect(await run(['10 LINE INPUT "WHO"; A$', "RUN"], ["X"])).toBe(
+            "WHOX\n",
+        );
     });
 
     it("keeps leading and trailing spaces", async () => {
         expect(
-            await run(['10 LINE INPUT A$', '20 PRINT "["+A$+"]"', "RUN"], ["  X  "]),
+            await run(
+                ["10 LINE INPUT A$", '20 PRINT "["+A$+"]"', "RUN"],
+                ["  X  "],
+            ),
         ).toBe("  X  \n[  X  ]\n");
     });
 });
@@ -135,20 +152,31 @@ describe("DATA and READ", () => {
 
     it("finds DATA wherever it sits, including after the READ", async () => {
         expect(
-            await run(["10 READ A", "20 PRINT A", "30 END", "40 DATA 5", "RUN"]),
+            await run([
+                "10 READ A",
+                "20 PRINT A",
+                "30 END",
+                "40 DATA 5",
+                "RUN",
+            ]),
         ).toBe(" 5 \n");
     });
 
     it("reads unquoted text as a string", async () => {
         expect(
-            await run(["10 DATA JOHN SMITH", '20 READ A$', '30 PRINT A$', "RUN"]),
+            await run([
+                "10 DATA JOHN SMITH",
+                "20 READ A$",
+                "30 PRINT A$",
+                "RUN",
+            ]),
         ).toBe("JOHN SMITH\n");
     });
 
     it("reads a number into a string variable as its text", async () => {
-        expect(await run(["10 DATA 42", '20 READ A$', '30 PRINT A$', "RUN"])).toBe(
-            "42\n",
-        );
+        expect(
+            await run(["10 DATA 42", "20 READ A$", "30 PRINT A$", "RUN"]),
+        ).toBe("42\n");
     });
 
     it("refuses a word where a number was wanted", async () => {
@@ -158,13 +186,13 @@ describe("DATA and READ", () => {
     });
 
     it("runs out of data", async () => {
-        await expect(
-            run(["10 DATA 1", "20 READ A,B", "RUN"]),
-        ).rejects.toThrow(/OUT OF DATA/);
+        await expect(run(["10 DATA 1", "20 READ A,B", "RUN"])).rejects.toThrow(
+            /OUT OF DATA/,
+        );
     });
 
     it("does not execute DATA where it stands", async () => {
-        expect(await run(['10 DATA 1,2', '20 PRINT "OK"', "RUN"])).toBe("OK\n");
+        expect(await run(["10 DATA 1,2", '20 PRINT "OK"', "RUN"])).toBe("OK\n");
     });
 });
 
@@ -218,7 +246,11 @@ describe("breaking out of a running program", () => {
     it("stops between statements and can be continued", async () => {
         const machine = new TestConsole();
         const interpreter = new Interpreter(machine);
-        for (const line of ["10 C=C+1", "20 IF C<100000 THEN GOTO 10", "30 PRINT C"]) {
+        for (const line of [
+            "10 C=C+1",
+            "20 IF C<100000 THEN GOTO 10",
+            "30 PRINT C",
+        ]) {
             await interpreter.executeLine(line);
         }
 

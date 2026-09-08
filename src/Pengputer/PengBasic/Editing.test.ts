@@ -48,21 +48,23 @@ describe("DELETE", () => {
     it("refuses a bare DELETE", async () => {
         const { interpreter } = machine();
         await feed(interpreter, ...program);
-        await expect(interpreter.executeLine("DELETE")).rejects.toThrow(/SYNTAX/);
+        await expect(interpreter.executeLine("DELETE")).rejects.toThrow(
+            /SYNTAX/,
+        );
     });
 });
 
 describe("RENUM", () => {
     it("renumbers by tens from ten", async () => {
-        expect(await listing("1 PRINT 1", "7 PRINT 2", "9 PRINT 3", "RENUM")).toBe(
-            "10 PRINT 1\n20 PRINT 2\n30 PRINT 3\n",
-        );
+        expect(
+            await listing("1 PRINT 1", "7 PRINT 2", "9 PRINT 3", "RENUM"),
+        ).toBe("10 PRINT 1\n20 PRINT 2\n30 PRINT 3\n");
     });
 
     it("takes a start and an increment", async () => {
-        expect(
-            await listing("1 PRINT 1", "2 PRINT 2", "RENUM 100,,5"),
-        ).toBe("100 PRINT 1\n105 PRINT 2\n");
+        expect(await listing("1 PRINT 1", "2 PRINT 2", "RENUM 100,,5")).toBe(
+            "100 PRINT 1\n105 PRINT 2\n",
+        );
     });
 
     it("renumbers only from a given line", async () => {
@@ -155,7 +157,7 @@ describe("rewriteLineReferences", () => {
     ]);
 
     it("splices without disturbing anything else", () => {
-        expect(rewriteLineReferences('IF A=5 THEN 5 ELSE 10', map).source).toBe(
+        expect(rewriteLineReferences("IF A=5 THEN 5 ELSE 10", map).source).toBe(
             "IF A=5 THEN 50 ELSE 100",
         );
     });
@@ -179,7 +181,9 @@ describe("rewriteLineReferences", () => {
     });
 
     it("leaves a line it cannot tokenize completely alone", () => {
-        expect(rewriteLineReferences("GOTO 5 @ @", map).source).toBe("GOTO 5 @ @");
+        expect(rewriteLineReferences("GOTO 5 @ @", map).source).toBe(
+            "GOTO 5 @ @",
+        );
     });
 });
 
@@ -328,9 +332,15 @@ describe("EDIT with no line number", () => {
 describe("CLEAR with arguments", () => {
     it("accepts the string space a listing asks for", async () => {
         const { interpreter } = machine();
-        await expect(interpreter.executeLine("CLEAR 500")).resolves.toBeDefined();
-        await expect(interpreter.executeLine("CLEAR ,32768")).resolves.toBeDefined();
-        await expect(interpreter.executeLine("CLEAR 500,32768")).resolves.toBeDefined();
+        await expect(
+            interpreter.executeLine("CLEAR 500"),
+        ).resolves.toBeDefined();
+        await expect(
+            interpreter.executeLine("CLEAR ,32768"),
+        ).resolves.toBeDefined();
+        await expect(
+            interpreter.executeLine("CLEAR 500,32768"),
+        ).resolves.toBeDefined();
     });
 
     it("still forgets the variables", async () => {

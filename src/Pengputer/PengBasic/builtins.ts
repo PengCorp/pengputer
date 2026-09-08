@@ -114,7 +114,9 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
     define("SCREEN", 2, 2, (a) => {
         const row = positionArgument(a[0]);
         const column = positionArgument(a[1]);
-        return codeForCharacter(deps.machine.readCharacter(row - 1, column - 1));
+        return codeForCharacter(
+            deps.machine.readCharacter(row - 1, column - 1),
+        );
     });
 
     /** Seconds since midnight, as GW-BASIC reckoned it. */
@@ -147,9 +149,7 @@ export function createBuiltins(deps: BuiltinDependencies): Builtins {
 
     define("LEN", 1, 1, (a) => asString(a[0]).length);
 
-    define("LEFT$", 2, 2, (a) =>
-        asString(a[0]).slice(0, countArgument(a[1])),
-    );
+    define("LEFT$", 2, 2, (a) => asString(a[0]).slice(0, countArgument(a[1])));
 
     define("RIGHT$", 2, 2, (a) => {
         const text = asString(a[0]);
@@ -234,6 +234,7 @@ function countArgument(value: Value): number {
 /** A position within a string: whole, and at least 1. */
 function positionArgument(value: Value): number {
     const position = Math.trunc(asNumber(value));
-    if (position < 1 || position > 255) throw new BasicError("ILLEGAL QUANTITY");
+    if (position < 1 || position > 255)
+        throw new BasicError("ILLEGAL QUANTITY");
     return position;
 }

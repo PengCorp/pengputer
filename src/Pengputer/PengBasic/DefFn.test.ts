@@ -12,21 +12,21 @@ async function run(...lines: string[]): Promise<string> {
 
 describe("defining and calling", () => {
     it("defines and calls a function", async () => {
-        expect(
-            await run("10 DEF FNS(X)=X*X", "20 PRINT FNS(5)", "RUN"),
-        ).toBe(" 25 \n");
+        expect(await run("10 DEF FNS(X)=X*X", "20 PRINT FNS(5)", "RUN")).toBe(
+            " 25 \n",
+        );
     });
 
     it("accepts a space after DEF FN", async () => {
-        expect(
-            await run("10 DEF FN S(X)=X*X", "20 PRINT FNS(5)", "RUN"),
-        ).toBe(" 25 \n");
+        expect(await run("10 DEF FN S(X)=X*X", "20 PRINT FNS(5)", "RUN")).toBe(
+            " 25 \n",
+        );
     });
 
     it("takes an expression as its argument", async () => {
-        expect(
-            await run("10 DEF FND(X)=X*2", "20 PRINT FND(3+4)", "RUN"),
-        ).toBe(" 14 \n");
+        expect(await run("10 DEF FND(X)=X*2", "20 PRINT FND(3+4)", "RUN")).toBe(
+            " 14 \n",
+        );
     });
 
     it("sees the program's other variables", async () => {
@@ -70,7 +70,7 @@ describe("more than one parameter", () => {
     it("mixes types", async () => {
         expect(
             await run(
-                '10 DEF FNP$(N$,C)=N$+STR$(C)',
+                "10 DEF FNP$(N$,C)=N$+STR$(C)",
                 '20 PRINT FNP$("ITEM",7)',
                 "RUN",
             ),

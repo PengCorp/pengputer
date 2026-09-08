@@ -159,10 +159,14 @@ class StdConsole implements Console {
         blink: boolean | null,
     ) {
         if (foreground !== null) {
-            this.pc.std.updateConsoleAttributes({ fgColor: cgaColor(foreground) });
+            this.pc.std.updateConsoleAttributes({
+                fgColor: cgaColor(foreground),
+            });
         }
         if (background !== null) {
-            this.pc.std.updateConsoleAttributes({ bgColor: cgaColor(background) });
+            this.pc.std.updateConsoleAttributes({
+                bgColor: cgaColor(background),
+            });
         }
         if (blink !== null) this.pc.std.updateConsoleAttributes({ blink });
     }
@@ -220,7 +224,9 @@ export class PengBasic implements Executable {
         /* TODO(stage 9): `pbasic PROG.BAS' should load and run the
          * program, the way `BASIC PROG' did under MS-DOS. */
         if (args.length > 1) {
-            std.writeConsole("?LOADING A PROGRAM FROM A FILE IS NOT DONE YET\n");
+            std.writeConsole(
+                "?LOADING A PROGRAM FROM A FILE IS NOT DONE YET\n",
+            );
         }
 
         this.isRunning = true;
@@ -288,7 +294,9 @@ export class PengBasic implements Executable {
             if ((await this.interpreter.executeLine(line)) === "stored") return;
         } catch (e) {
             if (!isBasicError(e)) throw e;
-            std.writeConsole(`${e.format(this.interpreter.getRunningLine())}\n`);
+            std.writeConsole(
+                `${e.format(this.interpreter.getRunningLine())}\n`,
+            );
         }
 
         this.writeReady();

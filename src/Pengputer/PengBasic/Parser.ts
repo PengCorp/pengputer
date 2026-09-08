@@ -81,7 +81,8 @@ export class Parser {
     }
 
     protected expectPunct(punct: Punct) {
-        if (!this.takePunct(punct)) throw new BasicError("SYNTAX", this.peek().pos);
+        if (!this.takePunct(punct))
+            throw new BasicError("SYNTAX", this.peek().pos);
     }
 
     /** Throws unless everything has been consumed. */
@@ -188,7 +189,11 @@ export class Parser {
     private parsePowerOperand(): Expr {
         const op = this.takeOperator("-", "+");
         if (op === "-") {
-            return { kind: "unary", op: "-", operand: this.parsePowerOperand() };
+            return {
+                kind: "unary",
+                op: "-",
+                operand: this.parsePowerOperand(),
+            };
         }
         if (op === "+") return this.parsePowerOperand();
         return this.parsePrimary();
@@ -226,7 +231,11 @@ export class Parser {
                         args: this.parseArguments(),
                     };
                 }
-                return { kind: "variable", name: token.name, sigil: token.sigil };
+                return {
+                    kind: "variable",
+                    name: token.name,
+                    sigil: token.sigil,
+                };
             }
 
             case "punct":

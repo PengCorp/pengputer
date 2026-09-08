@@ -39,11 +39,13 @@ const CHARACTER_BY_CODE: string[] = CP437_ROWS.flatMap((row) =>
 const CODE_BY_CHARACTER = new Map<string, number>();
 for (let code = 32; code < CHARACTER_BY_CODE.length; code += 1) {
     const character = CHARACTER_BY_CODE[code];
-    if (!CODE_BY_CHARACTER.has(character)) CODE_BY_CHARACTER.set(character, code);
+    if (!CODE_BY_CHARACTER.has(character))
+        CODE_BY_CHARACTER.set(character, code);
 }
 for (let code = 0; code < 32; code += 1) {
     const character = CHARACTER_BY_CODE[code];
-    if (!CODE_BY_CHARACTER.has(character)) CODE_BY_CHARACTER.set(character, code);
+    if (!CODE_BY_CHARACTER.has(character))
+        CODE_BY_CHARACTER.set(character, code);
 }
 
 /**

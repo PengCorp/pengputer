@@ -98,13 +98,21 @@ class Tokenizer {
                  * is full of it, and it is purely lexical: by the time
                  * the parser sees it, it is a PRINT like any other. */
                 this.pos += 1;
-                this.tokens.push({ kind: "keyword", keyword: "PRINT", pos: start });
+                this.tokens.push({
+                    kind: "keyword",
+                    keyword: "PRINT",
+                    pos: start,
+                });
             } else if (c === "'") {
                 this.pos += 1;
                 this.readRemarkBody(start);
             } else if (PUNCT.includes(c)) {
                 this.pos += 1;
-                this.tokens.push({ kind: "punct", punct: c as Punct, pos: start });
+                this.tokens.push({
+                    kind: "punct",
+                    punct: c as Punct,
+                    pos: start,
+                });
             } else {
                 this.readOperator();
             }
@@ -242,7 +250,10 @@ class Tokenizer {
 
             if (this.peek() === '"') {
                 this.readString();
-                const str = this.tokens.pop() as Extract<Token, { kind: "string" }>;
+                const str = this.tokens.pop() as Extract<
+                    Token,
+                    { kind: "string" }
+                >;
                 this.tokens.push({
                     kind: "data",
                     value: str.value,
@@ -251,7 +262,11 @@ class Tokenizer {
                 });
                 this.skipSpaces();
             } else {
-                while (!this.atEnd() && this.peek() !== "," && this.peek() !== ":") {
+                while (
+                    !this.atEnd() &&
+                    this.peek() !== "," &&
+                    this.peek() !== ":"
+                ) {
                     this.pos += 1;
                 }
                 const raw = this.src.slice(start, this.pos);
@@ -289,24 +304,49 @@ class Tokenizer {
         let op: Operator | null = null;
 
         switch (c) {
-            case "+": case "-": case "*": case "/": case "^":
+            case "+":
+            case "-":
+            case "*":
+            case "/":
+            case "^":
                 op = c;
                 this.pos += 1;
                 break;
             case "<":
-                if (next === ">") { op = "<>"; this.pos += 2; }
-                else if (next === "=") { op = "<="; this.pos += 2; }
-                else { op = "<"; this.pos += 1; }
+                if (next === ">") {
+                    op = "<>";
+                    this.pos += 2;
+                } else if (next === "=") {
+                    op = "<=";
+                    this.pos += 2;
+                } else {
+                    op = "<";
+                    this.pos += 1;
+                }
                 break;
             case ">":
-                if (next === "<") { op = "<>"; this.pos += 2; }
-                else if (next === "=") { op = ">="; this.pos += 2; }
-                else { op = ">"; this.pos += 1; }
+                if (next === "<") {
+                    op = "<>";
+                    this.pos += 2;
+                } else if (next === "=") {
+                    op = ">=";
+                    this.pos += 2;
+                } else {
+                    op = ">";
+                    this.pos += 1;
+                }
                 break;
             case "=":
-                if (next === "<") { op = "<="; this.pos += 2; }
-                else if (next === ">") { op = ">="; this.pos += 2; }
-                else { op = "="; this.pos += 1; }
+                if (next === "<") {
+                    op = "<=";
+                    this.pos += 2;
+                } else if (next === ">") {
+                    op = ">=";
+                    this.pos += 2;
+                } else {
+                    op = "=";
+                    this.pos += 1;
+                }
                 break;
             default:
                 throw new BasicError("SYNTAX", start);

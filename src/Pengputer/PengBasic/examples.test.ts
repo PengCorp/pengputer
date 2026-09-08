@@ -79,7 +79,8 @@ const EXPECTED: Record<string, string | RegExp> = {
 
     /* The number depends on the generator, which is pinned by its own
      * tests rather than by this one. */
-    "guess.bas": /^(YOUR GUESS\? \d+\n(TOO LOW|TOO HIGH)\n){6}OUT OF TRIES\. IT WAS \d+ \n$/,
+    "guess.bas":
+        /^(YOUR GUESS\? \d+\n(TOO LOW|TOO HIGH)\n){6}OUT OF TRIES\. IT WAS \d+ \n$/,
 
     /* Screen listings are about *where* things land, so they are
      * checked by position in Screen.test.ts rather than by their
@@ -87,12 +88,29 @@ const EXPECTED: Record<string, string | RegExp> = {
     "colors.bas": /COLOUR 15 {2}/,
     "bounce.bas": /STOPPED\n$/,
     "chars.bas": /SHADES: {2}/,
+
+    /* A listing from BASIC Computer Games, typed in exactly as it is
+     * printed there -- the strongest evidence in the suite that the
+     * dialect is the one the book was written for. Which cards come up
+     * depends on the generator, pinned by its own tests as in
+     * guess.bas; the shape of a game does not. */
+    "aceyducey.bas": new RegExp(
+        "^ {25}ACEY DUCEY CARD GAME\\n" +
+            " {14}CREATIVE COMPUTING  MORRISTOWN, NEW JERSEY\\n" +
+            "[\\s\\S]*YOU NOW HAVE  100  DOLLARS\\n" +
+            "[\\s\\S]*WHAT IS YOUR BET\\? 0\\nCHICKEN!!\\n" +
+            "[\\s\\S]*SORRY, FRIEND BUT YOU BLEW YOUR WAD\\n" +
+            "TRY AGAIN \\(YES OR NO\\)\\? NO\\nOK HOPE YOU HAD FUN\\n$",
+    ),
 };
 
 /** Lines the reader would type, for listings that ask questions. */
 const INPUTS: Record<string, string[]> = {
     "greet.bas": ["PENGER", "2"],
     "guess.bas": ["50", "25", "37", "31", "34", "32"],
+    /* Refuse the first hand, bet the lot on the second, then decline
+     * the offer of another game. */
+    "aceyducey.bas": ["0", "100", "NO"],
 };
 
 /** Keys the reader would press, for listings that watch for one. */
@@ -148,7 +166,9 @@ describe("examples", () => {
     /* Pasting a listing should leave you with a program, not run one. */
     it("none of them runs itself", () => {
         for (const name of listingNames()) {
-            expect(read(name).toUpperCase().split(/\s+/), name).not.toContain("RUN");
+            expect(read(name).toUpperCase().split(/\s+/), name).not.toContain(
+                "RUN",
+            );
         }
     });
 

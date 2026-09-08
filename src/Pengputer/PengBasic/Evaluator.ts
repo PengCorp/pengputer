@@ -100,7 +100,10 @@ export class Evaluator {
 
         const builtin = this.builtins.get(expr.name + expr.sigil);
         if (builtin) {
-            if (args.length < builtin.minArgs || args.length > builtin.maxArgs) {
+            if (
+                args.length < builtin.minArgs ||
+                args.length > builtin.maxArgs
+            ) {
                 throw new BasicError("SYNTAX");
             }
             return builtin.call(args);
@@ -140,7 +143,11 @@ export class Evaluator {
         );
 
         parameters.forEach((parameter, index) => {
-            this.variables.setScalar(parameter.name, parameter.sigil, args[index]);
+            this.variables.setScalar(
+                parameter.name,
+                parameter.sigil,
+                args[index],
+            );
         });
         try {
             return this.evaluate(definition.body);

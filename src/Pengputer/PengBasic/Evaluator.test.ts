@@ -4,7 +4,11 @@ import { Evaluator, type Builtin, type Builtins } from "./Evaluator";
 import { Variables } from "./Variables";
 import type { Value } from "./values";
 
-function makeBuiltin(fn: (args: Value[]) => Value, min = 1, max = min): Builtin {
+function makeBuiltin(
+    fn: (args: Value[]) => Value,
+    min = 1,
+    max = min,
+): Builtin {
     return { minArgs: min, maxArgs: max, call: fn };
 }
 
@@ -239,11 +243,15 @@ describe("built-ins versus arrays", () => {
     });
 
     it("matches on the sigil too", () => {
-        expect(run('MID$("HELLO",1)', new Variables(), FAKE_BUILTINS)).toBe("ELLO");
+        expect(run('MID$("HELLO",1)', new Variables(), FAKE_BUILTINS)).toBe(
+            "ELLO",
+        );
     });
 
     it("checks arity", () => {
-        expect(() => run("ABS(1,2)", new Variables(), FAKE_BUILTINS)).toThrow(/SYNTAX/);
+        expect(() => run("ABS(1,2)", new Variables(), FAKE_BUILTINS)).toThrow(
+            /SYNTAX/,
+        );
     });
 
     it("treats an unknown name as an array, not an error", () => {

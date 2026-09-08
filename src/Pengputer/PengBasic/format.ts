@@ -56,7 +56,9 @@ function formatMagnitude(n: number): string {
 }
 
 function scientific(n: number): string {
-    const [mantissa, exponent] = n.toExponential(SIGNIFICANT_DIGITS - 1).split("e");
+    const [mantissa, exponent] = n
+        .toExponential(SIGNIFICANT_DIGITS - 1)
+        .split("e");
     const power = Number(exponent);
     const sign = power < 0 ? "-" : "+";
     return `${trimZeros(mantissa)}E${sign}${String(Math.abs(power)).padStart(2, "0")}`;
